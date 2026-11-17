@@ -1,0 +1,71 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>สัปดาห์ที่ 2 เจาะรหัสลับ ฉบับ67 | 67 Math Problem</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700;800&family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/site.css"><script src="/assets/site.js"></script></head><body class="hk"><div class="main">
+<div class="wrap" style="padding-top:20px">
+  <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 24px">
+    <a class="logo" href="/"><span class="sig mono" style="background:transparent;border-color:var(--g);color:var(--g);border-radius:6px;transform:none;width:44px;height:44px;font-size:28px" aria-hidden="true">Σ</span><b class="mono" style="font-weight:400;font-size:17px;color:var(--g)">67 Math Problem<br>with Sigma Boys</b></a>
+    <a class="mono" href="/puzzles/" style="font-size:17px;color:var(--g);padding:8px 0">&lt; กลับไปคลังโจทย์</a>
+  </div>
+</div>
+<div class="wrap" style="padding-top:36px;padding-bottom:64px;display:flex;flex-direction:column;gap:24px">
+  <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+    <span class="tag mono">&gt; สัปดาห์ที่ 2</span>
+    <h1 class="mono" style="font-weight:400;font-size:clamp(34px,8vw,52px);line-height:1.15;color:var(--g2);text-shadow:0 0 10px rgba(57,255,136,.55)">เจาะรหัสลับ ฉบับ67_</h1>
+    <p style="margin:0;font-size:20px;line-height:1.65">คุณจะได้ไขรหัสลับ 3 รหัสจากรูปภาพที่มีความสอดคล้องกัน ต้องไขรหัสจากรูปแรกให้ได้ก่อน จึงจะไขรหัสจากรูปต่อไปได้</p>
+  </div>
+  <div class="mono" id="prog" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:18px"></div>
+  <div class="stg" id="s1"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="tag mono">รูปที่ 1</span><span class="mono st" style="margin-left:auto;font-size:17px"></span></div><div class="imgbox" data-img="1"></div><form class="row" data-f="1" autocomplete="off"><input class="inp" placeholder="พิมพ์รหัสลับ" aria-label="รหัสลับรูปที่ 1"><button class="ck" type="submit">ตรวจรหัส</button><button class="hb" type="button" data-hint="1">ขอใบ้</button></form><div class="hintline mono" hidden></div><div class="msg mono" hidden></div></div><div class="stg" id="s2"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="tag mono">รูปที่ 2</span><span class="mono st" style="margin-left:auto;font-size:17px"></span></div><div class="imgbox" data-img="2"></div><form class="row" data-f="2" autocomplete="off"><input class="inp" placeholder="พิมพ์รหัสลับ" aria-label="รหัสลับรูปที่ 2"><button class="ck" type="submit">ตรวจรหัส</button><button class="hb" type="button" data-hint="2">ขอใบ้</button></form><div class="hintline mono" hidden></div><div class="msg mono" hidden></div></div><div class="stg" id="s3"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="tag mono">รูปที่ 3</span><span class="mono st" style="margin-left:auto;font-size:17px"></span></div><div class="imgbox" data-img="3"></div><form class="row" data-f="3" autocomplete="off"><input class="inp" placeholder="พิมพ์รหัสลับ" aria-label="รหัสลับรูปที่ 3"><button class="ck" type="submit">ตรวจรหัส</button><button class="hb" type="button" data-hint="3">ขอใบ้</button></form><div class="hintline mono" hidden></div><div class="msg mono" hidden></div></div>
+  <div class="msg mono" id="done" hidden style="padding:16px 18px;border:2px solid var(--g);font-size:20px">&gt; ไขครบทั้ง 3 รหัสแล้ว เก่งมาก!</div>
+</div>
+<template id="img1"><div class="panel" role="img" aria-label="คำว่า โก ที่มี 6 คำ"><div style="inset:0;display:flex;align-items:center;justify-content:center"><span class="gl" style="font-size:12cqw;line-height:1.2">โกโกโกโกโกโก</span></div></div></template>
+<template id="img2"><div class="panel" role="img" aria-label="คำว่า โก ที่มี 6 คำ และมีลูกศรชี้จากธงชาติไทยไปธงชาติอังกฤษ"><span class="gl" style="left:4%;bottom:14%;font-size:7cqw;line-height:1.2">โกโกโกโกโกโก</span><svg style="right:5%;top:8%;width:20%" viewBox="0 0 60 40" fill="none" stroke="#7CFFB2" stroke-width="1.6" aria-hidden="true"><rect x="1" y="1" width="58" height="38"/><path d="M1 1L59 39M59 1L1 39"/><path d="M30 1V39M1 20H59" stroke-width="5" opacity=".6"/></svg><svg style="right:8%;bottom:6%;width:20%" viewBox="0 0 60 40" fill="none" stroke="#7CFFB2" stroke-width="1.8" aria-hidden="true"><rect x="1" y="1" width="58" height="38"/><path d="M1 7.5H59M1 14H59M1 26H59M1 32.5H59"/></svg><svg style="right:9%;top:34%;width:16%" viewBox="0 0 60 50" fill="none" stroke="#7CFFB2" stroke-width="2.5" stroke-dasharray="3 3" stroke-linecap="round" aria-hidden="true"><path d="M4 46C30 44 46 30 48 12"/><path d="M38 14L48 10L52 22" stroke-dasharray="0"/></svg></div></template>
+<template id="img3"><div class="panel" role="img" aria-label="รูปเดียวกับรูปที่ 2 แต่พลิกกลับหัว"><div style="inset:0;transform:rotate(180deg)"><span class="gl" style="left:4%;bottom:14%;font-size:7cqw;line-height:1.2">โกโกโกโกโกโก</span><svg style="right:5%;top:8%;width:20%" viewBox="0 0 60 40" fill="none" stroke="#7CFFB2" stroke-width="1.6" aria-hidden="true"><rect x="1" y="1" width="58" height="38"/><path d="M1 1L59 39M59 1L1 39"/><path d="M30 1V39M1 20H59" stroke-width="5" opacity=".6"/></svg><svg style="right:8%;bottom:6%;width:20%" viewBox="0 0 60 40" fill="none" stroke="#7CFFB2" stroke-width="1.8" aria-hidden="true"><rect x="1" y="1" width="58" height="38"/><path d="M1 7.5H59M1 14H59M1 26H59M1 32.5H59"/></svg><svg style="right:9%;top:34%;width:16%" viewBox="0 0 60 50" fill="none" stroke="#7CFFB2" stroke-width="2.5" stroke-dasharray="3 3" stroke-linecap="round" aria-hidden="true"><path d="M4 46C30 44 46 30 48 12"/><path d="M38 14L48 10L52 22" stroke-dasharray="0"/></svg></div></div></template>
+<template id="imgL"><div class="panel" style="border-color:var(--gd)"><div style="inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:0 24px"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#39FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="1.5"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg><span class="mono" style="font-size:19px;line-height:1.4;color:var(--g)" id="lockmsg">ไขรหัสให้ได้ก่อน<br>จึงจะเห็นรูปนี้</span></div></div></template>
+<script>
+(function(){
+  var KEY="sigma-w2";
+  var HS=["9nrfezehpn","2f132dya4mf","xn5w33khgg"];
+  var HINT=["2 พยางค์","ตัวพิมพ์ใหญ่","จำนวน 3 หลัก"];
+  var solved=parseInt(sigmaStore(KEY)||"0",10); if(!(solved>=0&&solved<=3)) solved=0;
+  var hinted=[false,false,false]; var vals=[]; try{vals=JSON.parse(sigmaStore(KEY+"v")||"[]")}catch(e){vals=[]}
+  function norm(s){return String(s).replace(/\s+/g,"").toLowerCase();}
+  function render(){
+    for(var i=1;i<=3;i++){
+      var el=document.getElementById("s"+i), box=el.querySelector(".imgbox"), st=el.querySelector(".st");
+      var inp=el.querySelector("input"), ck=el.querySelector(".ck"), hb=el.querySelector(".hb"), hl=el.querySelector(".hintline");
+      var state = i<=solved ? "done" : (i===solved+1 ? "cur" : "lock");
+      el.className="stg"+(state==="cur"?" cur":"")+(state==="lock"?" lock":"");
+      var tpl=document.getElementById(state==="lock"?"imgL":"img"+i);
+      box.innerHTML=""; box.appendChild(tpl.content.cloneNode(true));
+      if(state==="lock"){ var lm=box.querySelector("#lockmsg"); if(lm) lm.innerHTML="ไขรหัสรูปที่ "+(i-1)+" ให้ได้ก่อน<br>จึงจะเห็นรูปนี้"; }
+      st.textContent = state==="done" ? "✓ ไขแล้ว" : (state==="cur" ? "> กำลังไข" : "ล็อก");
+      st.style.color = state==="lock" ? "#3C8F5F" : "var(--g)";
+      inp.disabled = ck.disabled = hb.disabled = (state!=="cur");
+      if(state==="done"){ inp.value=vals[i-1]||"ไขแล้ว"; }
+      hl.hidden = !(hinted[i-1] && state==="cur"); if(!hl.hidden) hl.textContent="> ใบ้: "+HINT[i-1];
+      if(state!=="cur") el.querySelector(".msg").hidden=true;
+    }
+    var p=document.getElementById("prog");
+    function lab(i){ return i<=solved ? "[รหัส "+i+" ✓]" : (i===solved+1 ? "[รหัส "+i+" กำลังไข]" : "[รหัส "+i+" ล็อก]"); }
+    p.innerHTML='<span style="color:'+(solved>=1?"var(--g)":"var(--g2)")+'">'+lab(1)+'</span><span style="color:var(--gd)">──</span><span style="color:'+(solved>=2?"var(--g)":(solved===1?"var(--g2)":"#3C8F5F"))+'">'+lab(2)+'</span><span style="color:var(--gd)">──</span><span style="color:'+(solved>=3?"var(--g)":(solved===2?"var(--g2)":"#3C8F5F"))+'">'+lab(3)+'</span>';
+    document.getElementById("done").hidden = solved<3;
+  }
+  var forms=document.querySelectorAll("[data-f]");
+  for(var k=0;k<forms.length;k++){
+    forms[k].addEventListener("submit",function(e){
+      e.preventDefault();
+      var n=parseInt(e.currentTarget.getAttribute("data-f"),10);
+      if(n!==solved+1) return;
+      var inp=e.currentTarget.querySelector("input"), v=norm(inp.value), msg=document.getElementById("s"+n).querySelector(".msg");
+      if(!v) return;
+      if(sigmaHash(v)===HS[n-1]){
+        vals[n-1]=inp.value.trim(); sigmaStore(KEY+"v",JSON.stringify(vals));
+        solved=n; sigmaStore(KEY,String(solved)); render();
+      } else { msg.textContent="> รหัสไม่ถูกต้อง ลองใหม่อีกครั้ง"; msg.className="msg bad mono"; msg.hidden=false; }
+    });
+  }
+  var hbs=document.querySelectorAll("[data-hint]");
+  for(var j=0;j<hbs.length;j++) hbs[j].addEventListener("click",function(e){
+    var n=parseInt(e.currentTarget.getAttribute("data-hint"),10); hinted[n-1]=true; render();
+  });
+  render();
+})();
+</script></div><div class="foot"><div class="wrap mono"><span>67 Math Problem with Sigma Boys</span><span>Σ ผลรวมของทุกคนในชมรม</span></div></div></body></html>

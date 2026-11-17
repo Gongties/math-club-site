@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calcuเหรอ? ต้นแบบเรียลไทม์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { font-family: Sarabun, "Noto Sans Thai", system-ui, sans-serif; background: #0E1326; color: #EEF1FA; -webkit-text-size-adjust: 100%; }
+[hidden] { display: none !important; }
+button { font: inherit; cursor: pointer; }
+button[disabled] { cursor: not-allowed; }
+sup { font-size: .6em; line-height: 0; }
+.hd { font-family: Prompt, "Noto Sans Thai", sans-serif; }
+
+/* ---------- role screen ---------- */
+.role { min-height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 16px; max-width: 520px; margin: 0 auto; padding: 24px 16px; }
+.role h1 { font-family: Prompt, "Noto Sans Thai", sans-serif; font-size: 2rem; margin: 0; line-height: 1.3; }
+.role p { margin: 0; color: #B4BEDA; line-height: 1.5; }
+.rbtn { min-height: 64px; border-radius: 16px; border: 2px solid #9C8CFF; background: transparent; color: #EEF1FA; font-weight: 700; font-size: 1.15rem; padding: 10px 16px; text-align: left; }
+.rbtn.pri { background: #9C8CFF; color: #0E1326; }
+.rbtn small { display: block; font-weight: 400; font-size: .9rem; opacity: .9; }
+.note { padding: 10px 14px; border: 1px dashed #5A6785; border-radius: 12px; color: #B4BEDA; font-size: .9rem; line-height: 1.5; }
+
+/* ---------- connection badge ---------- */
+#netb { position: fixed; z-index: 60; pointer-events: none; left: 10px; bottom: 6px; font: 12px/1 Sarabun, "Noto Sans Thai", sans-serif; opacity: .85; color: #B4BEDA; }
+#netb.ok { color: #5BD98F; } #netb.local { color: #FFD65A; } #netb.bad { color: #FF8A80; }
+body.ph #netb { left: auto; bottom: auto; right: 4px; top: 4px; width: 6px; height: 6px; border-radius: 50%; font-size: 0; background: #9AA5C0; }
+body.ph #netb.ok { background: #2E9E6B; } body.ph #netb.local { background: #D9A400; } body.ph #netb.bad { background: #D64545; }
+
+/* ---------- HOST stage (1920x1080, scaled to the window) ---------- */
+#hostwrap { position: fixed; inset: 0; background: #0E1326; overflow: hidden; }
+#stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; padding: 40px 64px; display: flex; flex-direction: column; gap: 24px; overflow: hidden; color: #EEF1FA; }
+#stage .hdr { height: 124px; display: flex; align-items: center; justify-content: space-between; flex: none; }
+#stage .hl, #stage .hr { width: 520px; }
+#stage .hr { display: flex; justify-content: flex-end; }
+#stage .s1 { font-size: 28px; line-height: 1.3; color: #B4BEDA; }
+#stage .s2 { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 48px; line-height: 1.3; }
+#stage .hc2 { text-align: center; }
+#stage .ti { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 56px; line-height: 1.3; }
+#stage .su { font-size: 30px; line-height: 1.3; color: #B4BEDA; }
+#stage .ring { width: 124px; height: 124px; border-radius: 50%; border: 10px solid #9C8CFF; display: flex; align-items: center; justify-content: center; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 64px; line-height: 1; }
+#stage .pill { padding: 6px 36px; border-radius: 99px; border: 4px solid #9C8CFF; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 44px; line-height: 1.3; }
+#stage .main { flex: 1; min-height: 0; display: flex; align-items: center; gap: 56px; }
+#stage .ftr { height: 72px; display: flex; align-items: center; justify-content: space-between; flex: none; }
+#stage .ft1 { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 44px; line-height: 1.3; }
+#stage .hint { font-size: 30px; line-height: 1.3; color: #B4BEDA; }
+#stage .bar { width: 520px; height: 20px; border-radius: 10px; background: #2B3560; }
+#stage .bar div { height: 20px; border-radius: 10px; background: #5BD98F; }
+.gb { font-size: 28px; line-height: 1.3; min-height: 56px; padding: 0 28px; border-radius: 14px; border: 2px solid #5A6785; background: transparent; color: #EEF1FA; }
+.endb { position: absolute; right: 64px; bottom: 2px; font-size: 22px; min-height: 36px; padding: 0 20px; border-color: #2B3560; color: #B4BEDA; }
+.endov { position: absolute; inset: 0; z-index: 20; background: rgba(5, 8, 20, .82); display: flex; align-items: center; justify-content: center; }
+.endbox { width: 1100px; padding: 56px; border-radius: 32px; background: #171E38; border: 3px solid #2B3560; display: flex; flex-direction: column; gap: 24px; text-align: center; }
+.pb { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 40px; line-height: 1.3; min-height: 72px; padding: 0 56px; border-radius: 18px; border: 0; background: #9C8CFF; color: #0E1326; }
+.pb[disabled] { opacity: .35; }
+.hc { width: 190px; height: 136px; border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; background: #171E38; border: 3px solid #2B3560; color: #EEF1FA; line-height: 1.2; font-family: Prompt, "Noto Sans Thai", sans-serif; }
+.hc b { font-size: 52px; line-height: 1.1; font-weight: 700; }
+.hc .nm { font-size: 26px; font-weight: 600; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hc .sc { font-size: 24px; font-weight: 500; opacity: .85; }
+.hc.t { color: #0E1326; border-color: transparent; }
+.hc .bd { position: absolute; top: -14px; right: -14px; width: 52px; height: 52px; background: #FFD65A; color: #0E1326; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; line-height: 1; font-weight: 700; }
+.prow2 { display: flex; gap: 12px; justify-content: center; }
+.nt { width: 220px; height: 190px; border-radius: 20px; background: #171E38; border: 3px solid #2B3560; display: flex; align-items: center; justify-content: center; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 100px; line-height: 1.1; }
+.cd { width: 400px; height: 380px; border-radius: 28px; background: #171E38; border: 8px solid #2B3560; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-family: Prompt, "Noto Sans Thai", sans-serif; line-height: 1.25; }
+.cd b { font-size: 150px; line-height: 1.05; font-weight: 700; }
+.cd .n { font-size: 48px; font-weight: 700; max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cd .s { font-size: 30px; font-weight: 500; color: #B4BEDA; }
+.dl { display: flex; align-items: center; gap: 10px; padding: 6px 26px; border-radius: 99px; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 40px; line-height: 1.3; }
+.up { background: #12332A; color: #5BD98F; }
+.dn { background: #3A1C22; color: #FF8A80; }
+.ze { background: #2B3560; color: #EEF1FA; }
+.chip { display: flex; align-items: center; gap: 14px; padding: 10px 26px 10px 20px; border-radius: 99px; background: #171E38; border: 2px solid #2B3560; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 600; font-size: 38px; line-height: 1.3; }
+.chip.sm { font-size: 28px; padding: 6px 18px 6px 14px; gap: 10px; } .chip.sm i { width: 16px; height: 16px; }
+.chip.xs { font-size: 22px; padding: 3px 14px 3px 10px; gap: 8px; border-width: 1px; } .chip.xs i { width: 13px; height: 13px; }
+.chip i { width: 22px; height: 22px; border-radius: 50%; display: block; flex: none; }
+.lr { height: 80px; display: flex; align-items: center; gap: 20px; font-family: Prompt, "Noto Sans Thai", sans-serif; line-height: 1.3; }
+.lr .rk { width: 64px; text-align: center; font-weight: 700; font-size: 44px; color: #B4BEDA; }
+.lr .nm { width: 300px; display: flex; align-items: center; gap: 16px; font-weight: 700; font-size: 46px; overflow: hidden; white-space: nowrap; }
+.lr .nm i { width: 24px; height: 24px; border-radius: 50%; display: block; flex: none; }
+.lr .bar2 { flex: 1; height: 30px; border-radius: 15px; background: #2B3560; }
+.lr .bar2 div { height: 30px; border-radius: 15px; background: #9C8CFF; }
+.lr .sc2 { width: 110px; text-align: right; font-weight: 700; font-size: 58px; }
+.lr .dl2 { width: 150px; display: flex; justify-content: center; padding: 4px 0; border-radius: 99px; font-weight: 700; font-size: 40px; }
+.rcard { width: 1560px; padding: 36px 48px; border-radius: 32px; background: #171E38; border: 6px solid #2B3560; display: flex; flex-direction: column; gap: 26px; }
+
+/* ---------- host settings overlay (normal size, for the Host's own screen) ---------- */
+#cfgov { position: fixed; inset: 0; background: rgba(5, 8, 20, .78); display: flex; align-items: center; justify-content: center; z-index: 10; padding: 16px; }
+#cfgov .box { background: #171E38; border: 1px solid #2B3560; border-radius: 16px; width: min(640px, 100%); max-height: 100%; overflow: auto; padding: 18px; }
+#cfgov h2 { font-family: Prompt, "Noto Sans Thai", sans-serif; margin: 0 0 10px; font-size: 1.3rem; }
+#cfgov .field { display: grid; grid-template-columns: 1fr 140px; gap: 8px; align-items: center; margin-bottom: 8px; }
+#cfgov .field.wide { grid-template-columns: 1fr; }
+#cfgov input[type=text], #cfgov input[type=number], #cfgov select { font: inherit; font-size: 1rem; min-height: 44px; padding: 6px 10px; color: #EEF1FA; background: #0E1326; border: 1px solid #2B3560; border-radius: 10px; width: 100%; min-width: 0; }
+#cfgov .rng { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
+#cfgov .check { display: flex; gap: 10px; align-items: center; min-height: 44px; }
+#cfgov .check input { width: 22px; height: 22px; }
+#cfgov .row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+#cfgov .row3 label { display: block; font-size: .85rem; color: #B4BEDA; }
+#cfgov .warn { padding: 8px 12px; border-radius: 10px; background: #3A3010; color: #FFD65A; margin: 0 0 10px; }
+#cfgov .sm { font-size: .9rem; color: #B4BEDA; margin: 10px 0 4px; }
+#cfgov .done { width: 100%; margin-top: 10px; min-height: 52px; border-radius: 12px; border: 0; background: #9C8CFF; color: #0E1326; font-weight: 700; font-size: 1.05rem; }
+
+/* ---------- PLAYER (phone) ---------- */
+#pw { height: 100dvh; min-height: 100%; background: #EDF1F9; color: #14213D; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; font-size: 16px; line-height: 1.5; }
+#pw .ph { height: 52px; flex: none; display: flex; align-items: center; justify-content: space-between; }
+#pw .ph .a { font-size: 13px; line-height: 1.3; color: #5A6785; }
+#pw .ph .b { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 19px; line-height: 1.3; }
+#pw .tm { min-width: 56px; height: 44px; padding: 0 12px; border-radius: 12px; background: #4B35C9; color: #fff; display: flex; align-items: center; justify-content: center; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 26px; }
+#pw .tm.tag { background: transparent; border: 2px solid #4B35C9; color: #4B35C9; font-size: 14px; line-height: 1.2; text-align: center; font-weight: 700; }
+#pw .card { background: #fff; border: 1px solid #CBD5E8; border-radius: 14px; padding: 10px; }
+#pw .lab { font-size: 13px; line-height: 1.4; color: #5A6785; margin-bottom: 4px; }
+#pw .nts { display: flex; gap: 8px; }
+#pw .nts div { flex: 1; height: 44px; border-radius: 10px; background: #fff; border: 1px solid #CBD5E8; display: flex; align-items: center; justify-content: center; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 24px; }
+#pw .nts.sm div { height: 34px; font-size: 20px; }
+#pw .pr { display: flex; gap: 6px; justify-content: center; }
+#pw .pc { width: 60px; height: 58px; border-radius: 10px; border: 2px solid #CBD5E8; background: #fff; color: #14213D; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; line-height: 1.15; font-family: Prompt, "Noto Sans Thai", sans-serif; }
+#pw .pc b { font-size: 19px; font-weight: 700; }
+#pw .pc small { font-size: 12px; font-weight: 500; color: #5A6785; max-width: 54px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#pw .pc.t { color: #fff; border-color: transparent; }
+#pw .pc.t small { color: #fff; }
+#pw .pc.me { box-shadow: 0 0 0 3px #14213D; }
+#pw .pc.gray { background: #E3E8F3; color: #5A6785; }
+#pw .pc.gray small { color: #5A6785; }
+#pw .pc.em { border: 2px dashed #CBD5E8; background: transparent; }
+#pw .pc.on { box-shadow: 0 0 0 3px #14213D; }
+#pw .pc[disabled] { cursor: default; }
+#pw .st { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; font-weight: 700; font-size: 16px; line-height: 1.4; background: #fff; border: 1px solid #CBD5E8; }
+#pw .st.ok { background: #DDF3E6; color: #14562F; border-color: transparent; }
+#pw .st small { font-weight: 400; font-size: 14px; color: #5A6785; }
+#pw .tg { height: 64px; background: #fff; border: 1px solid #CBD5E8; border-radius: 14px; padding: 0 16px; display: flex; align-items: center; gap: 16px; }
+#pw .tg b { font-family: Prompt, "Noto Sans Thai", sans-serif; font-size: 44px; line-height: 1.1; }
+#pw .tg span { font-size: 14px; line-height: 1.35; color: #5A6785; }
+#pw .pv { height: 52px; background: #fff; border: 2px solid #CBD5E8; border-radius: 12px; padding: 0 14px; display: flex; align-items: center; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 600; font-size: 26px; overflow: hidden; }
+#pw .pv.long { font-size: 18px; }
+#pw .slot { height: 32px; display: flex; align-items: center; font-size: 14px; line-height: 1.35; color: #5A6785; flex: none; overflow: hidden; }
+#pw .slot.err { color: #B3261E; font-weight: 700; }
+#pw .items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; min-height: 136px; align-content: start; }
+#pw .it { height: 64px; border-radius: 12px; border: 2px solid #CBD5E8; background: #fff; color: #14213D; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 30px; padding: 0 4px; overflow: hidden; }
+#pw .it.long { font-size: 18px; }
+#pw .it.ph { border-style: dashed; background: transparent; }
+#pw .it.on { background: #4B35C9; border-color: #4B35C9; color: #fff; }
+#pw .ops { display: flex; gap: 8px; }
+#pw .op { flex: 1; height: 56px; border-radius: 10px; border: 1px solid #CBD5E8; background: #fff; color: #14213D; display: flex; align-items: center; justify-content: center; padding: 0; }
+#pw .op.on { background: #4B35C9; border-color: #4B35C9; color: #fff; }
+#pw .op[disabled] { opacity: .35; }
+#pw .op svg { width: 30px; height: 30px; display: block; pointer-events: none; }
+#pw .op .xn { font-family: Prompt, "Noto Sans Thai", sans-serif; font-size: 27px; line-height: 1; pointer-events: none; }
+#pw .gh { flex: 1; height: 44px; border-radius: 10px; border: 1px solid #CBD5E8; background: transparent; color: #14213D; font-size: 16px; }
+#pw .gh[disabled] { opacity: .4; }
+#pw .good { padding: 22px 18px; border-radius: 16px; background: #DDF3E6; color: #14562F; display: flex; flex-direction: column; gap: 12px; }
+#pw .good .t1 { display: flex; align-items: center; gap: 12px; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 24px; line-height: 1.3; }
+#pw .good .eq { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 600; font-size: 30px; line-height: 1.3; color: #14213D; word-break: break-word; }
+#pw .box { background: #fff; border: 1px solid #CBD5E8; border-radius: 16px; padding: 16px 18px; }
+#pw .box h2 { font-family: Prompt, "Noto Sans Thai", sans-serif; font-size: 22px; margin: 0 0 4px; line-height: 1.3; }
+#pw .muted { color: #5A6785; }
+#pw .big { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 56px; line-height: 1.2; display: flex; align-items: baseline; gap: 10px; }
+#pw .big.pos { color: #14562F; } #pw .big.neg { color: #B3261E; }
+#pw .br { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid #CBD5E8; }
+#pw .br .p { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 22px; white-space: nowrap; }
+#pw .br .p.pos { color: #14562F; } #pw .br .p.neg { color: #B3261E; }
+#pw .tr { display: flex; align-items: center; gap: 10px; padding: 4px 6px; font-size: 17px; line-height: 1.4; border-radius: 8px; }
+#pw .tr.me { background: #EDF1F9; }
+#pw .tr b { font-family: Prompt, "Noto Sans Thai", sans-serif; }
+#pw .fl { display: block; font-size: 15px; line-height: 1.4; font-weight: 700; margin-bottom: 6px; }
+#pw .in { width: 100%; min-height: 52px; padding: 6px 14px; border-radius: 12px; border: 2px solid #CBD5E8; background: #fff; color: #14213D; font: inherit; font-size: 20px; }
+#pw .go { min-height: 56px; border-radius: 14px; border: 0; background: #4B35C9; color: #fff; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 20px; }
+#pw .go[disabled] { opacity: .5; }
+#pw .errm { padding: 8px 12px; border-radius: 10px; background: #FBE3E1; color: #B3261E; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="cfgov" hidden></div>
+<div id="netb"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+/*LOGIC-START*/
+/* ---------- exact rational arithmetic (BigInt) ---------- */
+function bgcd(a, b) { if (a < 0n) a = -a; if (b < 0n) b = -b; while (b) { var t = a % b; a = b; b = t; } return a; }
+function frac(n, d) {
+  if (d === undefined) d = 1n;
+  if (d === 0n) throw { msg: "หารด้วยศูนย์" };
+  if (d < 0n) { n = -n; d = -d; }
+  var g = bgcd(n, d); if (g === 0n) g = 1n;
+  return { n: n / g, d: d / g };
+}
+/* every intermediate value (numerator and denominator, reduced) must stay within one million, same rule as the solver below */
+var LIMIT = 1000000n;
+function guard(v) { var a = v.n < 0n ? -v.n : v.n; if (a > LIMIT || v.d > LIMIT) throw { msg: "ค่าระหว่างทางมากเกินไป (เกินหนึ่งล้าน)" }; return v; }
+function fadd(a, b) { return guard(frac(a.n * b.d + b.n * a.d, a.d * b.d)); }
+function fsub(a, b) { return guard(frac(a.n * b.d - b.n * a.d, a.d * b.d)); }
+function fmul(a, b) { return guard(frac(a.n * b.n, a.d * b.d)); }
+function fdiv(a, b) { if (b.n === 0n) throw { msg: "หารด้วยศูนย์" }; return guard(frac(a.n * b.d, a.d * b.n)); }
+function fpow(a, e) {
+  if (e.d !== 1n) throw { msg: "เลขชี้กำลังต้องเป็นจำนวนเต็ม" };
+  if (e.n < 0n) throw { msg: "เลขชี้กำลังต้องไม่ติดลบ" };
+  if (e.n > 40n) throw { msg: "เลขชี้กำลังมากเกินไป (เกิน 40)" };
+  if (a.n === 0n && e.n === 0n) throw { msg: "0 ยกกำลัง 0 ไม่นิยาม" };
+  var abs = a.n < 0n ? -a.n : a.n;
+  if (abs > 1n && abs.toString(2).length * Number(e.n) > 4000) throw { msg: "ค่ามากเกินไป" };
+  return guard(frac(a.n ** e.n, a.d ** e.n));
+}
+function fstr(v) { return v.d === 1n ? v.n.toString() : v.n.toString() + "/" + v.d.toString(); }
+
+/* tokens: {k:"n", i:<index of starting number>, v:<value>} | {k:"o", v:"+"|"−"|"×"|"÷"|"^"|"("|")"} */
+function evaluate(tokens) {
+  var pos = 0;
+  function peek() { return tokens[pos]; }
+  function isOp(t, vals) { return t && t.k === "o" && vals.indexOf(t.v) >= 0; }
+  function expr() {
+    var v = term();
+    while (isOp(peek(), ["+", "−"])) { var o = tokens[pos++].v; var r = term(); v = o === "+" ? fadd(v, r) : fsub(v, r); }
+    return v;
+  }
+  function term() {
+    var v = power();
+    while (isOp(peek(), ["×", "÷"])) { var o = tokens[pos++].v; var r = power(); v = o === "×" ? fmul(v, r) : fdiv(v, r); }
+    return v;
+  }
+  function power() {
+    var b = atom();
+    if (isOp(peek(), ["^"])) { pos++; var e = power(); return fpow(b, e); }
+    return b;
+  }
+  function atom() {
+    var t = peek();
+    if (!t) throw { msg: "สมการไม่สมบูรณ์" };
+    if (t.k === "n") { pos++; return frac(BigInt(t.v)); }
+    if (isOp(t, ["("])) {
+      pos++; var v = expr();
+      if (!isOp(peek(), [")"])) throw { msg: "วงเล็บไม่ครบคู่" };
+      pos++; return v;
+    }
+    throw { msg: "รูปแบบสมการไม่ถูกต้อง" };
+  }
+  var v = expr();
+  if (pos < tokens.length) throw { msg: "รูปแบบสมการไม่ถูกต้อง" };
+  return v;
+}
+
+/* Check one submitted equation: uses starting numbers at most once each, at least 2 of them, result must equal target */
+function checkEquation(tokens, nums, target) {
+  if (!tokens || !tokens.length) return { pass: false, reason: "ไขไม่ทันเวลา" };
+  var seen = {}, count = 0, i;
+  for (i = 0; i < tokens.length; i++) {
+    var t = tokens[i];
+    if (t.k === "n") {
+      if (seen[t.i] || nums[t.i] !== t.v) return { pass: false, reason: "ใช้เลขตั้งต้นไม่ถูกต้อง" };
+      seen[t.i] = true; count++;
+    }
+  }
+  if (count < 2) return { pass: false, reason: "ต้องใช้เลขตั้งต้นอย่างน้อย 2 ตัว" };
+  var v;
+  try { v = evaluate(tokens); }
+  catch (e) { if (e && e.msg) return { pass: false, reason: e.msg }; throw e; }
+  var pass = v.d === 1n && v.n === BigInt(target);
+  return { pass: pass, value: fstr(v), reason: pass ? "" : "ผลลัพธ์ไม่เท่ากับค่าช่อง" };
+}
+
+/* ---------- board generation ---------- */
+/* Difficulty of a result = how often it can be built from 4 random starting numbers.
+   DEFAULT_COUNTS[t-1] = number of draws (out of 5,400 possible draws with the default ranges 1-5, 1-10, 1-12, 1-15)
+   from which result t (1..400) can be built with + − × ÷ ^ and parentheses, each number at most once, at least 2 numbers used,
+   every intermediate value within one million, exponent 0..40.
+   Results 1..M are ranked from hardest to easiest and cut into 5 tiers with fixed shares (16% / 26.5% / 21% / 19% / 17.5%);
+   for M = 200 this reproduces the earlier fixed table exactly. Tier 1 = apex (hardest) … tier 5 = base (easiest). */
+var DEFAULT_RANGES = [[1, 5], [1, 10], [1, 12], [1, 15]];
+var DEFAULT_COUNTS = "5400,5400,5398,5395,5390,5397,5398,5396,5394,5393,5378,5373,5375,5385,5352,5374,5317,5307,5256,5319,5226,5129,5039,5326,5156,4987,4949,5101,4729,4987,4542,5082,4756,4417,4853,5254,4110,4222,4488,5084,4028,4663,3885,4612,4794,3909,3578,4924,4638,4403,3869,4063,3572,4622,4297,4469,3691,3519,3533,4918,3197,3321,4483,5193,3869,3987,3095,3432,3483,4388,3124,4692,2958,3173,3859,3441,3635,3604,2645,4497,4805,2799,2295,4176,2993,2656,2551,3616,2374,4154,3038,2566,2356,2089,2413,4096,1783,2593,3157,4074,1801,2297,1808,2897,2904,1755,1566,3811,1680,2917,1659,3283,1709,2422,2004,2144,2853,1948,2174,4124,3446,1733,1862,2145,4091,3452,1831,4124,2011,2529,1685,2963,1916,1695,2671,2089,1383,1801,1294,2861,1284,1003,1945,4104,1306,900,1587,1106,880,2375,809,1489,1454,1887,949,1890,632,681,813,2457,981,2198,636,836,1759,697,557,2562,2272,1382,1120,852,597,931,1184,1689,629,506,529,2950,554,1238,504,966,623,702,889,677,1219,1078,521,2580,500,351,1260,2454,467,1394,512,1958,644,501,611,1265,656,661,927,1368,884,1876,660,730,500,644,790,3835,794,674,479,1632,1003,658,520,1858,2607,711,467,1212,613,1011,1095,896,660,1260,789,764,667,789,697,2185,769,1120,3710,985,1334,845,1115,753,962,1963,995,2295,1144,697,1288,4412,815,711,773,1259,855,544,495,1300,645,801,446,511,269,1442,289,460,454,181,650,602,132,154,401,1291,141,291,189,263,543,487,234,1837,1148,482,203,304,194,750,293,366,588,146,260,1544,203,78,162,379,182,426,183,686,185,367,196,881,192,180,897,275,181,288,379,1861,254,282,275,2321,490,139,278,427,366,1018,326,380,568,401,449,1099,369,552,497,534,521,712,2862,579,592,197,451,718,348,815,658,965,388,384,416,309,369,237,179,1881,991,191,503,549,271,202,146,298,242,345,183,359,103,183,687,206,118,652,108,396,125,70,136,1673,477,85,265,174,129,662,167,761,196,145,239,931,179,94,283,1809".split(",").map(Number);
+var TIER_CUM = [0.16, 0.425, 0.635, 0.825, 1];
+var TIER_SCORE = { 1: [10, 12], 2: [8, 9], 3: [6, 7], 4: [4, 5], 5: [2, 3] };
+function rint(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+function shuffle(arr) { var a = arr.slice(); for (var i = a.length - 1; i > 0; i--) { var j = rint(0, i); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+/* ---- solver: finds, for every result 1..maxV, an expression with the fewest operations (or none) ---- */
+var NLIM = 1000000;
+function ngcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { var t = a % b; a = b; b = t; } return a; }
+function nfr(n, d) { if (d < 0) { n = -n; d = -d; } var g = ngcd(n, d) || 1; return [n / g, d / g]; }
+function nok(v) { return Math.abs(v[0]) <= NLIM && v[1] <= NLIM; }
+function npowInt(b, e) { var r = 1; for (var i = 0; i < e; i++) { r *= b; if (Math.abs(r) > NLIM) return null; } return r; }
+function npow(x, y) {
+  if (y[1] !== 1 || y[0] < 0 || y[0] > 40) return null;
+  var e = y[0];
+  if (x[0] === 0 && e === 0) return null;
+  if (e === 0) return [1, 1];
+  var n = npowInt(x[0], e), d = npowInt(x[1], e);
+  if (n === null || d === null) return null;
+  return nfr(n, d);
+}
+function solveAll(nums, maxV) {
+  var vals = new Array(16);
+  for (var m = 1; m < 16; m++) {
+    var mp = new Map();
+    var put = function (r, node) { var k = r[0] + "/" + r[1]; var cur = mp.get(k); if (!cur || node.ops < cur.node.ops) mp.set(k, { v: r, node: node }); };
+    var bits = [0, 1, 2, 3].filter(function (i) { return (m >> i) & 1; });
+    if (bits.length === 1) { put([nums[bits[0]], 1], { leaf: true, i: bits[0], v: nums[bits[0]], ops: 0 }); vals[m] = mp; continue; }
+    for (var a = (m - 1) & m; a > 0; a = (a - 1) & m) {
+      var b = m ^ a;
+      vals[a].forEach(function (X) { vals[b].forEach(function (Y) {
+        var x = X.v, y = Y.v, r, ops = X.node.ops + Y.node.ops + 1;
+        var nd = function (op) { return { op: op, l: X.node, r: Y.node, ops: ops }; };
+        if (a < b) {
+          r = nfr(x[0] * y[1] + y[0] * x[1], x[1] * y[1]); if (nok(r)) put(r, nd("+"));
+          r = nfr(x[0] * y[0], x[1] * y[1]); if (nok(r)) put(r, nd("×"));
+        }
+        r = nfr(x[0] * y[1] - y[0] * x[1], x[1] * y[1]); if (nok(r)) put(r, nd("−"));
+        if (y[0] !== 0) { r = nfr(x[0] * y[1], x[1] * y[0]); if (nok(r)) put(r, nd("÷")); }
+        r = npow(x, y); if (r && nok(r)) put(r, nd("^"));
+      }); });
+    }
+    vals[m] = mp;
+  }
+  var best = {};
+  for (var m2 = 1; m2 < 16; m2++) {
+    if ((m2 & (m2 - 1)) === 0) continue;
+    vals[m2].forEach(function (e) {
+      if (e.v[1] === 1 && e.v[0] >= 1 && e.v[0] <= maxV) { var t = e.v[0]; if (!best[t] || e.node.ops < best[t].ops) best[t] = e.node; }
+    });
+  }
+  return best;
+}
+
+/* ---- expression trees → tokens (for the checker) and HTML (superscript exponents) ---- */
+var PREC = { "+": 1, "−": 1, "×": 2, "÷": 2, "^": 3 };
+function needParen(t, pp, side, pop, html) {
+  if (t.leaf || pp === undefined) return false;
+  if (pop === "^") return side === "l" ? true : (html ? false : t.op !== "^");
+  var p = PREC[t.op];
+  return p < pp || (p === pp && side === "r" && (pop === "−" || pop === "÷"));
+}
+function treeTokens(t, pp, side, pop) {
+  if (t.leaf) return [{ k: "n", i: t.i, v: t.v }];
+  var inner = treeTokens(t.l, PREC[t.op], "l", t.op).concat([{ k: "o", v: t.op }], treeTokens(t.r, PREC[t.op], "r", t.op));
+  return needParen(t, pp, side, pop, false) ? [{ k: "o", v: "(" }].concat(inner, [{ k: "o", v: ")" }]) : inner;
+}
+function treeHtml(t, pp, side, pop) {
+  if (t.leaf) return String(t.v);
+  var inner = t.op === "^"
+    ? treeHtml(t.l, 3, "l", "^") + "<sup>" + treeHtml(t.r, 3, "r", "^") + "</sup>"
+    : treeHtml(t.l, PREC[t.op], "l", t.op) + " " + t.op + " " + treeHtml(t.r, PREC[t.op], "r", t.op);
+  return needParen(t, pp, side, pop, true) ? "(" + inner + ")" : inner;
+}
+
+/* ---- tiers ---- */
+function poolsFromReach(reach, M) {
+  var vals = []; for (var t = 1; t <= M; t++) vals.push(t);
+  vals.sort(function (x, y) { return (reach(x) - reach(y)) || (y - x); });   // hardest first; on a tie the larger value counts as harder
+  var pools = { 1: [], 2: [], 3: [], 4: [], 5: [] }, lo = 0;
+  for (var k = 1; k <= 5; k++) { var hi = Math.round(TIER_CUM[k - 1] * M); pools[k] = vals.slice(lo, hi); lo = hi; }
+  return pools;
+}
+function sameRanges(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+function estimateReach(ranges, M) {
+  var N = 240, cnt = new Array(M + 1).fill(0);
+  for (var s = 0; s < N; s++) { var best = solveAll(genNums(ranges), M); for (var t = 1; t <= M; t++) if (best[t]) cnt[t]++; }
+  return function (t) { return cnt[t]; };
+}
+function buildPools(ranges, M) {
+  if (sameRanges(ranges, DEFAULT_RANGES)) return poolsFromReach(function (t) { return DEFAULT_COUNTS[t - 1]; }, M);
+  return poolsFromReach(estimateReach(ranges, M), M);
+}
+var DEFAULT_POOLS = buildPools(DEFAULT_RANGES, 200);
+function genBoard(pools) {
+  pools = pools || DEFAULT_POOLS;
+  var cells = [], id = 0;
+  for (var tier = 1; tier <= 5; tier++) {
+    var vals = shuffle(pools[tier]).slice(0, tier).sort(function (x, y) { return x - y; });
+    for (var k = 0; k < vals.length; k++) {
+      cells.push({ id: id++, tier: tier, col: k, value: vals[k], score: rint(TIER_SCORE[tier][0], TIER_SCORE[tier][1]) });
+    }
+  }
+  return cells;
+}
+/* ranges: [[lo,hi] x 4] — number i is drawn from ranges[i]; the 4 numbers are all different */
+function rangesFeasible(ranges) {
+  var ok = ranges.every(function (r) { return Number.isInteger(r[0]) && Number.isInteger(r[1]) && r[0] >= 1 && r[0] <= r[1]; });
+  if (!ok) return false;
+  var used = {};
+  var order = ranges.slice().sort(function (a, b) { return a[1] - b[1]; });
+  for (var i = 0; i < order.length; i++) {
+    var v = order[i][0];
+    while (used[v]) v++;
+    if (v > order[i][1]) return false;
+    used[v] = true;
+  }
+  return true;
+}
+function genNums(ranges) {
+  for (var t = 0; t < 2000; t++) {
+    var n = ranges.map(function (r) { return rint(r[0], r[1]); });
+    if (new Set(n).size === n.length) return n;
+  }
+  /* fallback for very tight ranges: fill the tightest slots first */
+  var idx = ranges.map(function (_, i) { return i; }).sort(function (a, b) { return ranges[a][1] - ranges[b][1]; });
+  var out = [], used = {};
+  idx.forEach(function (i) { var v = ranges[i][0]; while (used[v]) v++; used[v] = true; out[i] = v; });
+  return out;
+}
+
+/* ---------- scoring ---------- */
+/* res: {playerId: cellId}; chal: {targetId: [challengerIds]}; pass: {targetId: bool} */
+function scoreBreakdown(res, chal, pass, cells, cfg) {
+  var own = {}, challenge = {};
+  function addOwn(p, v) { own[p] = (own[p] || 0) + v; }
+  function addCh(p, v) { challenge[p] = (challenge[p] || 0) + v; }
+  Object.keys(res).forEach(function (tid) {
+    var c = cells[res[tid]];
+    var chs = chal[tid] || [];
+    if (!chs.length) { addOwn(tid, c.score); return; }
+    if (pass[tid]) {
+      addOwn(tid, Math.min(chs.length, cfg.maxMult) * c.score);
+      chs.forEach(function (x) { addCh(x, -c.score); });
+    } else {
+      addOwn(tid, -(cfg.penalty === "count" ? chs.length : 1) * c.score);
+      chs.forEach(function (x) { addCh(x, c.score); });
+    }
+  });
+  return { own: own, challenge: challenge };
+}
+function scoreRound(res, chal, pass, cells, cfg) {
+  var b = scoreBreakdown(res, chal, pass, cells, cfg), delta = {};
+  [b.own, b.challenge].forEach(function (m) { Object.keys(m).forEach(function (p) { delta[p] = (delta[p] || 0) + m[p]; }); });
+  return delta;
+}
+function clampScore(v, floor) { return floor === null || floor === undefined ? v : Math.max(floor, v); }
+/* ---------- step-by-step input (method C) ---------- */
+function opApply(op, a, b) {
+  return op === "+" ? fadd(a, b) : op === "−" ? fsub(a, b) : op === "×" ? fmul(a, b) : op === "÷" ? fdiv(a, b) : fpow(a, b);
+}
+function leafItems(nums) {
+  return nums.map(function (v, i) { return { id: "s" + i, f: frac(BigInt(v)), node: { leaf: true, i: i, v: v }, used: 1 }; });
+}
+function newWork(nums) { return { items: leafItems(nums), hist: [], a: null, op: null, err: "", last: "", n: 0 }; }
+/* combine items a and b with op → returns {work changes applied, solved:bool} ; throws {msg} when the step is not allowed */
+function workCombine(w, idB, target) {
+  var A = w.items.filter(function (x) { return x.id === w.a; })[0], B = w.items.filter(function (x) { return x.id === idB; })[0];
+  var f = opApply(w.op, A.f, B.f);
+  var it = { id: "m" + (++w.n), f: f, node: { op: w.op, l: A.node, r: B.node }, used: A.used + B.used };
+  w.hist.push(w.items.slice());
+  w.items = w.items.filter(function (x) { return x.id !== A.id && x.id !== B.id; }).concat([it]);
+  w.last = treeHtml(it.node) + " = " + fstr(f);
+  w.a = null; w.op = null; w.err = "";
+  return it.used >= 2 && f.d === 1n && f.n === BigInt(target) ? it : null;
+}
+/*LOGIC-END*/
+
+/* ============================================================ shared helpers ============================================================ */
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+function ss(k, v) { try { if (v === undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k, v); } catch (e) { return null; } }
+function fmtN(n) { return n < 0 ? "−" + (-n) : String(n); }
+function rid() { return Math.random().toString(36).slice(2, 10); }
+
+/* ---------- transport ----------
+   Net.open(code, me, onmsg) / Net.send(msg) / Net.close()
+   Uses a Supabase Realtime "broadcast" channel named "calcu-<code>" (no database tables needed).
+   If the Supabase library cannot be loaded, or the channel cannot connect within 5 s, it falls back to
+   BroadcastChannel (tabs of the same browser only) so the page still works as a single-computer test.
+   Net.mode is "supabase" or "local"; the small badge #netb shows which one is active. */
+var SB = { url: "https://pmiwrnbpoumkpmbbylvw.supabase.co", key: "sb_publishable_XhPC1F8vvNzOt7KoaEaQKw_C_0pJksR" };
+var Net = {
+  ch: null, me: null, mode: "", ready: false, q: [], client: null, timer: null, code: "", onmsg: null,
+  setStatus: function (st) {
+    var b = document.getElementById("netb"); if (!b) return;
+    b.className = st;
+    b.textContent = st === "ok" ? "เชื่อมต่อ Supabase แล้ว" : st === "local" ? "โหมดทดสอบ: ใช้ได้เฉพาะแท็บในเบราว์เซอร์เดียวกัน" : st === "bad" ? "ขาดการเชื่อมต่อ กำลังลองใหม่" : "กำลังเชื่อมต่อ…";
+    b.title = b.textContent;
+  },
+  open: function (code, me, onmsg) {
+    this.close(); this.me = me; this.code = code; this.onmsg = onmsg; this.q = []; this.ready = false;
+    var self = this;
+    if (window.supabase && window.supabase.createClient) {
+      try {
+        this.mode = "supabase"; this.setStatus("wait");
+        this.client = window.supabase.createClient(SB.url, SB.key, { realtime: { params: { eventsPerSecond: 40 } } });
+        var ch = this.client.channel("calcu-" + code, { config: { broadcast: { self: false, ack: false } } });
+        this.ch = ch;
+        ch.on("broadcast", { event: "m" }, function (p) { try { onmsg(p.payload); } catch (err) { if (window.console) console.error(err); } });
+        this.timer = setTimeout(function () { if (self.ch === ch && !self.ready) self.fallback(); }, 5000);
+        ch.subscribe(function (s) {
+          if (self.ch !== ch) return;
+          if (s === "SUBSCRIBED") { clearTimeout(self.timer); self.ready = true; self.setStatus("ok"); self.flush(); }
+          else if (s === "CHANNEL_ERROR" || s === "TIMED_OUT" || s === "CLOSED") { if (!self.ready) self.fallback(); else self.setStatus("bad"); }
+        });
+        return;
+      } catch (err) { if (window.console) console.error(err); this.teardown(); }
+    }
+    this.local();
+  },
+  teardown: function () {
+    clearTimeout(this.timer);
+    try { if (this.client && this.ch) this.client.removeChannel(this.ch); } catch (e) {}
+    try { if (this.client && this.client.realtime && this.client.realtime.disconnect) this.client.realtime.disconnect(); } catch (e) {}
+    this.client = null; this.ch = null; this.ready = false;
+  },
+  fallback: function () { this.teardown(); this.local(); },
+  local: function () {
+    var onmsg = this.onmsg; this.mode = "local";
+    this.ch = new BroadcastChannel("calcu-" + this.code);
+    this.ch.onmessage = function (e) { try { onmsg(e.data); } catch (err) { if (window.console) console.error(err); } };
+    this.ready = true; this.setStatus("local"); this.flush();
+  },
+  flush: function () { var q = this.q; this.q = []; for (var i = 0; i < q.length; i++) this.post(q[i]); },
+  post: function (m) {
+    if (this.mode === "supabase") { try { this.ch.send({ type: "broadcast", event: "m", payload: m }); } catch (e) { if (window.console) console.error(e); } }
+    else this.ch.postMessage(m);
+  },
+  send: function (m) {
+    if (!this.ch) return;
+    m.from = this.me; m = JSON.parse(JSON.stringify(m));
+    if (!this.ready) {   /* wait for the channel; keep only the newest full "state" */
+      if (m.type === "state") this.q = this.q.filter(function (x) { return x.type !== "state"; });
+      if (this.q.length < 60) this.q.push(m);
+      return;
+    }
+    this.post(m);
+  },
+  close: function () {
+    if (this.mode === "supabase") this.teardown();
+    else if (this.ch) { try { this.ch.close(); } catch (e) {} }
+    this.ch = null; this.ready = false; this.q = []; clearTimeout(this.timer);
+    var b = document.getElementById("netb"); if (b) { b.className = ""; b.textContent = ""; }
+  }
+};
+var MODE = null;   /* "host" | "player" */
+
+/* ============================================================ HOST ============================================================ */
+var DEF_CFG = { room: "ห้องชมรม", target: 50, start: 0, ranges: [[1, 5], [1, 10], [1, 12], [1, 15]], showScores: true, maxMult: 3, penalty: "value",
+  negMode: "none", negCustom: -20, chMode: "none", chCustom: 3, t1: 20, t2: 15, t3: 30, maxResult: 200, earlyEnd: true, showSolution: true };
+var H = { code: "", cfg: JSON.parse(JSON.stringify(DEF_CFG)), players: [], nextIdx: 0, phase: "lobby", G: null, poolCache: {}, showCfg: false };
+var G = null;
+
+function findP(pid) { for (var i = 0; i < H.players.length; i++) if (H.players[i].pid === pid) return H.players[i]; return null; }
+function hname(pid) { var p = findP(pid); return p ? p.name : "?"; }
+function hcol(pid) { var p = findP(pid); return "hsl(" + (((p ? p.idx : 0) * 47) % 360) + " 65% 64%)"; }
+function pcol(idx) { return "hsl(" + ((idx * 47) % 360) + " 60% 36%)"; }
+function cfgRanges() { return H.cfg.ranges.map(function (r) { return [Number(r[0]), Number(r[1])]; }); }
+function maxOk() { var m = H.cfg.maxResult; return Number.isInteger(m) && m >= 100 && m <= 400; }
+function cfgMax() { return maxOk() ? H.cfg.maxResult : 200; }
+function startOk() { return H.players.length >= 2 && rangesFeasible(cfgRanges()) && maxOk(); }
+function negFloor() { var c = H.cfg; return c.negMode === "none" ? null : c.negMode === "0" ? 0 : c.negMode === "-10" ? -10 : Number(c.negCustom); }
+function chLimit() { return H.cfg.chMode === "custom" ? Math.max(1, Math.floor(Number(H.cfg.chCustom)) || 1) : 0; }
+function challengedList() { return Object.keys(G.chal).filter(function (t) { return G.chal[t].length; }); }
+function cellOf(pid) { return G.cells[G.res[pid]]; }
+function secsLeft() { return !G || (!G.deadline && !G.paused) ? "–" : String(Math.max(0, Math.ceil((G.paused ? G.remaining : G.deadline - Date.now()) / 1000))); }
+
+function hostNewGame() {
+  var sc = {}; H.players.forEach(function (p) { sc[p.pid] = Number(H.cfg.start) || 0; });
+  G = H.G = { round: 0, isFinal: false, finalPending: false, ended: false, scores: sc, lastDelta: {}, breakdown: null };
+  var key = JSON.stringify(cfgRanges()) + "|" + cfgMax();
+  if (!H.poolCache[key]) H.poolCache[key] = buildPools(cfgRanges(), cfgMax());
+  G.pools = H.poolCache[key]; G.maxV = cfgMax();
+  startRound();
+}
+function startRound() {
+  G.round++; G.isFinal = G.finalPending; G.finalPending = false; G.toast = "";
+  resetBoard();
+}
+function resetBoard() {
+  G.nums = genNums(cfgRanges()); G.cells = genBoard(G.pools);
+  G.res = {}; G.chal = {}; G.subs = {}; G.subTree = {}; G.best = null; G.steps = []; G.rev = 0; G.summarized = false; G.lastDelta = {}; G.breakdown = null;
+  setPhase("p1");
+}
+function setPhase(ph) {
+  H.phase = ph;
+  var c = H.cfg, t = ph === "p1" ? c.t1 : ph === "p2" ? c.t2 : ph === "p3" ? c.t3 : 0;
+  G.paused = false; G.remaining = 0; G.deadline = t ? Date.now() + Number(t) * 1000 : 0;
+}
+function advance() {
+  G.toast = "";
+  if (H.phase === "p1") {
+    if (!Object.keys(G.res).length) { resetBoard(); G.toast = "ไม่มีใครจองช่อง ระบบสุ่มกระดานและเลขตั้งต้นใหม่"; return; }
+    setPhase("p2");
+  } else if (H.phase === "p2") {
+    if (challengedList().length) setPhase("p3"); else enterReveal();
+  } else if (H.phase === "p3") enterReveal();
+}
+function enterReveal() {
+  var unch = Object.keys(G.res).filter(function (t) { return !(G.chal[t] || []).length; });
+  var steps = [];
+  if (unch.length) steps.push({ type: "unch", ids: unch });
+  challengedList().forEach(function (t) { steps.push({ type: "chal", id: t }); });
+  G.steps = steps; G.rev = 1; G.summarized = false;
+  setPhase("p4");
+}
+function targetResult(tid) { return checkEquation(G.subs[tid] || [], G.nums, cellOf(tid).value); }
+function passMap() { var m = {}; challengedList().forEach(function (t) { m[t] = targetResult(t).pass; }); return m; }
+function summarize() {
+  G.breakdown = scoreBreakdown(G.res, G.chal, passMap(), G.cells, H.cfg);
+  var delta = {};
+  [G.breakdown.own, G.breakdown.challenge].forEach(function (m) { Object.keys(m).forEach(function (p) { delta[p] = (delta[p] || 0) + m[p]; }); });
+  var fl = negFloor();
+  H.players.forEach(function (p) { G.scores[p.pid] = clampScore(G.scores[p.pid] + (delta[p.pid] || 0), fl); });
+  G.lastDelta = delta; G.summarized = true;
+  if (G.isFinal) G.ended = true;
+  else if (H.players.some(function (p) { return G.scores[p.pid] >= Number(H.cfg.target); })) G.finalPending = true;
+}
+function ranking() { return H.players.slice().sort(function (a, b) { return G.scores[b.pid] - G.scores[a.pid]; }); }
+function rankOf(pid) { var sc = G.scores[pid], r = 1; H.players.forEach(function (p) { if (G.scores[p.pid] > sc) r++; }); return r; }
+function ownD(t) { var c = cellOf(t), chs = G.chal[t] || [], r = targetResult(t); return r.pass ? Math.min(chs.length, H.cfg.maxMult) * c.score : -(H.cfg.penalty === "count" ? chs.length : 1) * c.score; }
+
+/* ----- what each player is allowed to see ----- */
+function lineFor(pid) {
+  var lines = [];
+  if (G.res[pid] !== undefined) {
+    var c = cellOf(pid), chs = G.chal[pid] || [];
+    if (!chs.length) lines.push({ label: "ผลลัพธ์ของคุณ (" + c.value + ")", sub: "ไม่ถูกท้า", d: c.score });
+    else { var r = targetResult(pid); lines.push({ label: "ผลลัพธ์ของคุณ (" + c.value + ")", sub: (r.pass ? "ทำสมการได้" : "ทำสมการไม่ได้") + " · ถูกท้า " + chs.length + " คน", d: ownD(pid) }); }
+  } else lines.push({ label: "คุณไม่ได้จองผลลัพธ์", sub: "", d: 0 });
+  Object.keys(G.chal).forEach(function (t) {
+    if (G.chal[t].indexOf(pid) < 0) return;
+    var c2 = cellOf(t), pass = targetResult(t).pass;
+    lines.push({ label: "ท้า" + hname(t) + " (" + c2.value + ")", sub: pass ? esc("ผู้ถูกท้าทำสมการได้") : "ผู้ถูกท้าทำสมการไม่ได้", d: pass ? -c2.score : c2.score });
+  });
+  return lines;
+}
+function myInfo(pid) {
+  var me = { res: G.res[pid] === undefined ? null : G.res[pid], myChals: [], challenged: null, solved: false, solHtml: "", lines: null, rank: rankOf(pid), score: G.scores[pid], delta: null };
+  Object.keys(G.chal).forEach(function (t) { if (G.chal[t].indexOf(pid) >= 0) me.myChals.push(t); });
+  if (G.res[pid] !== undefined && (G.chal[pid] || []).length) {
+    var c = cellOf(pid);
+    me.challenged = { value: c.value, score: c.score, count: G.chal[pid].length };
+    if (G.subs[pid]) { me.solved = true; me.solHtml = treeHtml(G.subTree[pid]) + " = " + c.value; }
+  }
+  if (G.summarized) { me.lines = lineFor(pid); me.delta = G.lastDelta[pid] || 0; }
+  return me;
+}
+function publicState() {
+  var players = H.players.map(function (p) { return { pid: p.pid, name: p.name, idx: p.idx, score: G ? G.scores[p.pid] : 0 }; });
+  var st = { type: "state", phase: H.phase, room: H.cfg.room, target: H.cfg.target, players: players,
+    now: Date.now(), maxMult: H.cfg.maxMult, chLimit: chLimit(), showScores: H.cfg.showScores };
+  if (G) {
+    var owners = {}; Object.keys(G.res).forEach(function (p) { owners[G.res[p]] = p; });
+    var rows = ranking().map(function (p) { return { pid: p.pid, name: p.name, idx: p.idx, score: G.scores[p.pid], d: G.summarized ? G.lastDelta[p.pid] || 0 : null }; });
+    st.round = G.round; st.isFinal = G.isFinal; st.nums = G.nums; st.cells = G.cells.map(function (c) { return { id: c.id, tier: c.tier, value: c.value, score: c.score }; });
+    st.owners = owners; st.remaining = G.deadline || G.paused ? (G.paused ? G.remaining : Math.max(0, G.deadline - Date.now())) : null;
+    st.paused = G.paused; st.summarized = G.summarized; st.finalPending = G.finalPending; st.ended = G.ended; st.rows = rows; st.toast = G.toast;
+    st.me = {}; H.players.forEach(function (p) { st.me[p.pid] = myInfo(p.pid); });
+  } else {
+    st.me = {}; H.players.forEach(function (p) { st.me[p.pid] = { res: null, myChals: [], challenged: null, solved: false, solHtml: "", lines: null, rank: 0, score: 0, delta: null }; });
+  }
+  return st;
+}
+var BC = { last: 0, t: null };
+function bcGap() { return Math.min(1000, Math.max(150, H.players.length * 25)); }   /* every state is delivered to every phone, and Supabase counts each delivery against 100 messages/s on the free plan */
+function broadcast() {   /* coalesce bursts: at most one full state per gap, a trailing send keeps the last change */
+  var now = Date.now(), gap = bcGap();
+  if (now - BC.last >= gap) { BC.last = now; Net.send(publicState()); }
+  else if (!BC.t) BC.t = setTimeout(function () { BC.t = null; BC.last = Date.now(); Net.send(publicState()); }, gap - (now - BC.last));
+}
+var SV = { t: null };
+var G_KEYS = ["round", "isFinal", "finalPending", "ended", "scores", "lastDelta", "breakdown", "nums", "cells", "res", "chal", "subs", "subTree", "steps", "rev", "summarized", "paused", "remaining", "deadline", "toast", "maxV"];
+function saveHost() {   /* the host keeps the whole game in this browser, so a reload of the host page can continue it */
+  clearTimeout(SV.t);
+  SV.t = setTimeout(function () {
+    try {
+      if (!H.code) return;
+      var g = null; if (G) { g = {}; G_KEYS.forEach(function (k) { g[k] = G[k]; }); }
+      localStorage.setItem("calcu-host", JSON.stringify({ t: Date.now(), code: H.code, cfg: H.cfg, players: H.players, nextIdx: H.nextIdx, phase: H.phase, G: g }));
+    } catch (e) {}
+  }, 300);
+}
+function restoreHost() {
+  var raw = null; try { raw = localStorage.getItem("calcu-host"); } catch (e) {}
+  if (!raw) return false;
+  try {
+    var d = JSON.parse(raw);
+    if (!d || Date.now() - d.t > 12 * 3600 * 1000 || !/^\d{4}$/.test(d.code)) return false;
+    var pl = d.players || [], g = d.G || null;
+    if (g) { g = JSON.parse(JSON.stringify(g)); if (!g.cells || !g.nums || !g.scores) return false; }
+    H.code = d.code; H.cfg = Object.assign({}, DEF_CFG, d.cfg); H.players = pl; H.nextIdx = d.nextIdx || 0; H.phase = d.phase || "lobby";
+    if (g) {
+      G = H.G = g;
+      var key = JSON.stringify(cfgRanges()) + "|" + cfgMax();
+      if (!H.poolCache[key]) H.poolCache[key] = buildPools(cfgRanges(), cfgMax());
+      G.pools = H.poolCache[key];
+      if (G.deadline && !G.paused) { G.remaining = Math.max(8000, G.deadline - Date.now()); G.paused = true; G.deadline = 0; }
+      if (G.paused) G.toast = "Host กลับเข้ามาแล้ว เวลาหยุดไว้ กด “เดินเวลาต่อ” เพื่อเล่นต่อ";
+    } else G = H.G = null;
+    return true;
+  } catch (e) { return false; }
+}
+function changed() { broadcast(); renderHost(); saveHost(); }
+
+/* ----- messages from players ----- */
+function onHostMsg(m) {
+  if (!m || !m.type) return;
+  if (m.type === "hello") { broadcast(); return; }
+  if (m.type === "join") {
+    var ex = findP(m.pid);
+    if (!ex) {
+      if (H.phase !== "lobby") {
+        var nm0 = String(m.name || "").trim().slice(0, 20), old = null;   /* same nickname = the same player coming back on a new page/tab */
+        H.players.forEach(function (p) { if (p.name === nm0) old = p; });
+        if (old) { Net.send({ type: "adopt", to: m.pid, pid: old.pid }); return; }
+        Net.send({ type: "reject", to: m.pid, reason: "เกมเริ่มไปแล้ว ถ้าเคยเข้าห้องนี้ ให้พิมพ์ชื่อเล่นเดิมเพื่อกลับเข้าห้อง" }); return;
+      }
+      var nm = String(m.name || "").trim().slice(0, 20) || "ผู้เล่น", base = nm, k = 2;
+      while (H.players.some(function (p) { return p.name === nm; })) nm = base + " " + (k++);
+      H.players.push({ pid: m.pid, name: nm, idx: H.nextIdx++ });
+      if (G) G.scores[m.pid] = Number(H.cfg.start) || 0;
+    }
+    changed(); return;
+  }
+  if (!findP(m.pid) || !G) return;
+  var pid = m.pid;
+  if (m.type === "pick" && H.phase === "p1" && G.res[pid] === undefined) {
+    var cell = G.cells[m.cell]; if (!cell) return;
+    for (var k2 in G.res) if (G.res[k2] === cell.id) return;
+    G.res[pid] = cell.id; changed();
+  } else if (m.type === "chal" && H.phase === "p2" && m.target !== pid && G.res[m.target] !== undefined) {
+    var used = Object.keys(G.chal).filter(function (t) { return G.chal[t].indexOf(pid) >= 0; }).length, lim = chLimit();
+    if ((G.chal[m.target] || []).indexOf(pid) >= 0 || (lim > 0 && used >= lim)) return;
+    (G.chal[m.target] = G.chal[m.target] || []).push(pid); changed();
+  } else if (m.type === "submit" && H.phase === "p3" && (G.chal[pid] || []).length && G.res[pid] !== undefined && !G.subs[pid]) {
+    var toks;
+    try { toks = treeTokens(m.node); } catch (e) { return; }
+    var res; try { res = checkEquation(toks, G.nums, cellOf(pid).value); } catch (e2) { return; }
+    if (!res.pass) return;
+    G.subs[pid] = toks; G.subTree[pid] = m.node;
+    if (H.cfg.earlyEnd && challengedList().every(function (t) { return G.subs[t]; })) {
+      G.deadline = G.paused ? Date.now() + 2000 : Math.min(G.deadline, Date.now() + 2000); G.paused = false;
+      G.toast = "ทุกคนไขได้แล้ว ไปเฟสเฉลยใน 2 วินาที";
+    }
+    changed();
+  }
+}
+
+/* ----- host actions ----- */
+var HACT = {
+  newRoom: function () { H.code = String(1000 + Math.floor(Math.random() * 9000)); ss("calcu-hostcode", H.code); Net.open(H.code, "host", onHostMsg); renderHost(); saveHost(); },
+  resetRoom: function () {
+    if (H.phase !== "lobby") return;
+    if (!H.cr) { H.cr = true; renderHost(); return; }
+    H.cr = false; H.players = []; H.nextIdx = 0; G = H.G = null; H.phase = "lobby"; Net.close(); HACT.newRoom();
+  },
+  cfg: function () { H.showCfg = true; renderCfg(); },
+  start: function () { if (!startOk()) return; hostNewGame(); changed(); },
+  pause: function () { if (!G.deadline && !G.paused) return; if (G.paused) { G.deadline = Date.now() + G.remaining; G.paused = false; } else { G.remaining = Math.max(0, G.deadline - Date.now()); G.paused = true; } changed(); },
+  skip: function () { advance(); changed(); },
+  next: function () { if (G.rev < G.steps.length) G.rev++; changed(); },
+  toSum: function () { if (!G.summarized) summarize(); changed(); },
+  nextRound: function () { startRound(); changed(); },
+  askEnd: function () { if (!G || H.ce) return; H.ce = true; H.ceTimer = !!(G.deadline && !G.paused); if (H.ceTimer) { G.remaining = Math.max(0, G.deadline - Date.now()); G.paused = true; } changed(); },
+  cancelEnd: function () { if (!H.ce) return; H.ce = false; if (H.ceTimer && G.paused) { G.deadline = Date.now() + G.remaining; G.paused = false; } H.ceTimer = false; changed(); },
+  doEnd: function () { if (!H.ce) return; H.ce = false; H.ceTimer = false; H.phase = "end"; G.deadline = 0; G.paused = false; changed(); },
+  toEnd: function () { H.phase = "end"; G.deadline = 0; changed(); },
+  again: function () { hostNewGame(); changed(); },
+  toLobby: function () { G = H.G = null; H.phase = "lobby"; changed(); }
+};
+
+/* ----- host views (1920x1080 stage, same layout as the design boards) ----- */
+function hdr(title, sub, right) {
+  return '<div class="hdr"><div class="hl"><div class="s1" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">รหัสห้อง <b class="hd" style="font-size:38px;color:#FFD65A;letter-spacing:.08em">' + H.code + '</b> · ' + esc(H.cfg.room) + " · เป้า " + H.cfg.target + '</div><div class="s2">รอบที่ ' + G.round + (G.isFinal ? " · รอบสุดท้าย" : "") +
+    '</div></div><div class="hc2"><div class="ti">' + title + '</div><div class="su">' + sub + '</div></div><div class="hr">' + right + "</div></div>";
+}
+function ring() { return '<div class="ring" id="tm">' + secsLeft() + "</div>"; }
+function ctlBtns() { return '<div style="display:flex;gap:16px"><button class="gb" data-a="pause">' + (G.paused ? "เดินเวลาต่อ" : "หยุดเวลา") + '</button><button class="gb" data-a="skip">ข้ามเฟส</button></div>'; }
+function progress(label, n, d) {
+  return '<div style="display:flex;align-items:center;gap:28px"><div class="ft1">' + label + " " + n + " / " + d + '</div><div class="bar"><div style="width:' + (d ? Math.round(100 * n / d) : 0) + '%"></div></div></div>';
+}
+function numsPanel() {
+  return '<div style="width:480px;flex:none"><div style="font-size:30px;line-height:1.3;color:#B4BEDA;margin-bottom:14px">เลขตั้งต้น · ใช้ได้ตัวละครั้ง<br>ต้องใช้อย่างน้อย 2 ตัว</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px">' +
+    G.nums.map(function (n) { return '<div class="nt">' + n + "</div>"; }).join("") + "</div></div>";
+}
+function hpyr(mode) {
+  var owner = {}; Object.keys(G.res).forEach(function (p) { owner[G.res[p]] = p; });
+  var rows = "";
+  for (var tier = 1; tier <= 5; tier++) {
+    rows += '<div class="prow2">' + G.cells.filter(function (c) { return c.tier === tier; }).map(function (c) {
+      var o = owner[c.id];
+      if (!o) return '<div class="hc"><b>' + c.value + '</b><span class="sc">' + c.score + " แต้ม</span></div>";
+      var n = (G.chal[o] || []).length;
+      return '<div class="hc t" style="background:' + hcol(o) + '"><b>' + c.value + '</b><span class="nm">' + esc(hname(o)) + '</span><span class="sc">' + c.score + " แต้ม</span>" + (mode === "p2" && n ? '<span class="bd" aria-label="ถูกท้า ' + n + ' คน">' + n + "</span>" : "") + "</div>";
+    }).join("") + "</div>";
+  }
+  return '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px;align-items:center">' + rows + "</div>";
+}
+function hLobby() {
+  var csz = H.players.length > 30 ? " xs" : H.players.length > 14 ? " sm" : "";
+  var chips = H.players.map(function (p) { return '<div class="chip' + csz + '"><i style="background:' + hcol(p.pid) + '"></i>' + esc(p.name) + "</div>"; }).join("");
+  return '<div style="display:flex;gap:80px;flex:1;min-height:0"><div style="width:760px;display:flex;flex-direction:column;gap:28px">' +
+    '<div><div class="hd" style="font-weight:700;font-size:120px;line-height:1.15">Calcuเหรอ?</div><div style="font-size:44px;line-height:1.3;color:#B4BEDA">' + esc(H.cfg.room) + " · เป้าหมาย " + H.cfg.target + ' คะแนน</div></div>' +
+    '<div><div style="font-size:34px;line-height:1.3;color:#B4BEDA">รหัสห้อง</div><div class="hd" style="font-weight:700;font-size:170px;line-height:1.1;letter-spacing:.12em;color:#FFD65A">' + H.code + '</div></div>' +
+    '<div style="font-size:36px;line-height:1.55"><div>1  เปิดเว็บไซต์ของชมรมบนมือถือ</div><div>2  เลือก “ผู้เล่น” แล้วใส่รหัสห้อง</div><div>3  ตั้งชื่อเล่น (เล่นเป็นคู่/กลุ่มใช้เครื่องเดียวกันได้)</div></div>' +
+    '<div><button class="gb" data-a="resetRoom" style="white-space:nowrap">' + (H.cr ? "กดอีกครั้งเพื่อล้างห้องและสร้างรหัสใหม่" : "สร้างห้องใหม่") + '</button></div></div>' +
+    '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:28px"><div style="display:flex;align-items:baseline;justify-content:space-between"><div class="hd" style="font-weight:700;font-size:64px;line-height:1.3">ผู้เล่นที่เข้าห้องแล้ว</div><div class="hd" style="font-weight:700;font-size:64px;line-height:1.3;color:#9C8CFF">' + H.players.length + ' คน</div></div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:18px;align-content:flex-start;flex:1">' + (chips || '<div style="font-size:36px;color:#B4BEDA">ยังไม่มีใครเข้าห้อง</div>') + "</div>" +
+    '<div style="display:flex;justify-content:space-between;align-items:center"><button class="gb" data-a="cfg">ตั้งค่าห้อง</button><div style="display:flex;align-items:center;gap:24px">' + (H.players.length < 2 ? '<span style="font-size:30px;color:#B4BEDA">ต้องมีผู้เล่นอย่างน้อย 2 ชื่อ</span>' : "") +
+    '<button class="pb" data-a="start"' + (startOk() ? "" : " disabled") + ">เริ่มเกม</button></div></div></div></div>";
+}
+function hP1() {
+  var n = Object.keys(G.res).length, d = Math.min(H.players.length, G.cells.length);
+  return hdr("เฟส 1 · เลือกผลลัพธ์", "แตะช่องบนมือถือเพื่อจอง จองได้ชื่อละ 1 ช่อง", ring()) + '<div class="main">' + numsPanel() + hpyr("p1") + "</div>" + '<div class="ftr">' + progress("จองแล้ว", n, d) + ctlBtns() + "</div>";
+}
+function hP2() {
+  var counts = Object.keys(G.res).length, done = {};
+  Object.keys(G.chal).forEach(function (t) { G.chal[t].forEach(function (p) { done[p] = 1; }); });
+  return hdr("เฟส 2 · Challenge", "แตะท้าบนมือถือ · วงกลมเหลืองคือจำนวนคนที่ท้าช่องนั้น", ring()) + '<div class="main">' + numsPanel() + hpyr("p2") + "</div>" +
+    '<div class="ftr">' + progress("ท้าแล้ว", Object.keys(done).length, H.players.length) + ctlBtns() + "</div>";
+}
+function hP3() {
+  var chd = challengedList().sort(function (a, b) { return cellOf(a).value - cellOf(b).value; });
+  var solved = chd.filter(function (t) { return G.subs[t]; }).length;
+  var cards = chd.map(function (t) {
+    var c = cellOf(t);
+    return '<div class="cd" style="border-color:' + hcol(t) + '"><b>' + c.value + '</b><span class="n">' + esc(hname(t)) + '</span><span class="s">' + c.score + " แต้ม" + (chd.length > 8 ? "" : " · ถูกท้า " + G.chal[t].length + " คน") + "</span></div>";
+  }).join("");
+  var small = chd.length > 3, zm = chd.length > 8 ? ".54" : ".72";
+  return hdr("เฟส 3 · พิมพ์สมการ", "ผู้ที่ถูกท้าต้องทำผลลัพธ์ของตัวเองให้ได้", ring()) + '<div class="main">' + numsPanel() +
+    '<div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:28px"><div style="font-size:34px;line-height:1.3;color:#B4BEDA">ผลลัพธ์ที่ถูกท้า · ช่วยกันคิดวิธีทำจากเลขตั้งต้นทางซ้าย</div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:' + (small ? 20 : 32) + 'px;justify-content:center;' + (small ? "zoom:" + zm : "") + '">' + cards + "</div></div></div>" +
+    '<div class="ftr">' + progress("ไขได้แล้ว", solved, chd.length) + ctlBtns() + "</div>";
+}
+function deltaChip(name, d) { return '<div class="dl ' + (d > 0 ? "up" : d < 0 ? "dn" : "ze") + '">' + esc(name) + " " + (d > 0 ? "+" : d < 0 ? "−" : "") + Math.abs(d) + "</div>"; }
+function solutionHtml(target) {
+  if (!G.best) G.best = solveAll(G.nums, G.maxV);
+  var node = G.best[target];
+  if (node && checkEquation(treeTokens(node), G.nums, target).pass) return '<div class="hd" style="font-weight:600;font-size:80px;line-height:1.3">' + treeHtml(node) + ' <span style="color:#B4BEDA">= ' + target + "</span></div>";
+  return '<div class="hd" style="font-weight:600;font-size:52px;line-height:1.4">ผลลัพธ์นี้ทำไม่ได้จากเลขชุดนี้ตามกติกาของเกม</div>';
+}
+function hP4() {
+  var total = G.steps.length, i = G.rev, st = G.steps[i - 1], last = i >= total;
+  var right = '<div class="pill">ใบที่ ' + i + " / " + total + "</div>";
+  var body;
+  if (G.summarized) return hSummary();
+  if (st.type === "unch") {
+    body = '<div class="rcard"><div class="hd" style="font-weight:700;font-size:64px;line-height:1.3">ผู้ที่ไม่ถูก Challenge</div><div style="font-size:36px;line-height:1.4;color:#B4BEDA">ได้คะแนนของช่องตัวเองเต็มจำนวน</div><div style="display:flex;flex-wrap:wrap;gap:16px">' +
+      st.ids.map(function (t) { var c = cellOf(t); return '<div class="dl up" style="font-size:44px;gap:20px"><span style="color:#EEF1FA">' + c.value + "</span>" + esc(hname(t)) + " +" + c.score + "</div>"; }).join("") + "</div></div>";
+  } else {
+    var t = st.id, c = cellOf(t), chs = G.chal[t], r = targetResult(t), d2 = r.pass ? -c.score : c.score;
+    var mid = r.pass
+      ? '<div style="padding:22px 40px;border-radius:20px;background:#0E1326;border:3px solid #2B3560;font-family:Prompt,\'Noto Sans Thai\',sans-serif;font-weight:600;font-size:124px;line-height:1.25">' + treeHtml(G.subTree[t]) + ' <span style="color:#B4BEDA">= ' + c.value + "</span></div>"
+      : '<div style="display:flex;align-items:center;gap:20px;color:#FF8A80" class="hd"><span style="font-weight:700;font-size:68px;line-height:1.3">✕ ไม่ผ่าน: ' + esc(r.reason) + "</span></div>" +
+        (H.cfg.showSolution ? '<div style="padding:20px 36px;border-radius:0 20px 20px 0;background:#0E1326;border-left:8px solid #9C8CFF"><div style="font-size:30px;line-height:1.4;color:#B4BEDA">ตัวอย่างวิธีที่ทำได้</div>' + solutionHtml(c.value) + "</div>" : "");
+    body = '<div class="rcard" style="border-color:' + hcol(t) + '"><div style="display:flex;align-items:center;gap:56px"><div class="hd" style="font-weight:700;font-size:190px;line-height:1.05">' + c.value + '</div><div><div class="hd" style="font-weight:700;font-size:76px;line-height:1.3">' + esc(hname(t)) +
+      '</div><div style="font-size:38px;line-height:1.4;color:#B4BEDA">' + c.score + " แต้ม · ถูกท้าโดย " + chs.slice(0, 8).map(function (x) { return esc(hname(x)); }).join(", ") + (chs.length > 8 ? " และอีก " + (chs.length - 8) + " คน" : "") + " (" + chs.length + ' คน)</div></div></div>' + mid +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:32px"><div class="hd" style="font-weight:700;font-size:64px;line-height:1.3;color:' + (r.pass ? "#5BD98F" : "#FF8A80") + '">' + (r.pass ? "✓ ผ่าน" : "") + '</div><div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:flex-end">' +
+      deltaChip(hname(t), ownD(t)) + (chs.length > 8 ? deltaChip("ผู้ท้า " + chs.length + " คน คนละ", d2) : chs.map(function (x) { return deltaChip(hname(x), d2); }).join("")) + "</div></div></div>";
+  }
+  return hdr("เฟส 4 · เฉลย", "ดูผลของผู้เล่นทีละใบ", right) + '<div class="main" style="justify-content:center">' + body + "</div>" +
+    '<div class="ftr"><div class="hint">' + (last ? "เปิดครบแล้ว กด “สรุปคะแนน” เพื่อดูอันดับ" : "กด “ต่อไป” เพื่อเปิดผลใบถัดไป") + '</div><div style="display:flex;gap:16px;align-items:center">' +
+    (last ? '<button class="pb" data-a="toSum">สรุปคะแนน</button>' : '<button class="gb" data-a="toSum">ข้ามไปสรุป</button><button class="pb" data-a="next">ต่อไป</button>') + "</div></div>";
+}
+function hSummary() {
+  var list = ranking(), shown = list.slice(0, 10), target = Number(H.cfg.target) || 1;
+  var rows = shown.map(function (p) {
+    var sc = G.scores[p.pid], d = G.lastDelta[p.pid] || 0, rk = rankOf(p.pid);
+    return '<div class="lr"><div class="rk">' + rk + '</div><div class="nm"><i style="background:' + hcol(p.pid) + '"></i>' + esc(p.name) + '</div><div class="bar2"><div style="width:' + Math.max(0, Math.min(100, Math.round(100 * sc / target))) + '%"></div></div><div class="sc2">' + fmtN(sc) + '</div><div class="dl2 ' + (d > 0 ? "up" : d < 0 ? "dn" : "ze") + '">' + (d > 0 ? "▲ +" : d < 0 ? "▼ −" : "") + Math.abs(d) + "</div></div>";
+  }).join("");
+  var lead = list[0], crowned = list.filter(function (p) { return G.scores[p.pid] >= target; });
+  var side = '<div style="width:420px;flex:none;padding:32px;border-radius:28px;background:#171E38;border:3px solid #2B3560;display:flex;flex-direction:column;gap:12px"><div style="font-size:32px;line-height:1.3;color:#B4BEDA">แถบเต็ม = เป้าหมาย</div><div class="hd" style="font-weight:700;font-size:140px;line-height:1.1;color:#FFD65A">' + target + "</div>" +
+    (G.ended ? '<div style="font-size:36px;line-height:1.4">จบรอบสุดท้ายแล้ว</div>' :
+      G.finalPending ? '<div style="font-size:36px;line-height:1.4">ครองบัลลังก์: ' + crowned.map(function (p) { return esc(p.name); }).join(", ") + '<br><span style="color:#B4BEDA">รอบถัดไปเป็นรอบสุดท้าย</span></div>' :
+        '<div style="font-size:36px;line-height:1.4">ยังไม่มีใครถึงเป้า</div><div style="font-size:36px;line-height:1.4;color:#B4BEDA">' + esc(lead.name) + " นำอยู่ ขาดอีก " + Math.max(0, target - G.scores[lead.pid]) + " คะแนน</div>") +
+    (list.length > 10 ? '<div style="font-size:28px;line-height:1.4;color:#B4BEDA;margin-top:16px">จอนี้แสดง 10 อันดับแรก</div>' : "") + "</div>";
+  return hdr("สรุปคะแนน", "ตัวเลขสีเขียว/แดงคือคะแนนที่เปลี่ยนในรอบนี้", "") + '<div class="main" style="gap:64px"><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;' + (shown.length > 8 ? "zoom:.85" : "") + '">' + rows + "</div>" + side + "</div>" +
+    '<div class="ftr"><div class="hint">' + (G.finalPending ? "ถ้าครองบัลลังก์หลายคน คนคะแนนสูงสุดเมื่อจบรอบสุดท้ายชนะ" : "") + '</div><button class="pb" data-a="' + (G.ended ? "toEnd" : "nextRound") + '">' + (G.ended ? "ดูผู้ชนะ" : "ไปรอบถัดไป") + "</button></div>";
+}
+function hEnd() {
+  var list = ranking(), top = G.scores[list[0].pid], winners = list.filter(function (p) { return G.scores[p.pid] === top; });
+  var rows = list.slice(0, 5).map(function (p) { return '<div class="lr"><div class="rk">' + rankOf(p.pid) + '</div><div class="nm"><i style="background:' + hcol(p.pid) + '"></i>' + esc(p.name) + '</div><div class="bar2"></div><div class="sc2">' + G.scores[p.pid] + "</div></div>"; }).join("");
+  return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px"><div style="font-size:48px;color:#B4BEDA">ผู้ชนะ</div><div class="hd" style="font-weight:700;font-size:150px;line-height:1.2;color:#FFD65A;text-align:center">' + winners.map(function (p) { return esc(p.name); }).join(" และ ") + '</div><div class="hd" style="font-size:64px">' + top + " คะแนน" + (winners.length > 1 ? " (คะแนนเท่ากัน)" : "") + '</div><div style="width:1100px;margin-top:16px">' + rows + "</div></div>" +
+    '<div class="ftr"><div></div><div style="display:flex;gap:16px"><button class="gb" data-a="toLobby">กลับล็อบบี้</button><button class="pb" data-a="again">เล่นใหม่ด้วยผู้เล่นเดิม</button></div></div>';
+}
+function renderHost() {
+  var el = document.getElementById("stage"); if (!el) return;
+  var h;
+  if (H.phase === "lobby") h = hLobby();
+  else if (H.phase === "p1") h = hP1();
+  else if (H.phase === "p2") h = hP2();
+  else if (H.phase === "p3") h = hP3();
+  else if (H.phase === "p4") h = hP4();
+  else h = hEnd();
+  var inGame = G && H.phase !== "lobby" && H.phase !== "end";
+  var endUi = !inGame ? "" : '<button class="gb endb" data-a="askEnd">จบเกม</button>' + (H.ce ?
+    '<div class="endov" role="dialog" aria-modal="true"><div class="endbox"><div class="hd" style="font-weight:700;font-size:64px;line-height:1.3">จบเกมตอนนี้ใช่ไหม</div><div style="font-size:36px;line-height:1.5;color:#B4BEDA">จะไปหน้าผู้ชนะทันที โดยนับคะแนนจากรอบที่สรุปไปแล้ว<br>คะแนนของรอบที่กำลังเล่นอยู่จะไม่ถูกนับ</div><div style="display:flex;gap:24px;justify-content:center;margin-top:12px"><button class="gb" data-a="cancelEnd" style="font-size:36px;min-height:72px">เล่นต่อ</button><button class="pb" data-a="doEnd" style="background:#FF8A80">จบเกม</button></div></div></div>' : "");
+  el.innerHTML = h + endUi + (G && G.toast && H.phase !== "lobby" ? '<div style="position:absolute;left:50%;top:30px;transform:translateX(-50%);padding:10px 28px;border-radius:99px;background:#FFD65A;color:#0E1326;font-size:30px;font-weight:700">' + esc(G.toast) + "</div>" : "");
+}
+function fitStage() {
+  var el = document.getElementById("stage"); if (!el) return;
+  var s = Math.min(innerWidth / 1920, innerHeight / 1080);
+  el.style.transform = "translate(" + (innerWidth - 1920 * s) / 2 + "px," + (innerHeight - 1080 * s) / 2 + "px) scale(" + s + ")";
+}
+function hostBoot() {
+  MODE = "host"; document.body.className = "host"; ss("calcu-role", "host");
+  document.getElementById("app").innerHTML = '<div id="hostwrap"><div id="stage"></div></div>';
+  fitStage(); window.addEventListener("resize", fitStage);
+  if (restoreHost()) { ss("calcu-hostcode", H.code); Net.open(H.code, "host", onHostMsg); renderHost(); changed(); } else HACT.newRoom();
+  document.getElementById("stage").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-a]"); if (!b || b.disabled) return;
+    if (HACT[b.dataset.a]) HACT[b.dataset.a](b);
+  });
+  setInterval(function () {
+    if (!G || G.paused || !G.deadline || H.ce) return;
+    if (Date.now() >= G.deadline) { advance(); changed(); return; }
+    var t = document.getElementById("tm"); if (t) t.textContent = secsLeft();
+  }, 200);
+  setInterval(function () { if (Net.ch) broadcast(); }, 3000);
+}
+
+/* ----- host settings overlay ----- */
+function rangesFormHtml() {
+  return '<p class="sm">ช่วงสุ่มเลขตั้งต้นแต่ละตัว (เลขทั้ง 4 ตัวไม่ซ้ำกัน)</p>' + H.cfg.ranges.map(function (r, i) {
+    return '<div class="rng"><span>ตัวที่ ' + (i + 1) + '</span><input type="number" inputmode="numeric" data-r="' + i + '-0" value="' + r[0] + '" min="1"><span>ถึง</span><input type="number" inputmode="numeric" data-r="' + i + '-1" value="' + r[1] + '" min="1"></div>';
+  }).join("") + '<p class="warn" id="rng-warn"' + (rangesFeasible(cfgRanges()) ? " hidden" : "") + ">ช่วงที่ตั้งไว้สุ่มเลข 4 ตัวที่ไม่ซ้ำกันไม่ได้</p>";
+}
+function renderCfg() {
+  var c = H.cfg, ov = document.getElementById("cfgov");
+  function opt(v, label, cur) { return '<option value="' + v + '"' + (String(cur) === String(v) ? " selected" : "") + ">" + label + "</option>"; }
+  function num(key, label, min, max) { return '<div class="field"><label>' + label + '</label><input type="number" inputmode="numeric" data-cfg="' + key + '" value="' + c[key] + '" min="' + min + '" max="' + max + '"></div>'; }
+  ov.hidden = false;
+  ov.innerHTML = '<div class="box"><h2>ตั้งค่าห้อง</h2><div class="field wide"><label>ชื่อห้อง</label><input type="text" maxlength="30" data-cfg="room" value="' + esc(c.room) + '"></div>' +
+    num("target", "คะแนนเป้าหมาย", 1, 9999) + num("start", "คะแนนเริ่มต้น", -999, 999) + rangesFormHtml() + num("maxResult", "ผลลัพธ์สูงสุดบนกระดาน (100–400)", 100, 400) +
+    '<p class="warn" id="max-warn"' + (maxOk() ? " hidden" : "") + ">ต้องเป็นจำนวนเต็ม 100 ถึง 400</p>" +
+    '<label class="check"><input type="checkbox" data-cfg="showScores"' + (c.showScores ? " checked" : "") + "> แสดงคะแนนของแต่ละช่องในเฟส 1</label>" + num("maxMult", "ตัวคูณสูงสุดเมื่อถูกรุมท้า", 1, 20) +
+    '<div class="field"><label>บทลงโทษเมื่อแก้สมการไม่ได้</label><select data-cfg="penalty">' + opt("value", "เสียตามมูลค่าช่อง", c.penalty) + opt("count", "เสียตามจำนวนคนรุม", c.penalty) + "</select></div>" +
+    '<div class="field"><label>ลิมิตคะแนนติดลบ</label><select data-cfg="negMode">' + opt("none", "ไม่จำกัด", c.negMode) + opt("0", "ต่ำสุด 0", c.negMode) + opt("-10", "ต่ำสุด −10", c.negMode) + opt("custom", "ระบุเอง", c.negMode) + "</select></div>" +
+    (c.negMode === "custom" ? num("negCustom", "คะแนนต่ำสุด", -9999, 0) : "") +
+    '<div class="field"><label>จำกัดการกดท้าต่อรอบ</label><select data-cfg="chMode">' + opt("none", "ไม่จำกัด", c.chMode) + opt("custom", "ระบุเอง", c.chMode) + "</select></div>" + (c.chMode === "custom" ? num("chCustom", "ท้าได้สูงสุด (คนต่อรอบ)", 1, 99) : "") +
+    '<label class="check"><input type="checkbox" data-cfg="earlyEnd"' + (c.earlyEnd ? " checked" : "") + "> จบเฟส 3 ทันทีเมื่อทุกคนที่ถูกท้าไขได้แล้ว</label>" +
+    '<label class="check"><input type="checkbox" data-cfg="showSolution"' + (c.showSolution ? " checked" : "") + "> แสดงตัวอย่างวิธีที่ทำได้เมื่อผู้ถูกท้าไม่ผ่าน</label>" +
+    '<p class="sm">เวลาแต่ละเฟส (วินาที)</p><div class="row3"><div><label>เฟส 1</label><input type="number" inputmode="numeric" data-cfg="t1" value="' + c.t1 + '" min="5" max="600"></div><div><label>เฟส 2</label><input type="number" inputmode="numeric" data-cfg="t2" value="' + c.t2 + '" min="5" max="600"></div><div><label>เฟส 3</label><input type="number" inputmode="numeric" data-cfg="t3" value="' + c.t3 + '" min="5" max="600"></div></div>' +
+    '<button class="done" data-a="closeCfg">เสร็จ</button></div>';
+}
+document.addEventListener("change", function (e) {
+  var t = e.target; if (!t.closest || !t.closest("#cfgov")) return;
+  var c = H.cfg;
+  if (t.dataset.r) { var p = t.dataset.r.split("-"); c.ranges[+p[0]][+p[1]] = t.value === "" ? "" : Number(t.value); var w = document.getElementById("rng-warn"); if (w) w.hidden = rangesFeasible(cfgRanges()); return; }
+  var k = t.dataset.cfg; if (!k) return;
+  if (t.type === "checkbox") c[k] = t.checked;
+  else if (t.tagName === "SELECT") { c[k] = t.value; renderCfg(); return; }
+  else if (t.type === "number") { c[k] = t.value === "" ? "" : Number(t.value); if (k === "maxResult") { var m = document.getElementById("max-warn"); if (m) m.hidden = maxOk(); } }
+  else c[k] = t.value;
+});
+document.addEventListener("click", function (e) {
+  var b = e.target.closest ? e.target.closest("#cfgov [data-a=closeCfg]") : null;
+  if (b) { H.showCfg = false; document.getElementById("cfgov").hidden = true; renderHost(); broadcast(); }
+});
+
+/* ============================================================ PLAYER ============================================================ */
+var P = { pid: ss("calcu-pid") || rid(), name: ss("calcu-name") || "", code: ss("calcu-code") || "", joined: false, st: null, recvAt: 0, work: null, workKey: "", sent: false, error: "", joining: false };
+ss("calcu-pid", P.pid);
+/* a copy of the player's identity is kept in localStorage with a heartbeat: if the tab was closed (heartbeat older than 6 s) a new tab takes it over */
+var PL = {
+  read: function () { try { return JSON.parse(localStorage.getItem("calcu-pl") || "null"); } catch (e) { return null; } },
+  write: function () { try { localStorage.setItem("calcu-pl", JSON.stringify({ pid: P.pid, name: P.name, code: P.code, t: Date.now() })); } catch (e) {} },
+  clear: function () { try { localStorage.removeItem("calcu-pl"); } catch (e) {} }
+};
+function me() { return P.st && P.st.me ? P.st.me[P.pid] : null; }
+function pplayer(pid) { var l = P.st ? P.st.players : []; for (var i = 0; i < l.length; i++) if (l[i].pid === pid) return l[i]; return null; }
+function pnm(pid) { var p = pplayer(pid); return p ? p.name : "?"; }
+function pLeft() { if (!P.st || P.st.remaining === null || P.st.remaining === undefined) return null; return P.st.paused ? P.st.remaining : Math.max(0, P.st.remaining - (Date.now() - P.recvAt)); }
+function tmHtml() { var l = pLeft(); return '<div class="tm" id="tm">' + (l === null ? "–" : Math.ceil(l / 1000)) + "</div>"; }
+function phd(title, right) { return '<div class="ph"><div><div class="a">' + esc(P.name) + " · รอบที่ " + P.st.round + (P.st.isFinal ? " · รอบสุดท้าย" : "") + '</div><div class="b">' + title + "</div></div>" + right + "</div>"; }
+function numsCard(small) { return '<div class="card"' + (small ? ' style="padding:8px 10px"' : "") + '><div class="lab">เลขตั้งต้น · ใช้ได้ตัวละครั้ง อย่างน้อย 2 ตัว</div><div class="nts' + (small ? " sm" : "") + '">' + P.st.nums.map(function (n) { return "<div>" + n + "</div>"; }).join("") + "</div></div>"; }
+function pyrPhone(mode) {
+  var st = P.st, m = me(), rows = "";
+  for (var tier = 1; tier <= 5; tier++) {
+    rows += '<div class="pr">' + st.cells.filter(function (c) { return c.tier === tier; }).map(function (c) {
+      var o = st.owners[c.id], mine = o === P.pid;
+      if (mode === "p1") {
+        if (!o) return '<button class="pc" data-a="pick" data-id="' + c.id + '"' + (m && m.res !== null ? " disabled" : "") + ' aria-label="ผลลัพธ์ ' + c.value + '"><b>' + c.value + "</b><small>" + (st.showScores ? c.score + " แต้ม" : "") + "</small></button>";
+        return '<button class="pc t' + (mine ? " me" : "") + '" disabled style="background:' + pcol(pplayer(o).idx) + '"><b>' + c.value + "</b><small>" + (mine ? "คุณ" : esc(pnm(o))) + "</small></button>";
+      }
+      if (!o) return '<button class="pc em" disabled aria-label="ช่องว่าง"></button>';
+      if (mine) return '<button class="pc gray" disabled><b>' + c.value + "</b><small>คุณ</small></button>";
+      var on = m && m.myChals.indexOf(o) >= 0;
+      return '<button class="pc t' + (on ? " on" : "") + '" data-a="chal" data-id="' + o + '"' + (on ? " disabled" : "") + ' style="background:' + pcol(pplayer(o).idx) + '"><b>' + c.value + "</b><small>" + (on ? "ท้าแล้ว ✓" : esc(pnm(o))) + "</small></button>";
+    }).join("") + "</div>";
+  }
+  return '<div class="card" style="padding:10px 10px 12px"><div class="lab" style="text-align:center;margin-bottom:6px">' + (mode === "p1" ? "แตะผลลัพธ์ที่ต้องการจอง (1 ช่อง)" : "คิดว่าใครทำผลลัพธ์ตัวเองไม่ได้ แตะเพื่อท้า") + '</div><div style="display:flex;flex-direction:column;gap:6px">' + rows + "</div></div>";
+}
+function opSvg(o) {
+  var d = { "+": '<path d="M12 4v16M4 12h16"/>', "−": '<path d="M4 12h16"/>', "×": '<path d="M6 6l12 12M18 6L6 18"/>', "÷": '<path d="M4 12h16"/><circle cx="12" cy="5.5" r="1.9" fill="currentColor" stroke="none"/><circle cx="12" cy="18.5" r="1.9" fill="currentColor" stroke="none"/>' }[o];
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true">' + d + "</svg>";
+}
+function freshWork(nums) { var w = newWork(nums); w.slots = w.items.map(function (x) { return x.id; }); w.shist = []; return w; }   /* every number keeps its own place; a combined result takes the place of the first number and the second place stays empty */
+function getWork() {
+  var st = P.st, key = st.round + "|" + st.nums.join(",") + "|" + (me().challenged ? me().challenged.value : "");
+  if (P.workKey !== key) { P.workKey = key; P.work = freshWork(st.nums); P.sent = false; }
+  return P.work;
+}
+function viewJoin() {
+  return '<div id="pw" style="gap:20px;padding-top:36px"><div><div class="hd" style="font-weight:700;font-size:38px;line-height:1.3">Calcuเหรอ?</div><div class="muted">ชมรมคณิตศาสตร์ · เล่นร่วมกันบนจอใหญ่</div></div>' +
+    '<div class="box" style="display:flex;flex-direction:column;gap:16px"><div><label class="fl" for="code">รหัสห้อง (ดูจากจอใหญ่)</label><input class="in" id="code" type="text" inputmode="numeric" maxlength="4" value="' + esc(P.code) + '" style="letter-spacing:.2em;font-family:Prompt,sans-serif;font-weight:700"></div>' +
+    '<div><label class="fl" for="nick">ชื่อเล่นของคุณ (หรือชื่อคู่/กลุ่ม)</label><input class="in" id="nick" type="text" maxlength="20" value="' + esc(P.name) + '"></div>' +
+    (P.error ? '<div class="errm" role="alert">' + esc(P.error) + "</div>" : "") + '<button class="go" data-a="join"' + (P.joining ? " disabled" : "") + ">" + (P.joining ? "กำลังเข้าห้อง…" : "เข้าร่วม") + "</button></div>" +
+    '<div class="muted" style="font-size:15px">ใช้ชื่อเล่นเท่านั้น</div></div>';
+}
+function viewGameP() {
+  var st = P.st, m = me(), h = "";
+  if (!m) return '<div id="pw"><div class="box"><h2>ไม่พบชื่อของคุณในห้องนี้</h2><button class="go" data-a="leave" style="width:100%;margin-top:10px">กลับไปหน้าเข้าห้อง</button></div></div>';
+  if (st.phase === "lobby") {
+    h = '<div class="ph"><div><div class="a">รหัสห้อง ' + esc(P.code) + '</div><div class="b">เข้าห้องแล้ว</div></div></div><div class="box"><h2>' + esc(P.name) + '</h2><div class="muted">รอ Host กดเริ่มเกม ชื่อของคุณขึ้นบนจอใหญ่แล้ว</div></div><div class="card"><div class="lab">ผู้เล่นในห้อง (' + st.players.length + ")</div><div style=\"display:flex;flex-wrap:wrap;gap:6px\">" +
+      st.players.map(function (p) { return '<span style="padding:4px 12px;border-radius:99px;color:#fff;background:' + pcol(p.idx) + '">' + esc(p.name) + "</span>"; }).join("") + "</div></div>";
+  } else if (st.phase === "p1") {
+    h = phd("เฟส 1 · จองผลลัพธ์", tmHtml()) + numsCard() + pyrPhone("p1") + (m.res !== null ?
+      '<div class="st ok">✓ <span>จอง ' + st.cells[m.res].value + " แล้ว รอเพื่อนจอง</span></div>" : (Object.keys(st.owners).length >= st.cells.length ? '<div class="st">ช่องถูกจองครบแล้ว <small>ไปท้าในเฟสถัดไป</small></div>' : '<div class="st">แตะช่องที่ต้องการ <small>จองได้ 1 ช่อง</small></div>'));
+  } else if (st.phase === "p2") {
+    var lim = st.chLimit;
+    h = phd("เฟส 2 · Challenge", tmHtml()) + numsCard(true) + pyrPhone("p2") + '<div class="st"><span style="white-space:nowrap">ท้าแล้ว ' + m.myChals.length + (lim ? " / " + lim : "") + ' คน</span><small>' + (m.res === null ? "คุณยังไม่มีช่อง ท้าได้ทุกช่องที่มีชื่อ" : "ช่องเทาคือของคุณ ท้าตัวเองไม่ได้") + '</small></div>';
+  } else if (st.phase === "p3") {
+    if (m.challenged) {
+      if (m.solved) {
+        h = phd("เฟส 3 · พิมพ์สมการ", tmHtml()) + '<div class="good" role="status"><div class="t1">✓ สมการถูกต้อง</div><div class="eq">' + m.solHtml + '</div></div><div class="card" style="padding:14px 16px"><span class="muted">ล็อกคำตอบแล้ว ไม่ต้องทำอะไรต่อ รอเวลาหมดหรือรอเพื่อนที่ถูกท้าคนอื่น ๆ</span></div>';
+      } else {
+        var w = getWork(), A = w.a ? w.items.filter(function (x) { return x.id === w.a; })[0] : null;
+        var pv = !A ? '<span class="muted" style="font-size:18px">แตะตัวเลขตัวแรก</span>' : fstr(A.f) + (w.op ? (w.op === "^" ? "<sup>?</sup>" : " " + w.op + " ?") : ' <span class="muted" style="font-size:15px">แล้วเลือกเครื่องหมาย</span>');
+        var byId = {}; w.items.forEach(function (x) { byId[x.id] = x; });
+        var items = w.slots.map(function (sid) { if (sid === null || !byId[sid]) return '<div class="it ph" aria-hidden="true"></div>'; var it = byId[sid]; var lab = fstr(it.f), sel = w.a === it.id; return '<button class="it' + (sel ? " on" : "") + (lab.length > 6 ? " long" : "") + '" data-a="pickItem" data-id="' + it.id + '" aria-pressed="' + sel + '">' + esc(lab) + "</button>"; }).join("");
+        var ops = ["+", "−", "×", "÷", "^"].map(function (o) { return '<button class="op' + (w.op === o ? " on" : "") + '" data-a="pickOp" data-o="' + o + '"' + (A && !P.sent ? "" : " disabled") + ' aria-pressed="' + (w.op === o) + '" aria-label="' + ({ "+": "บวก", "−": "ลบ", "×": "คูณ", "÷": "หาร", "^": "ยกกำลัง" })[o] + '">' + (o === "^" ? '<span class="xn">x<sup>n</sup></span>' : opSvg(o)) + "</button>"; }).join("");
+        var slot = P.sent ? '<div class="slot">กำลังตรวจสมการ…</div>' : w.err ? '<div class="slot err" role="alert">' + esc(w.err) + "</div>" : w.last ? '<div class="slot">ขั้นล่าสุด: <span style="color:#14213D;margin-left:4px">' + w.last + "</span></div>" : '<div class="slot">แตะเลข แล้วแตะเครื่องหมาย แล้วแตะเลขตัวที่สอง</div>';
+        h = phd("เฟส 3 · พิมพ์สมการ", tmHtml()) + '<div class="tg"><b>' + m.challenged.value + "</b><span>ทำให้ได้ผลลัพธ์นี้<br>" + m.challenged.score + " แต้ม · ถูกท้า " + m.challenged.count + ' คน</span></div><div class="pv' + (pv.replace(/<[^>]*>/g, "").length > 12 ? " long" : "") + '" aria-live="polite"><span>' + pv + "</span></div>" + slot +
+          '<div class="items">' + items + '</div><div class="ops">' + ops + '</div><div style="display:flex;gap:8px"><button class="gh" data-a="undo"' + (w.hist.length && !P.sent ? "" : " disabled") + '>ย้อนหนึ่งขั้น</button><button class="gh" data-a="reset"' + (w.hist.length && !P.sent ? "" : " disabled") + ">Reset</button></div>";
+      }
+    } else {
+      h = phd("เฟส 3 · พิมพ์สมการ", tmHtml()) + '<div class="box"><h2>' + (m.res !== null ? "คุณไม่ถูกท้าในรอบนี้" : "รอเพื่อนไขสมการ") + '</h2><div class="muted">ไม่ต้องทำอะไรในเฟสนี้ ลองคิดวิธีทำผลลัพธ์ที่ถูกท้าบนจอใหญ่ดูได้</div></div>' + numsCard();
+    }
+  } else if (st.phase === "p4") {
+    if (!st.summarized) h = phd("เฟส 4 · เฉลย", '<div class="tm tag">ดูจอใหญ่</div>') + '<div class="box"><h2>ดูเฉลยบนจอใหญ่</h2><div class="muted">Host กำลังเปิดสมการของผู้ที่ถูกท้าทีละใบ เสร็จแล้วจะสรุปคะแนนของคุณที่นี่</div></div>';
+    else h = phd("เฟส 4 · สรุปของคุณ", '<div class="tm tag">รอ Host<br>ไปรอบถัดไป</div>') + summaryP(m);
+  } else {
+    var rows = st.rows, top = rows[0].score, ws = rows.filter(function (r) { return r.score === top; });
+    h = '<div class="ph"><div><div class="a">' + esc(P.name) + '</div><div class="b">จบเกมแล้ว</div></div></div><div class="box" style="text-align:center"><div class="muted">ผู้ชนะ</div><div class="hd" style="font-size:32px;font-weight:700;line-height:1.3">' + ws.map(function (r) { return esc(r.name); }).join(" และ ") + '</div><div>' + top + ' คะแนน</div></div>' + summaryP(m, true);
+  }
+  return '<div id="pw">' + h + "</div>";
+}
+function summaryP(m, endMode) {
+  var st = P.st, d = m.delta || 0, rows = st.rows, i = rows.map(function (r) { return r.pid; }).indexOf(P.pid), top3 = rows.slice(0, 3);
+  if (i >= 3) top3 = rows.slice(0, 2).concat([rows[i]]);
+  var lines = (m.lines || []).filter(function (l) { return !(l.d === 0 && !l.sub); }).map(function (l) { return '<div class="br"><span>' + esc(l.label) + (l.sub ? '<br><span class="muted" style="font-size:14px">' + l.sub + "</span>" : "") + '</span><span class="p ' + (l.d > 0 ? "pos" : l.d < 0 ? "neg" : "") + '">' + (l.d > 0 ? "+" : l.d < 0 ? "−" : "") + Math.abs(l.d) + "</span></div>"; }).join("");
+  return (endMode ? "" : '<div class="box" style="padding-bottom:4px"><div class="muted" style="font-size:14px">คะแนนที่เปลี่ยนในรอบนี้</div><div class="big ' + (d > 0 ? "pos" : d < 0 ? "neg" : "") + '"><span style="font-size:30px">' + (d > 0 ? "▲" : d < 0 ? "▼" : "") + "</span>" + (d > 0 ? "+" : d < 0 ? "−" : "") + Math.abs(d) + "</div>" + lines + "</div>") +
+    '<div class="box" style="padding:12px 16px"><div style="display:flex;align-items:baseline;justify-content:space-between"><span class="hd" style="font-weight:700;font-size:20px">คะแนนรวม ' + fmtN(m.score) + '</span><span class="muted">อันดับ ' + m.rank + " จาก " + rows.length + " · เป้า " + st.target + "</span></div>" +
+    top3.map(function (r) { var rk = rows.filter(function (x) { return x.score > r.score; }).length + 1; return '<div class="tr' + (r.pid === P.pid ? " me" : "") + '"><span style="width:20px" class="muted">' + rk + '</span><b style="flex:1">' + esc(r.name) + (r.pid === P.pid ? " (คุณ)" : "") + "</b><b>" + fmtN(r.score) + "</b></div>"; }).join("") + "</div>";
+}
+function renderPlayer() {
+  if (!P.joined || !P.st) return;
+  document.getElementById("app").innerHTML = viewGameP();
+}
+function onPlayerMsg(m) {
+  if (!m) return;
+  if (m.type === "reject" && m.to === P.pid) { P.error = m.reason; P.joining = false; P.joined = false; Net.close(); ss("calcu-joined", "0"); PL.clear(); renderPlayerForce(); return; }
+  if (m.type === "adopt" && m.to === P.pid) { P.pid = m.pid; ss("calcu-pid", P.pid); Net.send({ type: "join", pid: P.pid, name: P.name }); return; }
+  if (m.type !== "state") return;
+  if (!m.me || !m.me[P.pid]) { if (!P.joined) return; }
+  P.st = m; P.recvAt = Date.now();
+  if (P.sent && P.sentAt && Date.now() - P.sentAt > 2500 && !(m.me[P.pid] && m.me[P.pid].solved)) P.sent = false;
+  if (m.me && m.me[P.pid] && !P.joined) { P.joined = true; P.joining = false; P.error = ""; ss("calcu-name", P.name); ss("calcu-code", P.code); ss("calcu-joined", "1"); PL.write(); }
+  renderPlayer();
+}
+function pjoin() {
+  var code = document.getElementById("code").value.trim(), name = document.getElementById("nick").value.trim();
+  P.code = code; P.name = name;
+  if (!/^\d{4}$/.test(code)) { P.error = "รหัสห้องมี 4 หลัก"; renderPlayerForce(); return; }
+  if (!name) { P.error = "กรอกชื่อเล่นก่อน"; renderPlayerForce(); return; }
+  P.error = ""; P.joining = true; renderPlayerForce();
+  Net.open(code, P.pid, onPlayerMsg);
+  Net.send({ type: "join", pid: P.pid, name: name });
+  setTimeout(function () { if (!P.joined && P.joining) { P.joining = false; P.error = "ไม่พบห้องนี้ ตรวจรหัสห้องและให้แน่ใจว่าเปิดหน้า Host ไว้แล้ว"; Net.close(); ss("calcu-joined", "0"); PL.clear(); renderPlayerForce(); } }, 8000);
+}
+function renderPlayerForce() { var app2 = document.getElementById("app"); app2.innerHTML = viewJoin(); }
+var PACT = {
+  join: pjoin,
+  leave: function () { P.joined = false; P.st = null; Net.close(); ss("calcu-joined", "0"); PL.clear(); renderPlayerForce(); },
+  pick: function (b) { Net.send({ type: "pick", pid: P.pid, cell: Number(b.dataset.id) }); },
+  chal: function (b) { Net.send({ type: "chal", pid: P.pid, target: b.dataset.id }); },
+  pickItem: function (b) {
+    var m = me(); if (!m || !m.challenged || m.solved || P.sent) return;
+    var w = getWork(), id = b.dataset.id; w.err = "";
+    if (w.a === null) w.a = id;
+    else if (w.a === id) { w.a = null; w.op = null; }
+    else if (w.op === null) w.a = id;
+    else {
+      var hit;
+      var aId = w.a;
+      try { hit = workCombine(w, id, m.challenged.value); } catch (e) { if (e && e.msg) { w.err = e.msg; w.a = null; w.op = null; renderPlayer(); return; } throw e; }
+      w.shist.push(w.slots.slice()); var ia = w.slots.indexOf(aId), ib = w.slots.indexOf(id); w.slots[ia] = w.items[w.items.length - 1].id; w.slots[ib] = null;
+      if (hit) { P.sent = true; P.sentAt = Date.now(); Net.send({ type: "submit", pid: P.pid, node: hit.node }); }
+    }
+    renderPlayer();
+  },
+  pickOp: function (b) { var m = me(); if (!m || !m.challenged || m.solved || P.sent) return; var w = getWork(); if (!w.a) return; w.err = ""; w.op = w.op === b.dataset.o ? null : b.dataset.o; renderPlayer(); },
+  undo: function () { var w = getWork(); if (P.sent || !w.hist.length) return; w.items = w.hist.pop(); if (w.shist.length) w.slots = w.shist.pop(); w.a = null; w.op = null; w.err = ""; w.last = ""; renderPlayer(); },
+  reset: function () { if (P.sent) return; P.work = freshWork(P.st.nums); renderPlayer(); }
+};
+function playerBoot() {
+  MODE = "player"; document.body.className = "ph"; ss("calcu-role", "player");
+  document.getElementById("app").innerHTML = viewJoin();
+  document.getElementById("app").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-a]"); if (!b || b.disabled) return;
+    if (PACT[b.dataset.a]) PACT[b.dataset.a](b);
+  });
+  setInterval(function () { var t = document.getElementById("tm"); if (t && P.st) { var l = pLeft(); t.textContent = l === null ? "–" : Math.ceil(l / 1000); } }, 250);
+  /* a player who reloads the page rejoins the same room with the same id */
+  setInterval(function () { if (P.joined) PL.write(); }, 2000);
+  if (ss("calcu-joined") !== "1") {   /* tab was closed and reopened: take over the identity of a tab that is no longer sending its heartbeat */
+    var old = PL.read();
+    if (old && old.pid && old.name && /^\d{4}$/.test(old.code || "") && Date.now() - old.t > 6000 && Date.now() - old.t < 8 * 3600 * 1000) {
+      P.pid = old.pid; P.name = old.name; P.code = old.code; ss("calcu-pid", P.pid); ss("calcu-name", P.name); ss("calcu-code", P.code); ss("calcu-joined", "1");
+    }
+  }
+  if (P.code && P.name && ss("calcu-joined") === "1") { document.getElementById("code").value = P.code; document.getElementById("nick").value = P.name; pjoin(); }
+}
+
+/* ============================================================ start ============================================================ */
+function roleScreen() {
+  document.getElementById("app").innerHTML = '<div class="role"><h1>Calcuเหรอ? <span style="font-size:1rem;color:#B4BEDA">ต้นแบบเรียลไทม์</span></h1><p>เลือกว่าหน้านี้ทำหน้าที่อะไร</p>' +
+    '<button class="rbtn pri" data-r="host">Host (จอโปรเจกเตอร์)<small>แสดงกระดานบนจอใหญ่ และเป็นผู้ควบคุมเกม</small></button><button class="rbtn" data-r="player">ผู้เล่น (มือถือ)<small>เข้าห้องด้วยรหัส แล้วเล่นบนมือถือ</small></button>' +
+    '<div class="note">ต้นแบบนี้เชื่อมกันได้เฉพาะแท็บในเบราว์เซอร์เดียวกัน เพราะยังไม่ได้ต่อระบบกลาง (Supabase) ลองด้วยการเปิดลิงก์นี้หลายแท็บ: แท็บหนึ่งเป็น Host ที่เหลือเป็นผู้เล่น แท็บผู้เล่นควรย่อหน้าต่างให้แคบเท่ามือถือ</div></div>';
+  document.getElementById("app").onclick = function (e) { var b = e.target.closest("[data-r]"); if (!b) return; document.getElementById("app").onclick = null; (b.dataset.r === "host" ? hostBoot : playerBoot)(); };
+}
+(function () {
+  var r = ss("calcu-role");
+  if (location.hash === "#host") hostBoot(); else if (location.hash === "#player") playerBoot(); else if (r === "host") hostBoot(); else if (r === "player") playerBoot(); else roleScreen();
+})();
+</script>
+</body>
+</html>

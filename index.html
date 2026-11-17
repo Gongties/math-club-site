@@ -138,6 +138,7 @@ body.ph #netb.ok { background: #2E9E6B; } body.ph #netb.local { background: #D9A
 #pw .items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; min-height: 136px; align-content: start; }
 #pw .it { height: 64px; border-radius: 12px; border: 2px solid #CBD5E8; background: #fff; color: #14213D; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 30px; padding: 0 4px; overflow: hidden; }
 #pw .it.long { font-size: 18px; }
+#pw .it.ph { border-style: dashed; background: transparent; }
 #pw .it.on { background: #4B35C9; border-color: #4B35C9; color: #fff; }
 #pw .ops { display: flex; gap: 8px; }
 #pw .op { flex: 1; height: 56px; border-radius: 10px; border: 1px solid #CBD5E8; background: #fff; color: #14213D; display: flex; align-items: center; justify-content: center; padding: 0; }
@@ -746,7 +747,7 @@ var HACT = {
 
 /* ----- host views (1920x1080 stage, same layout as the design boards) ----- */
 function hdr(title, sub, right) {
-  return '<div class="hdr"><div class="hl"><div class="s1">' + esc(H.cfg.room) + " · เป้าหมาย " + H.cfg.target + ' คะแนน</div><div class="s2">รอบที่ ' + G.round + (G.isFinal ? " · รอบสุดท้าย" : "") +
+  return '<div class="hdr"><div class="hl"><div class="s1" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">รหัสห้อง <b class="hd" style="font-size:38px;color:#FFD65A;letter-spacing:.08em">' + H.code + '</b> · ' + esc(H.cfg.room) + " · เป้า " + H.cfg.target + '</div><div class="s2">รอบที่ ' + G.round + (G.isFinal ? " · รอบสุดท้าย" : "") +
     '</div></div><div class="hc2"><div class="ti">' + title + '</div><div class="su">' + sub + '</div></div><div class="hr">' + right + "</div></div>";
 }
 function ring() { return '<div class="ring" id="tm">' + secsLeft() + "</div>"; }
@@ -933,6 +934,12 @@ document.addEventListener("click", function (e) {
 /* ============================================================ PLAYER ============================================================ */
 var P = { pid: ss("calcu-pid") || rid(), name: ss("calcu-name") || "", code: ss("calcu-code") || "", joined: false, st: null, recvAt: 0, work: null, workKey: "", sent: false, error: "", joining: false };
 ss("calcu-pid", P.pid);
+/* a copy of the player's identity is kept in localStorage with a heartbeat: if the tab was closed (heartbeat older than 6 s) a new tab takes it over */
+var PL = {
+  read: function () { try { return JSON.parse(localStorage.getItem("calcu-pl") || "null"); } catch (e) { return null; } },
+  write: function () { try { localStorage.setItem("calcu-pl", JSON.stringify({ pid: P.pid, name: P.name, code: P.code, t: Date.now() })); } catch (e) {} },
+  clear: function () { try { localStorage.removeItem("calcu-pl"); } catch (e) {} }
+};
 function me() { return P.st && P.st.me ? P.st.me[P.pid] : null; }
 function pplayer(pid) { var l = P.st ? P.st.players : []; for (var i = 0; i < l.length; i++) if (l[i].pid === pid) return l[i]; return null; }
 function pnm(pid) { var p = pplayer(pid); return p ? p.name : "?"; }
@@ -961,9 +968,10 @@ function opSvg(o) {
   var d = { "+": '<path d="M12 4v16M4 12h16"/>', "−": '<path d="M4 12h16"/>', "×": '<path d="M6 6l12 12M18 6L6 18"/>', "÷": '<path d="M4 12h16"/><circle cx="12" cy="5.5" r="1.9" fill="currentColor" stroke="none"/><circle cx="12" cy="18.5" r="1.9" fill="currentColor" stroke="none"/>' }[o];
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true">' + d + "</svg>";
 }
+function freshWork(nums) { var w = newWork(nums); w.slots = w.items.map(function (x) { return x.id; }); w.shist = []; return w; }   /* every number keeps its own place; a combined result takes the place of the first number and the second place stays empty */
 function getWork() {
   var st = P.st, key = st.round + "|" + st.nums.join(",") + "|" + (me().challenged ? me().challenged.value : "");
-  if (P.workKey !== key) { P.workKey = key; P.work = newWork(st.nums); P.sent = false; }
+  if (P.workKey !== key) { P.workKey = key; P.work = freshWork(st.nums); P.sent = false; }
   return P.work;
 }
 function viewJoin() {
@@ -992,7 +1000,8 @@ function viewGameP() {
       } else {
         var w = getWork(), A = w.a ? w.items.filter(function (x) { return x.id === w.a; })[0] : null;
         var pv = !A ? '<span class="muted" style="font-size:18px">แตะตัวเลขตัวแรก</span>' : fstr(A.f) + (w.op ? (w.op === "^" ? "<sup>?</sup>" : " " + w.op + " ?") : ' <span class="muted" style="font-size:15px">แล้วเลือกเครื่องหมาย</span>');
-        var items = w.items.map(function (it) { var lab = fstr(it.f), sel = w.a === it.id; return '<button class="it' + (sel ? " on" : "") + (lab.length > 6 ? " long" : "") + '" data-a="pickItem" data-id="' + it.id + '" aria-pressed="' + sel + '">' + esc(lab) + "</button>"; }).join("");
+        var byId = {}; w.items.forEach(function (x) { byId[x.id] = x; });
+        var items = w.slots.map(function (sid) { if (sid === null || !byId[sid]) return '<div class="it ph" aria-hidden="true"></div>'; var it = byId[sid]; var lab = fstr(it.f), sel = w.a === it.id; return '<button class="it' + (sel ? " on" : "") + (lab.length > 6 ? " long" : "") + '" data-a="pickItem" data-id="' + it.id + '" aria-pressed="' + sel + '">' + esc(lab) + "</button>"; }).join("");
         var ops = ["+", "−", "×", "÷", "^"].map(function (o) { return '<button class="op' + (w.op === o ? " on" : "") + '" data-a="pickOp" data-o="' + o + '"' + (A && !P.sent ? "" : " disabled") + ' aria-pressed="' + (w.op === o) + '" aria-label="' + ({ "+": "บวก", "−": "ลบ", "×": "คูณ", "÷": "หาร", "^": "ยกกำลัง" })[o] + '">' + (o === "^" ? '<span class="xn">x<sup>n</sup></span>' : opSvg(o)) + "</button>"; }).join("");
         var slot = P.sent ? '<div class="slot">กำลังตรวจสมการ…</div>' : w.err ? '<div class="slot err" role="alert">' + esc(w.err) + "</div>" : w.last ? '<div class="slot">ขั้นล่าสุด: <span style="color:#14213D;margin-left:4px">' + w.last + "</span></div>" : '<div class="slot">แตะเลข แล้วแตะเครื่องหมาย แล้วแตะเลขตัวที่สอง</div>';
         h = phd("เฟส 3 · พิมพ์สมการ", tmHtml()) + '<div class="tg"><b>' + m.challenged.value + "</b><span>ทำให้ได้ผลลัพธ์นี้<br>" + m.challenged.score + " แต้ม · ถูกท้า " + m.challenged.count + ' คน</span></div><div class="pv' + (pv.replace(/<[^>]*>/g, "").length > 12 ? " long" : "") + '" aria-live="polite"><span>' + pv + "</span></div>" + slot +
@@ -1024,13 +1033,13 @@ function renderPlayer() {
 }
 function onPlayerMsg(m) {
   if (!m) return;
-  if (m.type === "reject" && m.to === P.pid) { P.error = m.reason; P.joining = false; P.joined = false; Net.close(); ss("calcu-joined", "0"); renderPlayerForce(); return; }
+  if (m.type === "reject" && m.to === P.pid) { P.error = m.reason; P.joining = false; P.joined = false; Net.close(); ss("calcu-joined", "0"); PL.clear(); renderPlayerForce(); return; }
   if (m.type === "adopt" && m.to === P.pid) { P.pid = m.pid; ss("calcu-pid", P.pid); Net.send({ type: "join", pid: P.pid, name: P.name }); return; }
   if (m.type !== "state") return;
   if (!m.me || !m.me[P.pid]) { if (!P.joined) return; }
   P.st = m; P.recvAt = Date.now();
   if (P.sent && P.sentAt && Date.now() - P.sentAt > 2500 && !(m.me[P.pid] && m.me[P.pid].solved)) P.sent = false;
-  if (m.me && m.me[P.pid] && !P.joined) { P.joined = true; P.joining = false; P.error = ""; ss("calcu-name", P.name); ss("calcu-code", P.code); ss("calcu-joined", "1"); }
+  if (m.me && m.me[P.pid] && !P.joined) { P.joined = true; P.joining = false; P.error = ""; ss("calcu-name", P.name); ss("calcu-code", P.code); ss("calcu-joined", "1"); PL.write(); }
   renderPlayer();
 }
 function pjoin() {
@@ -1041,12 +1050,12 @@ function pjoin() {
   P.error = ""; P.joining = true; renderPlayerForce();
   Net.open(code, P.pid, onPlayerMsg);
   Net.send({ type: "join", pid: P.pid, name: name });
-  setTimeout(function () { if (!P.joined && P.joining) { P.joining = false; P.error = "ไม่พบห้องนี้ ตรวจรหัสห้องและให้แน่ใจว่าเปิดหน้า Host ไว้แล้ว"; Net.close(); renderPlayerForce(); } }, 8000);
+  setTimeout(function () { if (!P.joined && P.joining) { P.joining = false; P.error = "ไม่พบห้องนี้ ตรวจรหัสห้องและให้แน่ใจว่าเปิดหน้า Host ไว้แล้ว"; Net.close(); ss("calcu-joined", "0"); PL.clear(); renderPlayerForce(); } }, 8000);
 }
 function renderPlayerForce() { var app2 = document.getElementById("app"); app2.innerHTML = viewJoin(); }
 var PACT = {
   join: pjoin,
-  leave: function () { P.joined = false; P.st = null; Net.close(); ss("calcu-joined", "0"); renderPlayerForce(); },
+  leave: function () { P.joined = false; P.st = null; Net.close(); ss("calcu-joined", "0"); PL.clear(); renderPlayerForce(); },
   pick: function (b) { Net.send({ type: "pick", pid: P.pid, cell: Number(b.dataset.id) }); },
   chal: function (b) { Net.send({ type: "chal", pid: P.pid, target: b.dataset.id }); },
   pickItem: function (b) {
@@ -1057,14 +1066,16 @@ var PACT = {
     else if (w.op === null) w.a = id;
     else {
       var hit;
+      var aId = w.a;
       try { hit = workCombine(w, id, m.challenged.value); } catch (e) { if (e && e.msg) { w.err = e.msg; w.a = null; w.op = null; renderPlayer(); return; } throw e; }
+      w.shist.push(w.slots.slice()); var ia = w.slots.indexOf(aId), ib = w.slots.indexOf(id); w.slots[ia] = w.items[w.items.length - 1].id; w.slots[ib] = null;
       if (hit) { P.sent = true; P.sentAt = Date.now(); Net.send({ type: "submit", pid: P.pid, node: hit.node }); }
     }
     renderPlayer();
   },
   pickOp: function (b) { var m = me(); if (!m || !m.challenged || m.solved || P.sent) return; var w = getWork(); if (!w.a) return; w.err = ""; w.op = w.op === b.dataset.o ? null : b.dataset.o; renderPlayer(); },
-  undo: function () { var w = getWork(); if (P.sent || !w.hist.length) return; w.items = w.hist.pop(); w.a = null; w.op = null; w.err = ""; w.last = ""; renderPlayer(); },
-  reset: function () { if (P.sent) return; P.work = newWork(P.st.nums); renderPlayer(); }
+  undo: function () { var w = getWork(); if (P.sent || !w.hist.length) return; w.items = w.hist.pop(); if (w.shist.length) w.slots = w.shist.pop(); w.a = null; w.op = null; w.err = ""; w.last = ""; renderPlayer(); },
+  reset: function () { if (P.sent) return; P.work = freshWork(P.st.nums); renderPlayer(); }
 };
 function playerBoot() {
   MODE = "player"; document.body.className = "ph"; ss("calcu-role", "player");
@@ -1075,6 +1086,13 @@ function playerBoot() {
   });
   setInterval(function () { var t = document.getElementById("tm"); if (t && P.st) { var l = pLeft(); t.textContent = l === null ? "–" : Math.ceil(l / 1000); } }, 250);
   /* a player who reloads the page rejoins the same room with the same id */
+  setInterval(function () { if (P.joined) PL.write(); }, 2000);
+  if (ss("calcu-joined") !== "1") {   /* tab was closed and reopened: take over the identity of a tab that is no longer sending its heartbeat */
+    var old = PL.read();
+    if (old && old.pid && old.name && /^\d{4}$/.test(old.code || "") && Date.now() - old.t > 6000 && Date.now() - old.t < 8 * 3600 * 1000) {
+      P.pid = old.pid; P.name = old.name; P.code = old.code; ss("calcu-pid", P.pid); ss("calcu-name", P.name); ss("calcu-code", P.code); ss("calcu-joined", "1");
+    }
+  }
   if (P.code && P.name && ss("calcu-joined") === "1") { document.getElementById("code").value = P.code; document.getElementById("nick").value = P.name; pjoin(); }
 }
 

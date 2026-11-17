@@ -646,7 +646,39 @@ function broadcast() {   /* coalesce bursts: at most one full state per gap, a t
   if (now - BC.last >= gap) { BC.last = now; Net.send(publicState()); }
   else if (!BC.t) BC.t = setTimeout(function () { BC.t = null; BC.last = Date.now(); Net.send(publicState()); }, gap - (now - BC.last));
 }
-function changed() { broadcast(); renderHost(); }
+var SV = { t: null };
+var G_KEYS = ["round", "isFinal", "finalPending", "ended", "scores", "lastDelta", "breakdown", "nums", "cells", "res", "chal", "subs", "subTree", "steps", "rev", "summarized", "paused", "remaining", "deadline", "toast", "maxV"];
+function saveHost() {   /* the host keeps the whole game in this browser, so a reload of the host page can continue it */
+  clearTimeout(SV.t);
+  SV.t = setTimeout(function () {
+    try {
+      if (!H.code) return;
+      var g = null; if (G) { g = {}; G_KEYS.forEach(function (k) { g[k] = G[k]; }); }
+      localStorage.setItem("calcu-host", JSON.stringify({ t: Date.now(), code: H.code, cfg: H.cfg, players: H.players, nextIdx: H.nextIdx, phase: H.phase, G: g }));
+    } catch (e) {}
+  }, 300);
+}
+function restoreHost() {
+  var raw = null; try { raw = localStorage.getItem("calcu-host"); } catch (e) {}
+  if (!raw) return false;
+  try {
+    var d = JSON.parse(raw);
+    if (!d || Date.now() - d.t > 12 * 3600 * 1000 || !/^\d{4}$/.test(d.code)) return false;
+    var pl = d.players || [], g = d.G || null;
+    if (g) { g = JSON.parse(JSON.stringify(g)); if (!g.cells || !g.nums || !g.scores) return false; }
+    H.code = d.code; H.cfg = Object.assign({}, DEF_CFG, d.cfg); H.players = pl; H.nextIdx = d.nextIdx || 0; H.phase = d.phase || "lobby";
+    if (g) {
+      G = H.G = g;
+      var key = JSON.stringify(cfgRanges()) + "|" + cfgMax();
+      if (!H.poolCache[key]) H.poolCache[key] = buildPools(cfgRanges(), cfgMax());
+      G.pools = H.poolCache[key];
+      if (G.deadline && !G.paused) { G.remaining = Math.max(8000, G.deadline - Date.now()); G.paused = true; G.deadline = 0; }
+      if (G.paused) G.toast = "Host กลับเข้ามาแล้ว เวลาหยุดไว้ กด “เดินเวลาต่อ” เพื่อเล่นต่อ";
+    } else G = H.G = null;
+    return true;
+  } catch (e) { return false; }
+}
+function changed() { broadcast(); renderHost(); saveHost(); }
 
 /* ----- messages from players ----- */
 function onHostMsg(m) {
@@ -655,7 +687,12 @@ function onHostMsg(m) {
   if (m.type === "join") {
     var ex = findP(m.pid);
     if (!ex) {
-      if (H.phase !== "lobby") { Net.send({ type: "reject", to: m.pid, reason: "เกมเริ่มไปแล้ว เข้าห้องใหม่ไม่ได้" }); return; }
+      if (H.phase !== "lobby") {
+        var nm0 = String(m.name || "").trim().slice(0, 20), old = null;   /* same nickname = the same player coming back on a new page/tab */
+        H.players.forEach(function (p) { if (p.name === nm0) old = p; });
+        if (old) { Net.send({ type: "adopt", to: m.pid, pid: old.pid }); return; }
+        Net.send({ type: "reject", to: m.pid, reason: "เกมเริ่มไปแล้ว ถ้าเคยเข้าห้องนี้ ให้พิมพ์ชื่อเล่นเดิมเพื่อกลับเข้าห้อง" }); return;
+      }
       var nm = String(m.name || "").trim().slice(0, 20) || "ผู้เล่น", base = nm, k = 2;
       while (H.players.some(function (p) { return p.name === nm; })) nm = base + " " + (k++);
       H.players.push({ pid: m.pid, name: nm, idx: H.nextIdx++ });
@@ -689,7 +726,12 @@ function onHostMsg(m) {
 
 /* ----- host actions ----- */
 var HACT = {
-  newRoom: function () { H.code = String(1000 + Math.floor(Math.random() * 9000)); ss("calcu-hostcode", H.code); Net.open(H.code, "host", onHostMsg); renderHost(); },
+  newRoom: function () { H.code = String(1000 + Math.floor(Math.random() * 9000)); ss("calcu-hostcode", H.code); Net.open(H.code, "host", onHostMsg); renderHost(); saveHost(); },
+  resetRoom: function () {
+    if (H.phase !== "lobby") return;
+    if (!H.cr) { H.cr = true; renderHost(); return; }
+    H.cr = false; H.players = []; H.nextIdx = 0; G = H.G = null; H.phase = "lobby"; Net.close(); HACT.newRoom();
+  },
   cfg: function () { H.showCfg = true; renderCfg(); },
   start: function () { if (!startOk()) return; hostNewGame(); changed(); },
   pause: function () { if (!G.deadline && !G.paused) return; if (G.paused) { G.deadline = Date.now() + G.remaining; G.paused = false; } else { G.remaining = Math.max(0, G.deadline - Date.now()); G.paused = true; } changed(); },
@@ -735,7 +777,8 @@ function hLobby() {
   return '<div style="display:flex;gap:80px;flex:1;min-height:0"><div style="width:760px;display:flex;flex-direction:column;gap:28px">' +
     '<div><div class="hd" style="font-weight:700;font-size:120px;line-height:1.15">Calcuเหรอ?</div><div style="font-size:44px;line-height:1.3;color:#B4BEDA">' + esc(H.cfg.room) + " · เป้าหมาย " + H.cfg.target + ' คะแนน</div></div>' +
     '<div><div style="font-size:34px;line-height:1.3;color:#B4BEDA">รหัสห้อง</div><div class="hd" style="font-weight:700;font-size:170px;line-height:1.1;letter-spacing:.12em;color:#FFD65A">' + H.code + '</div></div>' +
-    '<div style="font-size:36px;line-height:1.55"><div>1  เปิดเว็บไซต์ของชมรมบนมือถือ</div><div>2  เลือก “ผู้เล่น” แล้วใส่รหัสห้อง</div><div>3  ตั้งชื่อเล่น (เล่นเป็นคู่/กลุ่มใช้เครื่องเดียวกันได้)</div></div></div>' +
+    '<div style="font-size:36px;line-height:1.55"><div>1  เปิดเว็บไซต์ของชมรมบนมือถือ</div><div>2  เลือก “ผู้เล่น” แล้วใส่รหัสห้อง</div><div>3  ตั้งชื่อเล่น (เล่นเป็นคู่/กลุ่มใช้เครื่องเดียวกันได้)</div></div>' +
+    '<div><button class="gb" data-a="resetRoom" style="white-space:nowrap">' + (H.cr ? "กดอีกครั้งเพื่อล้างห้องและสร้างรหัสใหม่" : "สร้างห้องใหม่") + '</button></div></div>' +
     '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:28px"><div style="display:flex;align-items:baseline;justify-content:space-between"><div class="hd" style="font-weight:700;font-size:64px;line-height:1.3">ผู้เล่นที่เข้าห้องแล้ว</div><div class="hd" style="font-weight:700;font-size:64px;line-height:1.3;color:#9C8CFF">' + H.players.length + ' คน</div></div>' +
     '<div style="display:flex;flex-wrap:wrap;gap:18px;align-content:flex-start;flex:1">' + (chips || '<div style="font-size:36px;color:#B4BEDA">ยังไม่มีใครเข้าห้อง</div>') + "</div>" +
     '<div style="display:flex;justify-content:space-between;align-items:center"><button class="gb" data-a="cfg">ตั้งค่าห้อง</button><div style="display:flex;align-items:center;gap:24px">' + (H.players.length < 2 ? '<span style="font-size:30px;color:#B4BEDA">ต้องมีผู้เล่นอย่างน้อย 2 ชื่อ</span>' : "") +
@@ -835,8 +878,7 @@ function hostBoot() {
   MODE = "host"; document.body.className = "host"; ss("calcu-role", "host");
   document.getElementById("app").innerHTML = '<div id="hostwrap"><div id="stage"></div></div>';
   fitStage(); window.addEventListener("resize", fitStage);
-  var saved = ss("calcu-hostcode");
-  if (saved) { H.code = saved; Net.open(H.code, "host", onHostMsg); renderHost(); } else HACT.newRoom();
+  if (restoreHost()) { ss("calcu-hostcode", H.code); Net.open(H.code, "host", onHostMsg); renderHost(); changed(); } else HACT.newRoom();
   document.getElementById("stage").addEventListener("click", function (e) {
     var b = e.target.closest("[data-a]"); if (!b || b.disabled) return;
     if (HACT[b.dataset.a]) HACT[b.dataset.a](b);
@@ -983,6 +1025,7 @@ function renderPlayer() {
 function onPlayerMsg(m) {
   if (!m) return;
   if (m.type === "reject" && m.to === P.pid) { P.error = m.reason; P.joining = false; P.joined = false; Net.close(); ss("calcu-joined", "0"); renderPlayerForce(); return; }
+  if (m.type === "adopt" && m.to === P.pid) { P.pid = m.pid; ss("calcu-pid", P.pid); Net.send({ type: "join", pid: P.pid, name: P.name }); return; }
   if (m.type !== "state") return;
   if (!m.me || !m.me[P.pid]) { if (!P.joined) return; }
   P.st = m; P.recvAt = Date.now();

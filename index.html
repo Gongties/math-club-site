@@ -53,6 +53,9 @@ body.ph #netb.ok { background: #2E9E6B; } body.ph #netb.local { background: #D9A
 #stage .bar { width: 520px; height: 20px; border-radius: 10px; background: #2B3560; }
 #stage .bar div { height: 20px; border-radius: 10px; background: #5BD98F; }
 .gb { font-size: 28px; line-height: 1.3; min-height: 56px; padding: 0 28px; border-radius: 14px; border: 2px solid #5A6785; background: transparent; color: #EEF1FA; }
+.endb { position: absolute; right: 64px; bottom: 2px; font-size: 22px; min-height: 36px; padding: 0 20px; border-color: #2B3560; color: #B4BEDA; }
+.endov { position: absolute; inset: 0; z-index: 20; background: rgba(5, 8, 20, .82); display: flex; align-items: center; justify-content: center; }
+.endbox { width: 1100px; padding: 56px; border-radius: 32px; background: #171E38; border: 3px solid #2B3560; display: flex; flex-direction: column; gap: 24px; text-align: center; }
 .pb { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 40px; line-height: 1.3; min-height: 72px; padding: 0 56px; border-radius: 18px; border: 0; background: #9C8CFF; color: #0E1326; }
 .pb[disabled] { opacity: .35; }
 .hc { width: 190px; height: 136px; border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; background: #171E38; border: 3px solid #2B3560; color: #EEF1FA; line-height: 1.2; font-family: Prompt, "Noto Sans Thai", sans-serif; }
@@ -740,6 +743,9 @@ var HACT = {
   next: function () { if (G.rev < G.steps.length) G.rev++; changed(); },
   toSum: function () { if (!G.summarized) summarize(); changed(); },
   nextRound: function () { startRound(); changed(); },
+  askEnd: function () { if (!G || H.ce) return; H.ce = true; H.ceTimer = !!(G.deadline && !G.paused); if (H.ceTimer) { G.remaining = Math.max(0, G.deadline - Date.now()); G.paused = true; } changed(); },
+  cancelEnd: function () { if (!H.ce) return; H.ce = false; if (H.ceTimer && G.paused) { G.deadline = Date.now() + G.remaining; G.paused = false; } H.ceTimer = false; changed(); },
+  doEnd: function () { if (!H.ce) return; H.ce = false; H.ceTimer = false; H.phase = "end"; G.deadline = 0; G.paused = false; changed(); },
   toEnd: function () { H.phase = "end"; G.deadline = 0; changed(); },
   again: function () { hostNewGame(); changed(); },
   toLobby: function () { G = H.G = null; H.phase = "lobby"; changed(); }
@@ -868,7 +874,10 @@ function renderHost() {
   else if (H.phase === "p3") h = hP3();
   else if (H.phase === "p4") h = hP4();
   else h = hEnd();
-  el.innerHTML = h + (G && G.toast && H.phase !== "lobby" ? '<div style="position:absolute;left:50%;top:30px;transform:translateX(-50%);padding:10px 28px;border-radius:99px;background:#FFD65A;color:#0E1326;font-size:30px;font-weight:700">' + esc(G.toast) + "</div>" : "");
+  var inGame = G && H.phase !== "lobby" && H.phase !== "end";
+  var endUi = !inGame ? "" : '<button class="gb endb" data-a="askEnd">จบเกม</button>' + (H.ce ?
+    '<div class="endov" role="dialog" aria-modal="true"><div class="endbox"><div class="hd" style="font-weight:700;font-size:64px;line-height:1.3">จบเกมตอนนี้ใช่ไหม</div><div style="font-size:36px;line-height:1.5;color:#B4BEDA">จะไปหน้าผู้ชนะทันที โดยนับคะแนนจากรอบที่สรุปไปแล้ว<br>คะแนนของรอบที่กำลังเล่นอยู่จะไม่ถูกนับ</div><div style="display:flex;gap:24px;justify-content:center;margin-top:12px"><button class="gb" data-a="cancelEnd" style="font-size:36px;min-height:72px">เล่นต่อ</button><button class="pb" data-a="doEnd" style="background:#FF8A80">จบเกม</button></div></div></div>' : "");
+  el.innerHTML = h + endUi + (G && G.toast && H.phase !== "lobby" ? '<div style="position:absolute;left:50%;top:30px;transform:translateX(-50%);padding:10px 28px;border-radius:99px;background:#FFD65A;color:#0E1326;font-size:30px;font-weight:700">' + esc(G.toast) + "</div>" : "");
 }
 function fitStage() {
   var el = document.getElementById("stage"); if (!el) return;
@@ -885,7 +894,7 @@ function hostBoot() {
     if (HACT[b.dataset.a]) HACT[b.dataset.a](b);
   });
   setInterval(function () {
-    if (!G || G.paused || !G.deadline) return;
+    if (!G || G.paused || !G.deadline || H.ce) return;
     if (Date.now() >= G.deadline) { advance(); changed(); return; }
     var t = document.getElementById("tm"); if (t) t.textContent = secsLeft();
   }, 200);

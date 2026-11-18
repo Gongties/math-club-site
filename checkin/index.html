@@ -3,21 +3,23 @@
   <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
     <span class="pill" id="ckWeek" style="background:#FFD84D;color:#14213D;transform:rotate(-1.5deg)" hidden></span>
     <h1 class="pg-title" style="font-size:clamp(36px,8vw,52px)">เช็กชื่อประจำสัปดาห์</h1>
-    <p class="lead" id="ckLead">สำหรับสมาชิกชมรมเท่านั้น กรอกครั้งเดียวต่อสัปดาห์</p>
+    <p class="lead" id="ckLead">สำหรับสมาชิกชมรมเท่านั้น กรอกเลขประจำตัวนักเรียน แล้วตรวจข้อมูลก่อนกดยืนยัน (เช็กชื่อครั้งเดียวต่อสัปดาห์)</p>
   </div>
   <div class="fb f-hint" id="ckState">กำลังตรวจสถานะ…</div>
   <form class="pbox" id="ckForm" hidden autocomplete="off" style="gap:20px;flex:none">
-    <div><label class="fl" for="nm">ชื่อ-นามสกุลจริง</label><input class="inp" id="nm" style="width:100%" maxlength="80" placeholder="พิมพ์ชื่อและนามสกุล"></div>
-    <div style="display:flex;flex-wrap:wrap;gap:16px">
-      <div style="flex:1 1 140px;min-width:0"><label class="fl" for="gr">ชั้น</label>
-        <select class="inp" id="gr" style="width:100%"><option value="">เลือก</option><option value="1">ม.1</option><option value="2">ม.2</option><option value="3">ม.3</option><option value="4">ม.4</option><option value="5">ม.5</option><option value="6">ม.6</option></select></div>
-      <div style="flex:1 1 140px;min-width:0"><label class="fl" for="rm">ห้อง</label><input class="inp" id="rm" style="width:100%" inputmode="numeric" maxlength="2" placeholder="เช่น 2"></div>
-      <div style="flex:1 1 140px;min-width:0"><label class="fl" for="no">เลขที่</label><input class="inp" id="no" style="width:100%" inputmode="numeric" maxlength="2" placeholder="เช่น 12"></div>
+    <div id="ckStep1">
+      <label class="fl" for="sid">เลขประจำตัวนักเรียน (5 หลัก)</label>
+      <input class="inp" id="sid" style="width:100%" inputmode="numeric" maxlength="5" placeholder="เช่น 12345">
+      <div class="muted" style="font-size:15px;margin-top:6px;line-height:1.5">กรอกครบ 5 หลักแล้วระบบจะค้นหาชื่อให้ตรวจสอบ</div>
     </div>
-    <div><label class="fl" for="nk">ชื่อเล่น (ใช้แสดงในอันดับ ไม่กรอกก็ได้)</label><input class="inp" id="nk" style="width:100%" maxlength="20" placeholder="ชื่อเล่นที่อยากให้ขึ้นในอันดับ">
-      <div class="muted" style="font-size:15px;margin-top:6px;line-height:1.5">อันดับบนเว็บแสดงเฉพาะชื่อเล่น ชื่อจริงเห็นได้เฉพาะครูผู้ดูแล ถ้าไม่กรอกชื่อเล่น จะเช็กชื่อได้แต่ไม่ขึ้นอันดับ</div></div>
+    <div id="ckStep2" style="display:none;flex-direction:column;gap:20px">
+      <div class="fb f-hint" style="margin:0"><div style="font-size:15px;margin-bottom:4px">ใช่คุณไหม? ตรวจข้อมูลให้ถูกต้อง</div><div id="ckWho" style="font-family:Prompt,'Noto Sans Thai',sans-serif;font-weight:800;font-size:24px;line-height:1.35"></div><div id="ckCls" style="font-size:18px;margin-top:2px"></div></div>
+      <div><label class="fl" for="nk">ชื่อเล่น (ใช้แสดงในอันดับ ไม่กรอกก็ได้)</label><input class="inp" id="nk" style="width:100%" maxlength="20" placeholder="ชื่อเล่นที่อยากให้ขึ้นในอันดับ">
+        <div class="muted" style="font-size:15px;margin-top:6px;line-height:1.5">อันดับบนเว็บแสดงเฉพาะชื่อเล่น ชื่อจริงเห็นได้เฉพาะครูผู้ดูแล ชื่อเล่นจะล็อกตามที่ตั้งไว้ครั้งแรก ถ้าอยากเปลี่ยนให้แจ้งครู</div></div>
+    </div>
     <div class="fb f-no" id="ckErr" hidden></div>
-    <div style="display:flex;flex-wrap:wrap;gap:14px"><button class="btn b-acc" type="submit" id="ckSubmit">ส่งชื่อ</button><a class="btn b-card" href="/puzzles/">← กลับ</a></div>
+    <div id="ckBtns1" style="display:flex;flex-wrap:wrap;gap:14px"><button class="btn b-acc" type="submit" id="ckFind">ค้นหา</button><a class="btn b-card" href="/puzzles/">← กลับ</a></div>
+    <div id="ckBtns2" style="display:none;flex-wrap:wrap;gap:14px"><button class="btn b-acc" type="submit" id="ckSubmit">ใช่ เช็กชื่อเลย</button><button class="btn b-card" type="button" id="ckBack">ไม่ใช่ แก้เลขประจำตัว</button></div>
   </form>
   <div class="fb f-ok" id="ckDone" hidden></div>
 </div>
@@ -28,41 +30,68 @@
   var st=null;
   function msg(t,cls){ var e=$("ckState"); e.className="fb "+(cls||"f-hint"); e.innerHTML=t; e.hidden=false; $("ckForm").hidden=true; }
   function solvedLocally(w){ if(w===1) return sigmaStore("sigma-w1")==="1"; if(w===2) return sigmaStore("sigma-w2")==="3"; return false; }
-  function loadSaved(){ try{ var s=JSON.parse(sigmaStore("sigma-student")||"{}"); $("nm").value=s.nm||""; $("gr").value=s.gr||""; $("rm").value=s.rm||""; $("no").value=s.no||""; $("nk").value=s.nk||""; }catch(e){} }
+  var found=null;
+  function setErr(t){ var er=$("ckErr"); if(t){ er.textContent=t; er.hidden=false; } else er.hidden=true; }
+  function step(n){
+    $("ckStep1").style.display = n===1 ? "block" : "none";
+    $("ckBtns1").style.display = n===1 ? "flex" : "none";
+    $("ckStep2").style.display = n===2 ? "flex" : "none";
+    $("ckBtns2").style.display = n===2 ? "flex" : "none";
+    setErr("");
+  }
+  function loadSaved(){ var v=sigmaStore("sigma-sid"); if(v&&/^[0-9]{5}$/.test(v)) $("sid").value=v; }
+  function find(){
+    var id=$("sid").value.trim();
+    if(!/^[0-9]{5}$/.test(id)){ setErr("กรอกเลขประจำตัวให้ครบ 5 หลัก (ตัวเลขเท่านั้น)"); return; }
+    $("ckFind").disabled=true; setErr("");
+    sigmaRpc("lookup_student",{p_id:id}).then(function(r){
+      $("ckFind").disabled=false;
+      if(!r||!r.found){ setErr("ไม่พบเลขประจำตัวนี้ในรายชื่อชมรม ตรวจเลขอีกครั้ง หรือแจ้งครู"); return; }
+      found={id:id,name:r.name};
+      $("ckWho").textContent=r.name;
+      $("ckCls").textContent="ม."+r.grade+"/"+r.room+" เลขที่ "+r.number;
+      step(2); $("nk").focus();
+    }).catch(function(){ $("ckFind").disabled=false; setErr("ค้นหาไม่สำเร็จ ลองอีกครั้ง"); });
+  }
+  $("sid").addEventListener("input",function(){
+    var v=this.value.replace(/[^0-9]/g,"").slice(0,5); if(v!==this.value) this.value=v;
+    setErr(""); if(v.length===5) find();
+  });
+  $("ckBack").addEventListener("click",function(){ found=null; step(1); $("sid").focus(); $("sid").select(); });
+  $("ckForm").addEventListener("submit",function(e){
+    e.preventDefault();
+    if(!found){ find(); return; }
+    var nk=$("nk").value.trim(), er=$("ckErr"); er.hidden=true;
+    if(sigmaBadNick(nk)){ setErr("ชื่อเล่นนี้ใช้ไม่ได้ ลองชื่ออื่น"); return; }
+    $("ckSubmit").disabled=true;
+    var solver=sigmaSolverId();
+    var pre = st.kind==="puzzle" ? sigmaRpc("record_solve",{p_week:st.week,p_solver:solver}) : Promise.resolve();
+    pre.then(function(){ return sigmaRpc("submit_checkin",{p_week:st.week,p_student:found.id,p_nick:nk,p_solver:solver}); }).then(function(r){
+      $("ckSubmit").disabled=false;
+      if(r==="ok"||r==="already"){
+        sigmaStore("sigma-sid",found.id);
+        sigmaStore("sigma-ck-"+st.week,"1"); $("ckForm").hidden=true;
+        var d=$("ckDone"); d.hidden=false; d.textContent="";
+        var b=document.createElement("b"); b.textContent = r==="ok" ? "เช็กชื่อสำเร็จ!" : "เช็กชื่อสัปดาห์นี้ไปแล้ว";
+        d.appendChild(b);
+        d.appendChild(document.createTextNode(r==="ok" ? " "+found.name+" ถ้ามีชื่อเล่นที่ตั้งไว้ จะขึ้นในอันดับ" : " นับเป็นคนเดียว ไม่ต้องกรอกซ้ำ"));
+        if(r==="ok"){ d.appendChild(document.createElement("br")); var a=document.createElement("a"); a.className="go"; a.href="/leaderboard/"; a.style.textDecoration="underline"; a.textContent="ดูอันดับ →"; d.appendChild(a); }
+      } else if(r==="closed"){ msg("<b>ปิดเช็กชื่อแล้ว</b> ครูปิดการเช็กชื่อรอบนี้แล้ว","f-no"); }
+      else if(r==="not_solved"){ msg("<b>ยังไม่พบการตอบโจทย์ถูก</b> กลับไปตอบโจทย์สัปดาห์นี้ก่อน","f-no"); }
+      else if(r==="bad_nick"){ setErr("ชื่อเล่นนี้ใช้ไม่ได้ ลองชื่ออื่น"); }
+      else if(r==="unknown_student"){ found=null; step(1); setErr("ไม่พบเลขประจำตัวนี้ในรายชื่อชมรม ตรวจเลขอีกครั้ง หรือแจ้งครู"); }
+      else { setErr("ข้อมูลไม่ถูกต้อง ตรวจเลขประจำตัวอีกครั้ง"); }
+    }).catch(function(){ $("ckSubmit").disabled=false; setErr("ส่งไม่สำเร็จ ลองอีกครั้ง"); });
+  });
   function start(){
     sigmaRpc("get_state").then(function(s){
       st=s; $("ckWeek").textContent="สัปดาห์ที่ "+s.week; $("ckWeek").hidden=false;
       if(sigmaStore("sigma-ck-"+s.week)==="1"){ msg("<b>คุณเช็กชื่อสัปดาห์นี้ไปแล้ว</b> ขอบคุณที่มาร่วมกิจกรรม <a class=\"go\" href=\"/leaderboard/\" style=\"text-decoration:underline\">ดูอันดับ →</a>","f-ok"); return; }
       if(!s.open){ msg("<b>ตอนนี้ยังไม่เปิดเช็กชื่อ</b> ครูจะเปิดให้ในคาบชมรม แล้วกลับมาหน้านี้อีกครั้ง"); return; }
       if(s.kind==="puzzle" && !solvedLocally(s.week)){ msg("<b>ต้องตอบโจทย์สัปดาห์นี้ให้ถูกก่อน</b> แล้วจึงเช็กชื่อได้<br><a class=\"go\" href=\"/week/"+s.week+"/\" style=\"text-decoration:underline\">ไปที่โจทย์สัปดาห์ที่ "+s.week+" →</a>"); return; }
-      $("ckState").hidden=true; $("ckForm").hidden=false; loadSaved();
+      $("ckState").hidden=true; $("ckForm").hidden=false; step(1); loadSaved();
     }).catch(function(){ msg("<b>เชื่อมต่อระบบไม่ได้</b> ลองรีเฟรชหน้าอีกครั้ง","f-no"); });
   }
-  $("ckForm").addEventListener("submit",function(e){
-    e.preventDefault();
-    var nm=$("nm").value.trim(), gr=parseInt($("gr").value,10), rm=parseInt($("rm").value,10), no=parseInt($("no").value,10), nk=$("nk").value.trim();
-    var er=$("ckErr"); er.hidden=true;
-    if(nm.length<2){ er.textContent="กรอกชื่อและนามสกุลให้ครบ"; er.hidden=false; return; }
-    if(!(gr>=1&&gr<=6)){ er.textContent="เลือกชั้น"; er.hidden=false; return; }
-    if(!(rm>=1&&rm<=30)){ er.textContent="กรอกห้อง (ตัวเลข 1–30)"; er.hidden=false; return; }
-    if(!(no>=1&&no<=99)){ er.textContent="กรอกเลขที่ (ตัวเลข 1–99)"; er.hidden=false; return; }
-    if(sigmaBadNick(nk)){ er.textContent="ชื่อเล่นนี้ใช้ไม่ได้ ลองชื่ออื่น"; er.hidden=false; return; }
-    $("ckSubmit").disabled=true;
-    sigmaStore("sigma-student",JSON.stringify({nm:nm,gr:gr,rm:rm,no:no,nk:nk}));
-    var solver=sigmaSolverId();
-    var pre = st.kind==="puzzle" ? sigmaRpc("record_solve",{p_week:st.week,p_solver:solver}) : Promise.resolve();
-    pre.then(function(){ return sigmaRpc("submit_checkin",{p_week:st.week,p_name:nm,p_grade:gr,p_room:rm,p_no:no,p_nick:nk,p_solver:solver}); }).then(function(r){
-      $("ckSubmit").disabled=false;
-      if(r==="ok"||r==="already"){
-        sigmaStore("sigma-ck-"+st.week,"1"); $("ckForm").hidden=true;
-        var d=$("ckDone"); d.hidden=false;
-        d.innerHTML = r==="ok" ? "<b>เช็กชื่อสำเร็จ!</b> "+(nk?"ชื่อเล่น “"+nk.replace(/[<>&]/g,"")+"” จะขึ้นในอันดับ":"คุณไม่ได้กรอกชื่อเล่น จึงไม่ขึ้นในอันดับ")+"<br><a class=\"go\" href=\"/leaderboard/\" style=\"text-decoration:underline\">ดูอันดับ →</a>" : "<b>เช็กชื่อสัปดาห์นี้ไปแล้ว</b> นับเป็นคนเดียว ไม่ต้องกรอกซ้ำ";
-      } else if(r==="closed"){ msg("<b>ปิดเช็กชื่อแล้ว</b> ครูปิดการเช็กชื่อรอบนี้แล้ว","f-no"); }
-      else if(r==="not_solved"){ msg("<b>ยังไม่พบการตอบโจทย์ถูก</b> กลับไปตอบโจทย์สัปดาห์นี้ก่อน","f-no"); }
-      else if(r==="bad_nick"){ er.textContent="ชื่อเล่นนี้ใช้ไม่ได้ ลองชื่ออื่น"; er.hidden=false; }
-      else { er.textContent="ข้อมูลไม่ถูกต้อง ตรวจชื่อ ชั้น ห้อง เลขที่ อีกครั้ง"; er.hidden=false; }
-    }).catch(function(){ $("ckSubmit").disabled=false; er.textContent="ส่งไม่สำเร็จ ลองอีกครั้ง"; er.hidden=false; });
-  });
   start();
 })();
 </script></div><div class="foot"><div class="wrap"><span class="pf" style="font-weight:700">67 Math Problem with Sigma Boys</span><span>67 MATH PROBLEMS WITH SIGMA BOYS</span></div></div></body></html>

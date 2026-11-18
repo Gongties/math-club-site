@@ -38,56 +38,6 @@
     </div>
   </div>
 
-  <div style="display:flex;flex-wrap:wrap;gap:32px">
-    <div class="gc" style="flex:1 1 480px">
-      <div style="padding:28px;display:flex;flex-direction:column;gap:16px;flex:1">
-        <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:center">
-          <div style="display:flex;flex-direction:column;gap:4px;padding:10px;background:#F6EEF0;border-radius:6px" aria-hidden="true">
-            <div style="display:flex;gap:4px"><span class="mt" style="background:#C9B458">1</span><span class="mt" style="background:#787C7E">2</span><span class="mt" style="background:#787C7E">÷</span><span class="mt" style="background:#787C7E">3</span><span class="mt" style="background:#C9B458">=</span><span class="mt" style="background:#787C7E">4</span></div>
-            <div style="display:flex;gap:4px"><span class="mt" style="background:#6AAA64">?</span><span class="mt" style="background:#6AAA64">?</span><span class="mt" style="background:#6AAA64">?</span><span class="mt" style="background:#6AAA64">?</span><span class="mt" style="background:#6AAA64">?</span><span class="mt" style="background:#6AAA64">?</span></div>
-          </div>
-          <h2 style="font-weight:800;font-size:34px;line-height:1.25">Mathdle</h2>
-        </div>
-        <p style="margin:0;font-size:18px;line-height:1.65;flex:1">ทายสมการที่เป็นจริงแบบ Wordle ดูสีของช่องแล้วหาสมการที่ถูกต้อง เล่นคนเดียวได้</p>
-        <div style="display:flex;flex-wrap:wrap;gap:14px">
-          <a class="btn b-acc" href="/week/1/">เล่นเกม</a>
-          <button class="rb" type="button" data-rule="r2">กติกา ▾</button>
-        </div>
-      </div>
-      <div class="rules" id="r2" hidden>
-        <h3>กติกา Mathdle</h3>
-        <ul>
-          <li>ใช้เลข 0–9 และเครื่องหมาย + − × ÷ และ = ให้เป็นสมการที่เป็นจริง</li>
-          <li>สีเทา: ตัวเลขหรือเครื่องหมายนั้นไม่อยู่ในสมการ</li>
-          <li>สีเหลือง: อยู่ในสมการ แต่อยู่ผิดตำแหน่ง</li>
-          <li>สีเขียว: อยู่ในสมการ และอยู่ถูกตำแหน่ง</li>
-          <li>ดูแถวที่ทายไปแล้ว แล้วตอบว่าสมการที่ถูกต้องคืออะไร</li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="gc" style="flex:1 1 480px">
-      <div style="padding:28px;display:flex;flex-direction:column;gap:16px;flex:1">
-        <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:center">
-          <div style="width:150px;height:84px;border-radius:6px;border:2px solid #39FF88;background:#07120B;background-image:linear-gradient(rgba(57,255,136,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(57,255,136,.12) 1px,transparent 1px);background-size:16px 16px;display:flex;align-items:center;justify-content:center;flex:none" aria-hidden="true"><div style="display:flex;flex-direction:column;align-items:center;gap:6px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#39FF88"><div style="display:flex;gap:3px"><span style="width:14px;height:16px;background:#39FF88"></span><span style="width:14px;height:16px;background:#39FF88"></span><span style="width:14px;height:16px;background:#39FF88"></span><span style="width:14px;height:16px;background:#39FF88"></span><span style="width:14px;height:16px;background:#39FF88"></span></div><span style="font-size:11px">ΣYS.LOCKED</span></div></div>
-          <h2 style="font-weight:800;font-size:34px;line-height:1.25">เจาะรหัสลับ ฉบับ67</h2>
-        </div>
-        <p style="margin:0;font-size:18px;line-height:1.65;flex:1">ไขรหัสลับจากภาพธีมแฮกเกอร์ทีละรูป แต่สังเกตให้ดี แต่ละภาพอาจเชื่อมกันอยู่ เล่นคนเดียวได้</p>
-        <div style="display:flex;flex-wrap:wrap;gap:14px">
-          <a class="btn b-acc" href="/week/2/">เล่นเกม</a>
-          <button class="rb" type="button" data-rule="r3">กติกา ▾</button>
-        </div>
-      </div>
-      <div class="rules" id="r3" hidden>
-        <h3>กติกา เจาะรหัสลับ ฉบับ67</h3>
-        <ul>
-          <li>มีรูปภาพ 3 รูปที่สอดคล้องกัน ซ่อนรหัสลับรูปละ 1 รหัส</li>
-          <li>ต้องไขรหัสจากรูปแรกให้ได้ก่อน จึงจะเห็นและไขรูปต่อไปได้</li>
-          <li>ติดตรงไหน กดขอใบ้ได้</li>
-        </ul>
-      </div>
-    </div>
-  </div>
 </div><script>
 sigmaRpc("get_state").then(function(s){ if(s&&s.open&&s.kind==="game"&&s.week===3) document.getElementById("ckGame").hidden=false; }).catch(function(){});
-</script></div><div class="foot"><div class="wrap"><span class="pf" style="font-weight:700">67 Math Problem with Sigma Boys</span><span>Σ ผลรวมของทุกคนในชมรม</span></div></div></body></html>
+</script></div><div class="foot"><div class="wrap"><span class="pf" style="font-weight:700">67 Math Problem with Sigma Boys</span><span>67 MATH PROBLEMS WITH SIGMA BOYS</span></div></div></body></html>

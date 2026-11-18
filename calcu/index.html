@@ -170,6 +170,31 @@ body.ph #netb.ok { background: #2E9E6B; } body.ph #netb.local { background: #D9A
 #pw .go { min-height: 56px; border-radius: 14px; border: 0; background: #4B35C9; color: #fff; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 20px; }
 #pw .go[disabled] { opacity: .5; }
 #pw .errm { padding: 8px 12px; border-radius: 10px; background: #FBE3E1; color: #B3261E; }
+/* ---- join screen: ticket + keypad ---- */
+#pw.jn { background: #0E1326; color: #EEF1FA; gap: 14px; padding: 28px 16px 20px; }
+#pw.jn .jh { text-align: center; }
+#pw.jn .jh .t { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 34px; line-height: 1.25; }
+#pw.jn .jh .s { color: #B4BEDA; font-size: 15px; }
+#pw.jn .tk { background: #FFD84D; color: #14213D; border: 2px solid #EEF1FA; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+#pw.jn .tk .fl { margin: 0; }
+#pw.jn .jcd { display: flex; gap: 8px; }
+#pw.jn .ct { flex: 1; height: 56px; border-radius: 10px; border: 2px dashed #14213D; display: flex; align-items: center; justify-content: center; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 30px; line-height: 1; }
+#pw.jn .ct.f { background: #14213D; border-style: solid; color: #FFD84D; }
+#pw.jn .ct.n { border-style: solid; background: #FFF3B8; }
+#pw.jn .dv { margin: 2px -14px; border-top: 2px dashed #14213D; position: relative; }
+#pw.jn .dv::before, #pw.jn .dv::after { content: ""; position: absolute; top: -10px; width: 18px; height: 18px; border-radius: 50%; background: #0E1326; border: 2px solid #EEF1FA; box-sizing: border-box; }
+#pw.jn .dv::before { left: -11px; } #pw.jn .dv::after { right: -11px; }
+#pw.jn .tk .in { border-color: #14213D; }
+#pw.jn .tk .go { background: #14213D; color: #FFD84D; }
+#pw.jn .kp { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+#pw.jn .kp button { height: 52px; border-radius: 12px; border: 2px solid #5A6785; background: #171F3D; color: #EEF1FA; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 24px; line-height: 1; }
+#pw.jn .kp button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+#pw.jn .kp button:active { background: #2B3560; }
+#pw.jn .kp button.bk { border-color: #FFD84D; color: #FFD84D; font-size: 20px; }
+#pw.jn .kp button.cl { color: #B4BEDA; font-size: 17px; }
+#pw.jn .jtop { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#pw.jn .jedit { background: none; border: 0; padding: 4px 0; color: #14213D; font-weight: 700; font-size: 15px; text-decoration: underline; }
+#pw.jn .jn-note { text-align: center; color: #B4BEDA; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -952,6 +977,7 @@ document.addEventListener("click", function (e) {
 });
 
 /* ============================================================ PLAYER ============================================================ */
+var JSTEP = 1;   /* join screen: 1 = tap the room code, 2 = type the name */
 var P = { pid: ss("calcu-pid") || rid(), name: ss("calcu-name") || "", code: ss("calcu-code") || "", joined: false, st: null, recvAt: 0, work: null, workKey: "", sent: false, error: "", joining: false };
 ss("calcu-pid", P.pid);
 /* a copy of the player's identity is kept in localStorage with a heartbeat: if the tab was closed (heartbeat older than 6 s) a new tab takes it over */
@@ -995,11 +1021,21 @@ function getWork() {
   return P.work;
 }
 function viewJoin() {
-  return '<div id="pw" style="gap:20px;padding-top:36px"><div><div class="hd" style="font-weight:700;font-size:38px;line-height:1.3">Calcuเหรอ?</div><div class="muted">ชมรมคณิตศาสตร์ · เล่นร่วมกันบนจอใหญ่</div></div>' +
-    '<div class="box" style="display:flex;flex-direction:column;gap:16px"><div><label class="fl" for="code">รหัสห้อง (ดูจากจอใหญ่)</label><input class="in" id="code" type="text" inputmode="numeric" maxlength="4" value="' + esc(P.code) + '" style="letter-spacing:.2em;font-family:Prompt,sans-serif;font-weight:700"></div>' +
-    '<div><label class="fl" for="nick">ชื่อเล่นของคุณ (หรือชื่อคู่/กลุ่ม)</label><input class="in" id="nick" type="text" maxlength="20" value="' + esc(P.name) + '"></div>' +
-    (P.error ? '<div class="errm" role="alert">' + esc(P.error) + "</div>" : "") + '<button class="go" data-a="join"' + (P.joining ? " disabled" : "") + ">" + (P.joining ? "กำลังเข้าห้อง…" : "เข้าร่วม") + "</button></div>" +
-    '<div class="muted" style="font-size:15px">ใช้ชื่อเล่นเท่านั้น</div></div>';
+  var cd = String(P.code || "").replace(/\D/g, "").slice(0, 4), tiles = "", step2 = JSTEP === 2 && cd.length === 4;
+  for (var i = 0; i < 4; i++) tiles += '<span class="ct' + (cd[i] ? " f" : (i === cd.length ? " n" : "")) + '">' + (cd[i] || "") + "</span>";
+  var err = P.error ? '<div class="errm" role="alert">' + esc(P.error) + "</div>" : "";
+  var head = '<div class="jh"><div class="t">Calcuเหรอ?</div><div class="s">ชมรมคณิตศาสตร์ · เล่นร่วมกันบนจอใหญ่</div></div>';
+  var codeBox = '<input id="code" type="hidden" value="' + esc(cd) + '"><div class="jcd" id="cdisp" role="group" aria-labelledby="codelab">' + tiles + "</div>";
+  if (step2) {
+    return '<div id="pw" class="jn">' + head + '<div class="tk"><div class="jtop"><div class="fl" id="codelab">รหัสห้อง</div><button type="button" class="jedit" data-a="editcode">← แก้รหัส</button></div>' + codeBox +
+      '<div class="dv"></div><div><label class="fl" for="nick">ชื่อเล่นของคุณ (หรือชื่อคู่/กลุ่ม)</label><input class="in" id="nick" type="text" maxlength="20" value="' + esc(P.name) + '"></div>' + err +
+      '<button class="go" data-a="join"' + (P.joining ? " disabled" : "") + ">" + (P.joining ? "กำลังเข้าห้อง…" : "เข้าร่วม") + '</button></div><div class="jn-note">ใช้ชื่อเล่นเท่านั้น</div></div>';
+  }
+  var keys = "";
+  [1, 2, 3, 4, 5, 6, 7, 8, 9].forEach(function (k) { keys += '<button type="button" data-a="key" data-k="' + k + '" aria-label="เลข ' + k + '">' + k + "</button>"; });
+  keys += '<button type="button" class="cl" data-a="clr" aria-label="ล้างรหัสห้อง">ล้าง</button><button type="button" data-a="key" data-k="0" aria-label="เลข 0">0</button><button type="button" class="bk" data-a="del" aria-label="ลบตัวเลขล่าสุด">⌫</button>';
+  return '<div id="pw" class="jn">' + head + '<div class="tk"><div class="fl" id="codelab">รหัสห้อง (ดูจากจอใหญ่)</div>' + codeBox + err + "</div>" +
+    '<div class="kp" role="group" aria-label="แป้นกรอกรหัสห้อง">' + keys + '</div><div class="jn-note">กดเลข 4 ตัวแล้วไปใส่ชื่อต่อ</div></div>';
 }
 function viewGameP() {
   var st = P.st, m = me(), h = "";
@@ -1065,17 +1101,30 @@ function onPlayerMsg(m) {
 function pjoin() {
   var code = document.getElementById("code").value.trim(), name = document.getElementById("nick").value.trim();
   P.code = code; P.name = name;
-  if (!/^\d{4}$/.test(code)) { P.error = "รหัสห้องมี 4 หลัก"; renderPlayerForce(); return; }
+  if (!/^\d{4}$/.test(code)) { P.error = "รหัสห้องมี 4 หลัก"; JSTEP = 1; renderPlayerForce(); return; }
   if (!name) { P.error = "กรอกชื่อเล่นก่อน"; renderPlayerForce(); return; }
   P.error = ""; P.joining = true; renderPlayerForce();
   Net.open(code, P.pid, onPlayerMsg);
   Net.send({ type: "join", pid: P.pid, name: name });
-  setTimeout(function () { if (!P.joined && P.joining) { P.joining = false; P.error = "ไม่พบห้องนี้ ตรวจรหัสห้องและให้แน่ใจว่าเปิดหน้า Host ไว้แล้ว"; Net.close(); ss("calcu-joined", "0"); PL.clear(); renderPlayerForce(); } }, 8000);
+  setTimeout(function () { if (!P.joined && P.joining) { P.joining = false; P.error = "ไม่พบห้องนี้ ตรวจรหัสห้องและให้แน่ใจว่าเปิดหน้า Host ไว้แล้ว"; JSTEP = 1; Net.close(); ss("calcu-joined", "0"); PL.clear(); renderPlayerForce(); } }, 8000);
 }
 function renderPlayerForce() { var app2 = document.getElementById("app"); app2.innerHTML = viewJoin(); }
+function setJoinCode(v) {
+  v = String(v).replace(/\D/g, "").slice(0, 4); P.code = v; P.error = "";
+  var c = document.getElementById("code"); if (c) c.value = v;
+  var t = document.querySelectorAll("#cdisp .ct");
+  for (var i = 0; i < t.length; i++) { t[i].textContent = v[i] || ""; t[i].className = "ct" + (v[i] ? " f" : (i === v.length ? " n" : "")); }
+  var e = document.querySelector("#pw.jn .errm"); if (e) e.remove();
+  if (v.length === 4 && JSTEP === 1) setTimeout(function () { if (JSTEP === 1 && joinCode().length === 4 && document.getElementById("cdisp")) { JSTEP = 2; renderPlayerForce(); var n = document.getElementById("nick"); if (n && !n.value) n.focus(); } }, 250);
+}
+function joinCode() { var c = document.getElementById("code"); return c ? c.value : ""; }
 var PACT = {
   join: pjoin,
-  leave: function () { P.joined = false; P.st = null; Net.close(); ss("calcu-joined", "0"); PL.clear(); renderPlayerForce(); },
+  key: function (b) { var v = joinCode(); setJoinCode(v.length < 4 ? v + b.dataset.k : b.dataset.k); },
+  del: function () { setJoinCode(joinCode().slice(0, -1)); },
+  clr: function () { setJoinCode(""); },
+  editcode: function () { var n = document.getElementById("nick"); if (n) P.name = n.value.trim(); JSTEP = 1; renderPlayerForce(); },
+  leave: function () { P.code = ""; JSTEP = 1; P.joined = false; P.st = null; Net.close(); ss("calcu-joined", "0"); PL.clear(); renderPlayerForce(); },
   pick: function (b) { Net.send({ type: "pick", pid: P.pid, cell: Number(b.dataset.id) }); },
   chal: function (b) { Net.send({ type: "chal", pid: P.pid, target: b.dataset.id }); },
   pickItem: function (b) {
@@ -1104,6 +1153,10 @@ function playerBoot() {
     var b = e.target.closest("[data-a]"); if (!b || b.disabled) return;
     if (PACT[b.dataset.a]) PACT[b.dataset.a](b);
   });
+  document.addEventListener("keydown", function (e) {
+    var a = document.activeElement; if (JSTEP !== 1 || !document.getElementById("cdisp") || (a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA")) || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (/^\d$/.test(e.key)) { if (joinCode().length < 4) setJoinCode(joinCode() + e.key); } else if (e.key === "Backspace") setJoinCode(joinCode().slice(0, -1));
+  });
   setInterval(function () { var t = document.getElementById("tm"); if (t && P.st) { var l = pLeft(); t.textContent = l === null ? "–" : Math.ceil(l / 1000); } }, 250);
   /* a player who reloads the page rejoins the same room with the same id */
   setInterval(function () { if (P.joined) PL.write(); }, 2000);
@@ -1113,7 +1166,8 @@ function playerBoot() {
       P.pid = old.pid; P.name = old.name; P.code = old.code; ss("calcu-pid", P.pid); ss("calcu-name", P.name); ss("calcu-code", P.code); ss("calcu-joined", "1");
     }
   }
-  if (P.code && P.name && ss("calcu-joined") === "1") { document.getElementById("code").value = P.code; document.getElementById("nick").value = P.name; pjoin(); }
+  if (P.code && P.name && ss("calcu-joined") === "1") { JSTEP = 2; renderPlayerForce(); document.getElementById("code").value = P.code; document.getElementById("nick").value = P.name; pjoin(); }
+  else { P.code = ""; JSTEP = 1; renderPlayerForce(); }
 }
 
 /* ============================================================ start ============================================================ */

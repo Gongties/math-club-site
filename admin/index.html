@@ -16,6 +16,11 @@
     </div>
     <div class="pbox" style="gap:14px;flex:none">
       <div class="pf" style="font-weight:800;font-size:24px">รายชื่อที่เช็กชื่อ: <span id="cnt">0</span> คน</div>
+      <form id="addF" autocomplete="off" style="display:flex;flex-direction:column;gap:10px;padding:14px;border:2px dashed var(--grid);border-radius:14px">
+        <div class="pf" style="font-weight:800;font-size:19px">เช็กชื่อแทนนักเรียน (ใช้ได้แม้ปิดเช็กชื่ออยู่)</div>
+        <div class="row" style="align-items:center"><input class="inp" id="addId" inputmode="numeric" maxlength="5" placeholder="เลขประจำตัว 5 หลัก" style="flex:1 1 180px"><input class="inp" id="addNk" maxlength="20" placeholder="ชื่อเล่น (ไม่บังคับ)" style="flex:1 1 180px"><button class="btn b-acc" type="submit" id="addBtn" style="flex:none">เพิ่มเช็กชื่อ</button></div>
+        <div class="fb f-ok" id="addMsg" hidden></div>
+      </form>
       <div id="rankNote" class="muted" style="font-size:16px;line-height:1.5" hidden>สัปดาห์ที่เป็นเกม: ใส่ลำดับในเกมของแต่ละคน (1 = ชนะ) คนที่เว้นว่างจะได้ 1 คะแนน แล้วกดบันทึกอันดับ</div>
       <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:17px" id="tb"><thead><tr style="text-align:left;color:var(--muted);font-size:14px"><th style="padding:6px">ชื่อ-นามสกุล</th><th style="padding:6px">ชั้น/ห้อง/เลขที่</th><th style="padding:6px">ชื่อเล่น</th><th style="padding:6px" class="rk">ลำดับในเกม</th><th style="padding:6px">ลบ</th></tr></thead><tbody id="tbody"></tbody></table></div>
       <div class="row"><button class="btn b-gold" id="bRank" type="button" hidden>บันทึกอันดับเกม</button></div>
@@ -70,6 +75,23 @@
     sigmaRpc("admin_delete_checkin",{p_pass:PW,p_id:id}).then(function(ok){
       flash("rkMsg", ok?"ลบรายการแล้ว":"ลบไม่สำเร็จ", !ok); if(ok) return loadList(ST.week,ST.kind);
     }).catch(function(){ flash("rkMsg","ลบไม่สำเร็จ (ยังไม่ได้เพิ่มฟังก์ชัน admin_delete_checkin ใน Supabase หรือเชื่อมต่อไม่ได้)",true); });
+  });
+  $("addF").addEventListener("submit",function(e){
+    e.preventDefault();
+    var id=$("addId").value.trim(), nk=$("addNk").value.trim();
+    if(!/^[0-9]{5}$/.test(id)){ flash("addMsg","กรอกเลขประจำตัวให้ครบ 5 หลัก",true); return; }
+    if(!ST){ flash("addMsg","ยังไม่ได้โหลดสถานะ ลองรีเฟรชรายชื่อ",true); return; }
+    $("addBtn").disabled=true;
+    sigmaRpc("admin_add_checkin",{p_pass:PW,p_week:ST.week,p_student:id,p_nick:nk}).then(function(r){
+      $("addBtn").disabled=false;
+      var k=r&&r.r, nm=r&&r.name;
+      if(k==="ok"){ flash("addMsg","เพิ่มแล้ว: "+nm+" (สัปดาห์ที่ "+ST.week+")"); $("addId").value=""; $("addNk").value=""; $("addId").focus(); return loadList(ST.week,ST.kind); }
+      if(k==="already") flash("addMsg",nm+" เช็กชื่อสัปดาห์นี้ไปแล้ว",true);
+      else if(k==="unknown_student") flash("addMsg","ไม่พบเลขประจำตัวนี้ในรายชื่อ",true);
+      else if(k==="bad_nick") flash("addMsg","ชื่อเล่นนี้ใช้ไม่ได้",true);
+      else if(k==="forbidden") flash("addMsg","รหัสผ่านไม่ถูกต้อง",true);
+      else flash("addMsg","ข้อมูลไม่ถูกต้อง",true);
+    }).catch(function(){ $("addBtn").disabled=false; flash("addMsg","ไม่สำเร็จ (ยังไม่ได้เพิ่มฟังก์ชัน admin_add_checkin ใน Supabase หรือเชื่อมต่อไม่ได้)",true); });
   });
   $("bRank").addEventListener("click",function(){
     var inputs=document.querySelectorAll("#tbody input[data-id]"), arr=[];

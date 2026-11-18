@@ -29,7 +29,7 @@
   var $=function(i){return document.getElementById(i)};
   var st=null;
   function msg(t,cls){ var e=$("ckState"); e.className="fb "+(cls||"f-hint"); e.innerHTML=t; e.hidden=false; $("ckForm").hidden=true; }
-  function solvedLocally(w){ if(w===1) return sigmaStore("sigma-w1")==="1"; if(w===2) return sigmaStore("sigma-w2")==="3"; return false; }
+  function solvedLocally(w){ return sigmaStore("sigma-solved-"+w)==="1"; }
   var found=null;
   function setErr(t){ var er=$("ckErr"); if(t){ er.textContent=t; er.hidden=false; } else er.hidden=true; }
   function step(n){

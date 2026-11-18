@@ -61,7 +61,8 @@ function sigmaSolverId() {
 function sigmaAfterSolve(week, boxId) {
   sigmaRpc("get_state").then(function (st) {
     if (!st || !st.open || st.week !== week) return;
-    return sigmaRpc("record_solve", { p_week: week, p_solver: sigmaSolverId() }).then(function () {
+    return sigmaRpc("record_solve", { p_week: week, p_solver: sigmaSolverId() }).then(function (ok) {
+      if (ok === true) sigmaStore("sigma-solved-" + week, "1"); /* ให้หน้า /checkin/ รู้ว่าสัปดาห์นี้ตอบถูกแล้ว */
       var b = document.getElementById(boxId); if (b) b.hidden = false;
     });
   }).catch(function () {});

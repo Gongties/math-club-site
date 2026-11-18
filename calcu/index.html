@@ -595,9 +595,19 @@ function summarize() {
   H.players.forEach(function (p) { G.scores[p.pid] = clampScore(G.scores[p.pid] + (delta[p.pid] || 0), fl); });
   G.lastDelta = delta; G.summarized = true;
   if (G.isFinal) G.ended = true;
-  else if (H.players.some(function (p) { return G.scores[p.pid] >= Number(H.cfg.target); })) G.finalPending = true;
+  else if (H.players.some(function (p) { return G.scores[p.pid] >= Number(H.cfg.target); })) { G.finalPending = true; G.prevScores = JSON.parse(JSON.stringify(G.scores)); }   /* total scores at the end of the round before the final round: used to break a tie at the end */
 }
 function ranking() { return H.players.slice().sort(function (a, b) { return G.scores[b.pid] - G.scores[a.pid]; }); }
+/* winner(s): highest score; if tied, the higher total score at the end of the round before the final round; still tied = shared win */
+function endInfo() {
+  var list = ranking(), top = G.scores[list[0].pid], tied = list.filter(function (p) { return G.scores[p.pid] === top; }), w = tied, pv = G.prevScores;
+  if (tied.length > 1 && pv) {
+    var val = function (p) { return pv[p.pid] === undefined ? -Infinity : pv[p.pid]; };
+    var best = Math.max.apply(null, tied.map(val));
+    w = tied.filter(function (p) { return val(p) === best; });
+  }
+  return { top: top, tied: tied.length, winners: w.map(function (p) { return p.pid; }), decided: w.length < tied.length };
+}
 function rankOf(pid) { var sc = G.scores[pid], r = 1; H.players.forEach(function (p) { if (G.scores[p.pid] > sc) r++; }); return r; }
 function ownD(t) { var c = cellOf(t), chs = G.chal[t] || [], r = targetResult(t); return r.pass ? Math.min(chs.length, H.cfg.maxMult) * c.score : -(H.cfg.penalty === "count" ? chs.length : 1) * c.score; }
 
@@ -637,6 +647,7 @@ function publicState() {
     st.round = G.round; st.isFinal = G.isFinal; st.nums = G.nums; st.cells = G.cells.map(function (c) { return { id: c.id, tier: c.tier, value: c.value, score: c.score }; });
     st.owners = owners; st.remaining = G.deadline || G.paused ? (G.paused ? G.remaining : Math.max(0, G.deadline - Date.now())) : null;
     st.paused = G.paused; st.summarized = G.summarized; st.finalPending = G.finalPending; st.ended = G.ended; st.rows = rows; st.toast = G.toast;
+    var ei = endInfo(); st.winners = ei.winners; st.tieDecided = ei.decided;
     st.me = {}; H.players.forEach(function (p) { st.me[p.pid] = myInfo(p.pid); });
   } else {
     st.me = {}; H.players.forEach(function (p) { st.me[p.pid] = { res: null, myChals: [], challenged: null, solved: false, solHtml: "", lines: null, rank: 0, score: 0, delta: null }; });
@@ -651,7 +662,7 @@ function broadcast() {   /* coalesce bursts: at most one full state per gap, a t
   else if (!BC.t) BC.t = setTimeout(function () { BC.t = null; BC.last = Date.now(); Net.send(publicState()); }, gap - (now - BC.last));
 }
 var SV = { t: null };
-var G_KEYS = ["round", "isFinal", "finalPending", "ended", "scores", "lastDelta", "breakdown", "nums", "cells", "res", "chal", "subs", "subTree", "steps", "rev", "summarized", "paused", "remaining", "deadline", "toast", "maxV"];
+var G_KEYS = ["round", "isFinal", "finalPending", "ended", "scores", "lastDelta", "breakdown", "nums", "cells", "res", "chal", "subs", "subTree", "steps", "rev", "summarized", "paused", "remaining", "deadline", "toast", "maxV", "prevScores"];
 function saveHost() {   /* the host keeps the whole game in this browser, so a reload of the host page can continue it */
   clearTimeout(SV.t);
   SV.t = setTimeout(function () {
@@ -860,9 +871,9 @@ function hSummary() {
     '<div class="ftr"><div class="hint">' + (G.finalPending ? "ถ้าครองบัลลังก์หลายคน คนคะแนนสูงสุดเมื่อจบรอบสุดท้ายชนะ" : "") + '</div><button class="pb" data-a="' + (G.ended ? "toEnd" : "nextRound") + '">' + (G.ended ? "ดูผู้ชนะ" : "ไปรอบถัดไป") + "</button></div>";
 }
 function hEnd() {
-  var list = ranking(), top = G.scores[list[0].pid], winners = list.filter(function (p) { return G.scores[p.pid] === top; });
+  var list = ranking(), ei = endInfo(), top = ei.top, winners = list.filter(function (p) { return ei.winners.indexOf(p.pid) >= 0; });
   var rows = list.slice(0, 5).map(function (p) { return '<div class="lr"><div class="rk">' + rankOf(p.pid) + '</div><div class="nm"><i style="background:' + hcol(p.pid) + '"></i>' + esc(p.name) + '</div><div class="bar2"></div><div class="sc2">' + G.scores[p.pid] + "</div></div>"; }).join("");
-  return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px"><div style="font-size:48px;color:#B4BEDA">ผู้ชนะ</div><div class="hd" style="font-weight:700;font-size:150px;line-height:1.2;color:#FFD65A;text-align:center">' + winners.map(function (p) { return esc(p.name); }).join(" และ ") + '</div><div class="hd" style="font-size:64px">' + top + " คะแนน" + (winners.length > 1 ? " (คะแนนเท่ากัน)" : "") + '</div><div style="width:1100px;margin-top:16px">' + rows + "</div></div>" +
+  return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px"><div style="font-size:48px;color:#B4BEDA">ผู้ชนะ</div><div class="hd" style="font-weight:700;font-size:150px;line-height:1.2;color:#FFD65A;text-align:center">' + winners.map(function (p) { return esc(p.name); }).join(" และ ") + '</div><div class="hd" style="font-size:64px">' + top + " คะแนน" + (winners.length > 1 ? " (คะแนนเท่ากัน)" : "") + '</div>' + (ei.decided ? '<div style="font-size:36px;line-height:1.4;color:#B4BEDA">คะแนนเท่ากัน ตัดสินด้วยคะแนนรวมก่อนรอบสุดท้าย</div>' : "") + '<div style="width:1100px;margin-top:16px">' + rows + "</div></div>" +
     '<div class="ftr"><div></div><div style="display:flex;gap:16px"><button class="gb" data-a="toLobby">กลับล็อบบี้</button><button class="pb" data-a="again">เล่นใหม่ด้วยผู้เล่นเดิม</button></div></div>';
 }
 function renderHost() {
@@ -1023,8 +1034,8 @@ function viewGameP() {
     if (!st.summarized) h = phd("เฟส 4 · เฉลย", '<div class="tm tag">ดูจอใหญ่</div>') + '<div class="box"><h2>ดูเฉลยบนจอใหญ่</h2><div class="muted">Host กำลังเปิดสมการของผู้ที่ถูกท้าทีละใบ เสร็จแล้วจะสรุปคะแนนของคุณที่นี่</div></div>';
     else h = phd("เฟส 4 · สรุปของคุณ", '<div class="tm tag">รอ Host<br>ไปรอบถัดไป</div>') + summaryP(m);
   } else {
-    var rows = st.rows, top = rows[0].score, ws = rows.filter(function (r) { return r.score === top; });
-    h = '<div class="ph"><div><div class="a">' + esc(P.name) + '</div><div class="b">จบเกมแล้ว</div></div></div><div class="box" style="text-align:center"><div class="muted">ผู้ชนะ</div><div class="hd" style="font-size:32px;font-weight:700;line-height:1.3">' + ws.map(function (r) { return esc(r.name); }).join(" และ ") + '</div><div>' + top + ' คะแนน</div></div>' + summaryP(m, true);
+    var rows = st.rows, top = rows[0].score, ws = st.winners ? rows.filter(function (r) { return st.winners.indexOf(r.pid) >= 0; }) : rows.filter(function (r) { return r.score === top; });
+    h = '<div class="ph"><div><div class="a">' + esc(P.name) + '</div><div class="b">จบเกมแล้ว</div></div></div><div class="box" style="text-align:center"><div class="muted">ผู้ชนะ</div><div class="hd" style="font-size:32px;font-weight:700;line-height:1.3">' + ws.map(function (r) { return esc(r.name); }).join(" และ ") + '</div><div>' + top + ' คะแนน</div>' + (st.tieDecided ? '<div class="muted" style="font-size:14px">คะแนนเท่ากัน ตัดสินด้วยคะแนนรวมก่อนรอบสุดท้าย</div>' : "") + '</div>' + summaryP(m, true);
   }
   return '<div id="pw">' + h + "</div>";
 }

@@ -1,0 +1,75 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>แอดมิน | 67 Math Problem</title><meta name="description" content="เว็บไซต์ชมรมคณิตศาสตร์ 67 Math Problem with Sigma Boys"><script>(function(){var t='dark';try{t=localStorage.getItem('sigma-theme')||'dark'}catch(e){}document.documentElement.setAttribute('data-theme',t==='light'?'light':'dark')})();</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700;800&family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/site.css"><meta name="robots" content="noindex,nofollow"><script src="/assets/site.js"></script></head><body><div class="wrap"><div class="nav"><a class="logo" href="/"><span class="sig" aria-hidden="true">Σ</span><b>67 Math Problem<br>with Sigma Boys</b></a><div class="links"><a class="nl" href="/">หน้าแรก</a><a class="nl" href="/puzzles/">โจทย์ประจำสัปดาห์</a><a class="nl" href="/games/">เกม</a><a class="nl" href="/leaderboard/">อันดับ</a><button class="tg" id="themeBtn" type="button" aria-label="สลับโหมดมืดและสว่าง"><span class="to-light"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M18.7 5.3L17 7M7 17l-1.7 1.7"/></svg>โหมดสว่าง</span><span class="to-dark"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a6.8 6.8 0 0 0 10.7 10.7z"/></svg>โหมดมืด</span></button></div></div></div><div class="main">
+<div class="wrap" style="padding-top:44px;padding-bottom:64px;max-width:900px;display:flex;flex-direction:column;gap:20px">
+  <h1 class="pg-title" style="font-size:clamp(34px,7vw,48px)">แอดมิน (สำหรับครู)</h1>
+  <form class="pbox" id="lg" style="gap:14px;flex:none"><label class="fl" for="pw">รหัสผ่านแอดมิน</label>
+    <div class="row"><input class="inp" id="pw" type="password" autocomplete="current-password" placeholder="รหัสผ่าน"><button class="ck" type="submit">เข้าสู่ระบบ</button></div>
+    <div class="fb f-no" id="lgErr" hidden></div></form>
+  <div id="panel" hidden style="display:flex;flex-direction:column;gap:20px">
+    <div class="pbox" style="gap:16px;flex:none">
+      <div class="pf" style="font-weight:800;font-size:24px">สถานะเช็กชื่อ: <span id="stTxt"></span></div>
+      <div class="row" style="align-items:center">
+        <label class="fl" for="wk" style="margin:0">สัปดาห์ที่</label><input class="inp" id="wk" style="flex:0 0 100px" inputmode="numeric" maxlength="3">
+        <label class="fl" for="kd" style="margin:0">ประเภท</label><select class="inp" id="kd" style="flex:0 0 160px;appearance:auto"><option value="puzzle">โจทย์</option><option value="game">เกม</option></select>
+      </div>
+      <div class="row"><button class="btn b-acc" id="bOpen" type="button">เปิดเช็กชื่อ</button><button class="btn b-card" id="bClose" type="button">ปิดเช็กชื่อ</button><button class="rb" id="bRef" type="button">รีเฟรชรายชื่อ</button></div>
+      <div class="fb f-ok" id="stMsg" hidden></div>
+    </div>
+    <div class="pbox" style="gap:14px;flex:none">
+      <div class="pf" style="font-weight:800;font-size:24px">รายชื่อที่เช็กชื่อ: <span id="cnt">0</span> คน</div>
+      <div id="rankNote" class="muted" style="font-size:16px;line-height:1.5" hidden>สัปดาห์ที่เป็นเกม: ใส่ลำดับในเกมของแต่ละคน (1 = ชนะ) คนที่เว้นว่างจะได้ 1 คะแนน แล้วกดบันทึกอันดับ</div>
+      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:17px" id="tb"><thead><tr style="text-align:left;color:var(--muted);font-size:14px"><th style="padding:6px">ชื่อ-นามสกุล</th><th style="padding:6px">ชั้น/ห้อง/เลขที่</th><th style="padding:6px">ชื่อเล่น</th><th style="padding:6px" class="rk">ลำดับในเกม</th></tr></thead><tbody id="tbody"></tbody></table></div>
+      <div class="row"><button class="btn b-gold" id="bRank" type="button" hidden>บันทึกอันดับเกม</button></div>
+      <div class="fb f-ok" id="rkMsg" hidden></div>
+    </div>
+  </div>
+</div>
+<style>.fl{display:block;margin-bottom:6px;font-family:Prompt,'Noto Sans Thai',sans-serif;font-weight:700;font-size:17px;line-height:1.4}#tbody td{padding:8px 6px;border-top:1.5px solid var(--grid)}</style>
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)}, PW="", ST=null, ROWS=[];
+  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+  function flash(id,t,bad){ var e=$(id); e.className="fb "+(bad?"f-no":"f-ok"); e.textContent=t; e.hidden=false; }
+  function refresh(){
+    return sigmaRpc("admin_state",{p_pass:PW}).then(function(s){
+      if(!s||!s.ok){ $("panel").hidden=true; $("lg").hidden=false; var e=$("lgErr"); e.textContent="รหัสผ่านไม่ถูกต้อง หรือยังไม่ได้ตั้งรหัสผ่านใน Supabase"; e.hidden=false; try{sessionStorage.removeItem("sigma-admin")}catch(x){} return; }
+      ST=s; $("lg").hidden=true; $("panel").hidden=false;
+      $("stTxt").textContent=(s.open?"เปิดอยู่":"ปิดอยู่")+" (สัปดาห์ที่ "+s.week+", "+(s.kind==="game"?"เกม":"โจทย์")+")";
+      $("stTxt").style.color=s.open?"#2E9E5B":"var(--muted)";
+      if(!$("wk").value) { $("wk").value=s.week; $("kd").value=s.kind; }
+      return loadList(s.week, s.kind);
+    });
+  }
+  function loadList(week,kind){
+    return sigmaRpc("admin_checkins",{p_pass:PW,p_week:week}).then(function(rows){
+      ROWS=rows||[]; $("cnt").textContent=ROWS.length;
+      var game = kind==="game";
+      $("rankNote").hidden=!game; $("bRank").hidden=!game;
+      var th=document.querySelectorAll(".rk"); for(var i=0;i<th.length;i++) th[i].style.display=game?"":"none";
+      $("tbody").innerHTML=ROWS.map(function(r){
+        return '<tr><td>'+esc(r.name)+'</td><td>ม.'+r.grade+'/'+r.room+'/'+r.number+'</td><td>'+esc(r.nick||"—")+'</td>'+(game?'<td class="rk"><input class="inp" data-id="'+r.id+'" value="'+(r.rank||"")+'" inputmode="numeric" style="min-height:40px;width:80px;font-size:18px;flex:none"></td>':'<td class="rk" style="display:none"></td>')+'</tr>';
+      }).join("");
+    });
+  }
+  function save(open){
+    var wk=parseInt($("wk").value,10), kd=$("kd").value;
+    if(!(wk>=1)){ flash("stMsg","ใส่เลขสัปดาห์ให้ถูกต้อง",true); return; }
+    sigmaRpc("admin_set",{p_pass:PW,p_open:open,p_week:wk,p_kind:kd}).then(function(ok){
+      if(!ok){ flash("stMsg","บันทึกไม่สำเร็จ",true); return; }
+      flash("stMsg", open?"เปิดเช็กชื่อสัปดาห์ที่ "+wk+" แล้ว":"ปิดเช็กชื่อแล้ว"); return refresh();
+    }).catch(function(){ flash("stMsg","เชื่อมต่อไม่ได้",true); });
+  }
+  $("lg").addEventListener("submit",function(e){ e.preventDefault(); PW=$("pw").value; try{sessionStorage.setItem("sigma-admin",PW)}catch(x){} refresh().catch(function(){ var er=$("lgErr"); er.textContent="เชื่อมต่อไม่ได้"; er.hidden=false; }); });
+  $("bOpen").addEventListener("click",function(){ save(true); });
+  $("bClose").addEventListener("click",function(){ save(false); });
+  $("bRef").addEventListener("click",function(){ refresh(); });
+  $("bRank").addEventListener("click",function(){
+    var inputs=document.querySelectorAll("#tbody input[data-id]"), arr=[];
+    for(var i=0;i<inputs.length;i++){ var v=parseInt(inputs[i].value,10); if(v>=1) arr.push({id:parseInt(inputs[i].getAttribute("data-id"),10),r:v}); }
+    arr.sort(function(a,b){return a.r-b.r});
+    sigmaRpc("admin_set_ranks",{p_pass:PW,p_week:ST.week,p_ids:arr.map(function(x){return x.id})}).then(function(ok){
+      flash("rkMsg", ok?"บันทึกอันดับเกมแล้ว ("+arr.length+" คน)":"บันทึกไม่สำเร็จ", !ok); if(ok) return loadList(ST.week,ST.kind);
+    }).catch(function(){ flash("rkMsg","เชื่อมต่อไม่ได้",true); });
+  });
+  try{ var p=sessionStorage.getItem("sigma-admin"); if(p){ PW=p; refresh().catch(function(){}); } }catch(x){}
+})();
+</script></div><div class="foot"><div class="wrap"><span class="pf" style="font-weight:700">67 Math Problem with Sigma Boys</span><span>Σ ผลรวมของทุกคนในชมรม</span></div></div></body></html>

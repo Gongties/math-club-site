@@ -1,0 +1,66 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>เช็กชื่อประจำสัปดาห์ | 67 Math Problem</title><meta name="description" content="เว็บไซต์ชมรมคณิตศาสตร์ 67 Math Problem with Sigma Boys"><script>(function(){var t='dark';try{t=localStorage.getItem('sigma-theme')||'dark'}catch(e){}document.documentElement.setAttribute('data-theme',t==='light'?'light':'dark')})();</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700;800&family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/site.css"><script src="/assets/site.js"></script></head><body><div class="wrap"><div class="nav"><a class="logo" href="/"><span class="sig" aria-hidden="true">Σ</span><b>67 Math Problem<br>with Sigma Boys</b></a><div class="links"><a class="nl" href="/">หน้าแรก</a><a class="nl on" href="/puzzles/">โจทย์ประจำสัปดาห์</a><a class="nl" href="/games/">เกม</a><a class="nl" href="/leaderboard/">อันดับ</a><button class="tg" id="themeBtn" type="button" aria-label="สลับโหมดมืดและสว่าง"><span class="to-light"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M18.7 5.3L17 7M7 17l-1.7 1.7"/></svg>โหมดสว่าง</span><span class="to-dark"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a6.8 6.8 0 0 0 10.7 10.7z"/></svg>โหมดมืด</span></button></div></div></div><div class="main">
+<div class="wrap" style="padding-top:44px;padding-bottom:64px;max-width:760px;display:flex;flex-direction:column;gap:24px">
+  <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+    <span class="pill" id="ckWeek" style="background:#FFD84D;color:#14213D;transform:rotate(-1.5deg)" hidden></span>
+    <h1 class="pg-title" style="font-size:clamp(36px,8vw,52px)">เช็กชื่อประจำสัปดาห์</h1>
+    <p class="lead" id="ckLead">สำหรับสมาชิกชมรมเท่านั้น กรอกครั้งเดียวต่อสัปดาห์</p>
+  </div>
+  <div class="fb f-hint" id="ckState">กำลังตรวจสถานะ…</div>
+  <form class="pbox" id="ckForm" hidden autocomplete="off" style="gap:20px;flex:none">
+    <div><label class="fl" for="nm">ชื่อ-นามสกุลจริง</label><input class="inp" id="nm" style="width:100%" maxlength="80" placeholder="พิมพ์ชื่อและนามสกุล"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px">
+      <div style="flex:1 1 140px;min-width:0"><label class="fl" for="gr">ชั้น</label>
+        <select class="inp" id="gr" style="width:100%"><option value="">เลือก</option><option value="1">ม.1</option><option value="2">ม.2</option><option value="3">ม.3</option><option value="4">ม.4</option><option value="5">ม.5</option><option value="6">ม.6</option></select></div>
+      <div style="flex:1 1 140px;min-width:0"><label class="fl" for="rm">ห้อง</label><input class="inp" id="rm" style="width:100%" inputmode="numeric" maxlength="2" placeholder="เช่น 2"></div>
+      <div style="flex:1 1 140px;min-width:0"><label class="fl" for="no">เลขที่</label><input class="inp" id="no" style="width:100%" inputmode="numeric" maxlength="2" placeholder="เช่น 12"></div>
+    </div>
+    <div><label class="fl" for="nk">ชื่อเล่น (ใช้แสดงในอันดับ ไม่กรอกก็ได้)</label><input class="inp" id="nk" style="width:100%" maxlength="20" placeholder="ชื่อเล่นที่อยากให้ขึ้นในอันดับ">
+      <div class="muted" style="font-size:15px;margin-top:6px;line-height:1.5">อันดับบนเว็บแสดงเฉพาะชื่อเล่น ชื่อจริงเห็นได้เฉพาะครูผู้ดูแล ถ้าไม่กรอกชื่อเล่น จะเช็กชื่อได้แต่ไม่ขึ้นอันดับ</div></div>
+    <div class="fb f-no" id="ckErr" hidden></div>
+    <div style="display:flex;flex-wrap:wrap;gap:14px"><button class="btn b-acc" type="submit" id="ckSubmit">ส่งชื่อ</button><a class="btn b-card" href="/puzzles/">← กลับ</a></div>
+  </form>
+  <div class="fb f-ok" id="ckDone" hidden></div>
+</div>
+<style>.fl{display:block;margin-bottom:6px;font-family:Prompt,'Noto Sans Thai',sans-serif;font-weight:700;font-size:17px;line-height:1.4}select.inp{appearance:auto}</style>
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)};
+  var st=null;
+  function msg(t,cls){ var e=$("ckState"); e.className="fb "+(cls||"f-hint"); e.innerHTML=t; e.hidden=false; $("ckForm").hidden=true; }
+  function solvedLocally(w){ if(w===1) return sigmaStore("sigma-w1")==="1"; if(w===2) return sigmaStore("sigma-w2")==="3"; return false; }
+  function loadSaved(){ try{ var s=JSON.parse(sigmaStore("sigma-student")||"{}"); $("nm").value=s.nm||""; $("gr").value=s.gr||""; $("rm").value=s.rm||""; $("no").value=s.no||""; $("nk").value=s.nk||""; }catch(e){} }
+  function start(){
+    sigmaRpc("get_state").then(function(s){
+      st=s; $("ckWeek").textContent="สัปดาห์ที่ "+s.week; $("ckWeek").hidden=false;
+      if(sigmaStore("sigma-ck-"+s.week)==="1"){ msg("<b>คุณเช็กชื่อสัปดาห์นี้ไปแล้ว</b> ขอบคุณที่มาร่วมกิจกรรม <a class=\"go\" href=\"/leaderboard/\" style=\"text-decoration:underline\">ดูอันดับ →</a>","f-ok"); return; }
+      if(!s.open){ msg("<b>ตอนนี้ยังไม่เปิดเช็กชื่อ</b> ครูจะเปิดให้ในคาบชมรม แล้วกลับมาหน้านี้อีกครั้ง"); return; }
+      if(s.kind==="puzzle" && !solvedLocally(s.week)){ msg("<b>ต้องตอบโจทย์สัปดาห์นี้ให้ถูกก่อน</b> แล้วจึงเช็กชื่อได้<br><a class=\"go\" href=\"/week/"+s.week+"/\" style=\"text-decoration:underline\">ไปที่โจทย์สัปดาห์ที่ "+s.week+" →</a>"); return; }
+      $("ckState").hidden=true; $("ckForm").hidden=false; loadSaved();
+    }).catch(function(){ msg("<b>เชื่อมต่อระบบไม่ได้</b> ลองรีเฟรชหน้าอีกครั้ง","f-no"); });
+  }
+  $("ckForm").addEventListener("submit",function(e){
+    e.preventDefault();
+    var nm=$("nm").value.trim(), gr=parseInt($("gr").value,10), rm=parseInt($("rm").value,10), no=parseInt($("no").value,10), nk=$("nk").value.trim();
+    var er=$("ckErr"); er.hidden=true;
+    if(nm.length<2){ er.textContent="กรอกชื่อและนามสกุลให้ครบ"; er.hidden=false; return; }
+    if(!(gr>=1&&gr<=6)){ er.textContent="เลือกชั้น"; er.hidden=false; return; }
+    if(!(rm>=1&&rm<=30)){ er.textContent="กรอกห้อง (ตัวเลข 1–30)"; er.hidden=false; return; }
+    if(!(no>=1&&no<=99)){ er.textContent="กรอกเลขที่ (ตัวเลข 1–99)"; er.hidden=false; return; }
+    $("ckSubmit").disabled=true;
+    sigmaStore("sigma-student",JSON.stringify({nm:nm,gr:gr,rm:rm,no:no,nk:nk}));
+    var solver=sigmaSolverId();
+    var pre = st.kind==="puzzle" ? sigmaRpc("record_solve",{p_week:st.week,p_solver:solver}) : Promise.resolve();
+    pre.then(function(){ return sigmaRpc("submit_checkin",{p_week:st.week,p_name:nm,p_grade:gr,p_room:rm,p_no:no,p_nick:nk,p_solver:solver}); }).then(function(r){
+      $("ckSubmit").disabled=false;
+      if(r==="ok"||r==="already"){
+        sigmaStore("sigma-ck-"+st.week,"1"); $("ckForm").hidden=true;
+        var d=$("ckDone"); d.hidden=false;
+        d.innerHTML = r==="ok" ? "<b>เช็กชื่อสำเร็จ!</b> "+(nk?"ชื่อเล่น “"+nk.replace(/[<>&]/g,"")+"” จะขึ้นในอันดับ":"คุณไม่ได้กรอกชื่อเล่น จึงไม่ขึ้นในอันดับ")+"<br><a class=\"go\" href=\"/leaderboard/\" style=\"text-decoration:underline\">ดูอันดับ →</a>" : "<b>เช็กชื่อสัปดาห์นี้ไปแล้ว</b> นับเป็นคนเดียว ไม่ต้องกรอกซ้ำ";
+      } else if(r==="closed"){ msg("<b>ปิดเช็กชื่อแล้ว</b> ครูปิดการเช็กชื่อรอบนี้แล้ว","f-no"); }
+      else if(r==="not_solved"){ msg("<b>ยังไม่พบการตอบโจทย์ถูก</b> กลับไปตอบโจทย์สัปดาห์นี้ก่อน","f-no"); }
+      else { er.textContent="ข้อมูลไม่ถูกต้อง ตรวจชื่อ ชั้น ห้อง เลขที่ อีกครั้ง"; er.hidden=false; }
+    }).catch(function(){ $("ckSubmit").disabled=false; er.textContent="ส่งไม่สำเร็จ ลองอีกครั้ง"; er.hidden=false; });
+  });
+  start();
+})();
+</script></div><div class="foot"><div class="wrap"><span class="pf" style="font-weight:700">67 Math Problem with Sigma Boys</span><span>Σ ผลรวมของทุกคนในชมรม</span></div></div></body></html>

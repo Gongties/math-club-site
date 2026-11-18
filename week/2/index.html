@@ -9,11 +9,12 @@
   <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
     <span class="tag mono">&gt; สัปดาห์ที่ 2</span>
     <h1 class="mono" style="font-weight:400;font-size:clamp(34px,8vw,52px);line-height:1.15;color:var(--g2);text-shadow:0 0 10px rgba(57,255,136,.55)">เจาะรหัสลับ ฉบับ67_</h1>
-    <p style="margin:0;font-size:20px;line-height:1.65">คุณจะได้ไขรหัสลับ 3 รหัสจากรูปภาพที่มีความสอดคล้องกัน ต้องไขรหัสจากรูปแรกให้ได้ก่อน จึงจะไขรหัสจากรูปต่อไปได้</p>
+    <p style="margin:0;font-size:20px;line-height:1.65">ไขรหัสจากภาพต่อไปนี้ แต่สังเกตให้ดี แต่ละภาพอาจเชื่อมกันอยู่</p>
   </div>
+  <div class="mono" id="sysline" style="font-size:16px;color:var(--g);letter-spacing:.5px">ΣYS.LOCKED // ใส่รหัสลับ</div>
   <div class="mono" id="prog" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:18px"></div>
-  <div class="stg" id="s1"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="tag mono">รูปที่ 1</span><span class="mono st" style="margin-left:auto;font-size:17px"></span></div><div class="imgbox" data-img="1"></div><form class="row" data-f="1" autocomplete="off"><input class="inp" placeholder="พิมพ์รหัสลับ" aria-label="รหัสลับรูปที่ 1"><button class="ck" type="submit">ตรวจรหัส</button><button class="hb" type="button" data-hint="1">ขอใบ้</button></form><div class="hintline mono" hidden></div><div class="msg mono" hidden></div></div><div class="stg" id="s2"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="tag mono">รูปที่ 2</span><span class="mono st" style="margin-left:auto;font-size:17px"></span></div><div class="imgbox" data-img="2"></div><form class="row" data-f="2" autocomplete="off"><input class="inp" placeholder="พิมพ์รหัสลับ" aria-label="รหัสลับรูปที่ 2"><button class="ck" type="submit">ตรวจรหัส</button><button class="hb" type="button" data-hint="2">ขอใบ้</button></form><div class="hintline mono" hidden></div><div class="msg mono" hidden></div></div><div class="stg" id="s3"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="tag mono">รูปที่ 3</span><span class="mono st" style="margin-left:auto;font-size:17px"></span></div><div class="imgbox" data-img="3"></div><form class="row" data-f="3" autocomplete="off"><input class="inp" placeholder="พิมพ์รหัสลับ" aria-label="รหัสลับรูปที่ 3"><button class="ck" type="submit">ตรวจรหัส</button><button class="hb" type="button" data-hint="3">ขอใบ้</button></form><div class="hintline mono" hidden></div><div class="msg mono" hidden></div></div>
-  <div class="msg mono" id="done" hidden style="padding:16px 18px;border:2px solid var(--g);font-size:20px">&gt; ไขครบทั้ง 3 รหัสแล้ว เก่งมาก!</div>
+  <div class="stg" id="s1"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="tag mono">รูปที่ 1</span><span class="mono st" style="margin-left:auto;font-size:17px"></span></div><div class="imgbox" data-img="1"></div><form class="row" data-f="1" autocomplete="off"><input class="inp" placeholder="พิมพ์รหัสลับ" aria-label="รหัสลับรูปที่ 1"><button class="ck" type="submit">เจาะรหัส ▶</button><button class="hb" type="button" data-hint="1">ขอใบ้</button></form><div class="hintline mono" hidden></div><div class="msg mono" hidden></div></div><div class="stg" id="s2"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="tag mono">รูปที่ 2</span><span class="mono st" style="margin-left:auto;font-size:17px"></span></div><div class="imgbox" data-img="2"></div><form class="row" data-f="2" autocomplete="off"><input class="inp" placeholder="พิมพ์รหัสลับ" aria-label="รหัสลับรูปที่ 2"><button class="ck" type="submit">เจาะรหัส ▶</button><button class="hb" type="button" data-hint="2">ขอใบ้</button></form><div class="hintline mono" hidden></div><div class="msg mono" hidden></div></div><div class="stg" id="s3"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="tag mono">รูปที่ 3</span><span class="mono st" style="margin-left:auto;font-size:17px"></span></div><div class="imgbox" data-img="3"></div><form class="row" data-f="3" autocomplete="off"><input class="inp" placeholder="พิมพ์รหัสลับ" aria-label="รหัสลับรูปที่ 3"><button class="ck" type="submit">เจาะรหัส ▶</button><button class="hb" type="button" data-hint="3">ขอใบ้</button></form><div class="hintline mono" hidden></div><div class="msg mono" hidden></div></div>
+  <div class="msg mono" id="done" hidden style="padding:16px 18px;border:2px solid var(--g);font-size:20px">&gt; เจาะระบบสำเร็จ // สุดยอด Sigma!</div>
   <div class="msg mono" id="ckBox" hidden style="padding:16px 18px;border:2px dashed var(--g);font-size:19px;line-height:1.55">&gt; เปิดเช็กชื่อประจำสัปดาห์อยู่ สมาชิกชมรมเช็กชื่อได้ที่นี่ คนนอกชมรมข้ามได้เลย<br><a href="/checkin/" style="text-decoration:underline;color:var(--g)">เช็กชื่อประจำสัปดาห์ &gt;</a></div>
 </div>
 <template id="img1"><div class="panel" role="img" aria-label="คำว่า โก ที่มี 6 คำ"><div style="inset:0;display:flex;align-items:center;justify-content:center"><span class="gl" style="font-size:12cqw;line-height:1.2">โกโกโกโกโกโก</span></div></div></template>
@@ -22,11 +23,11 @@
 <template id="imgL"><div class="panel" style="border-color:var(--gd)"><div style="inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:0 24px"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#39FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="1.5"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg><span class="mono" style="font-size:19px;line-height:1.4;color:var(--g)" id="lockmsg">ไขรหัสให้ได้ก่อน<br>จึงจะเห็นรูปนี้</span></div></div></template>
 <script>
 (function(){
-  var KEY="sigma-w2";
   var HS=["9nrfezehpn","2f132dya4mf","xn5w33khgg"];
-  var HINT=["2 พยางค์","ตัวพิมพ์ใหญ่","จำนวน 3 หลัก"];
-  var solved=parseInt(sigmaStore(KEY)||"0",10); if(!(solved>=0&&solved<=3)) solved=0;
-  var hinted=[false,false,false]; var vals=[]; try{vals=JSON.parse(sigmaStore(KEY+"v")||"[]")}catch(e){vals=[]}
+  var HINT=["QUmH1f/Wj9GJ39+BjrCT0eON2Lo=", "k9HyjdmH18vOh9X/1o/Hid/MgY6pk9Drjdi118vCh9Xs1o77", "k9HvjdmF18vwh9XG1o/qSVRNgY6ck9HCjdmH18vo"]; /* คำใบ้เข้ารหัสไว้ ไม่เห็นเป็นข้อความตรง ๆ ในโค้ด */
+  function dh(s){var b=atob(s),k="sigma67",a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i)^k.charCodeAt(i%k.length);return new TextDecoder().decode(a);}
+  var solved=0; /* ไม่จำความคืบหน้า: รีเฟรชหน้าแล้วเริ่มรูปที่ 1 ใหม่ */
+  var hinted=[false,false,false]; var vals=[];
   function norm(s){return String(s).replace(/\s+/g,"").toLowerCase();}
   function render(){
     for(var i=1;i<=3;i++){
@@ -41,13 +42,14 @@
       st.style.color = state==="lock" ? "#3C8F5F" : "var(--g)";
       inp.disabled = ck.disabled = hb.disabled = (state!=="cur");
       if(state==="done"){ inp.value=vals[i-1]||"ไขแล้ว"; }
-      hl.hidden = !(hinted[i-1] && state==="cur"); if(!hl.hidden) hl.textContent="> ใบ้: "+HINT[i-1];
+      hl.hidden = !(hinted[i-1] && state==="cur"); if(!hl.hidden) hl.textContent="> ใบ้: "+dh(HINT[i-1]);
       if(state!=="cur") el.querySelector(".msg").hidden=true;
     }
     var p=document.getElementById("prog");
     function lab(i){ return i<=solved ? "[รหัส "+i+" ✓]" : (i===solved+1 ? "[รหัส "+i+" กำลังไข]" : "[รหัส "+i+" ล็อก]"); }
     p.innerHTML='<span style="color:'+(solved>=1?"var(--g)":"var(--g2)")+'">'+lab(1)+'</span><span style="color:var(--gd)">──</span><span style="color:'+(solved>=2?"var(--g)":(solved===1?"var(--g2)":"#3C8F5F"))+'">'+lab(2)+'</span><span style="color:var(--gd)">──</span><span style="color:'+(solved>=3?"var(--g)":(solved===2?"var(--g2)":"#3C8F5F"))+'">'+lab(3)+'</span>';
     document.getElementById("done").hidden = solved<3;
+    document.getElementById("sysline").textContent = solved>=3 ? "ΣYS.UNLOCKED // เข้าได้แล้ว" : "ΣYS.LOCKED // ใส่รหัสลับ";
     if(solved>=3 && !window._ckAsked){ window._ckAsked=true; sigmaAfterSolve(2,"ckBox"); }
   }
   var forms=document.querySelectorAll("[data-f]");
@@ -59,9 +61,9 @@
       var inp=e.currentTarget.querySelector("input"), v=norm(inp.value), msg=document.getElementById("s"+n).querySelector(".msg");
       if(!v) return;
       if(sigmaHash(v)===HS[n-1]){
-        vals[n-1]=inp.value.trim(); sigmaStore(KEY+"v",JSON.stringify(vals));
-        solved=n; sigmaStore(KEY,String(solved)); render();
-      } else { msg.textContent="> รหัสไม่ถูกต้อง ลองใหม่อีกครั้ง"; msg.className="msg bad mono"; msg.hidden=false; }
+        vals[n-1]=inp.value.trim();
+        solved=n; render();
+      } else { msg.textContent="> เจาะไม่ผ่าน: รหัสไม่ถูกต้อง ลองใหม่อีกครั้ง"; msg.className="msg bad mono"; msg.hidden=false; }
     });
   }
   var hbs=document.querySelectorAll("[data-hint]");

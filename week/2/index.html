@@ -26,7 +26,7 @@
   var HS=["9nrfezehpn","2f132dya4mf","xn5w33khgg"];
   var HINT=["QUmH1f/Wj9GJ39+BjrCT0eON2Lo=", "k9HyjdmH18vOh9X/1o/Hid/MgY6pk9Drjdi118vCh9Xs1o77", "k9HvjdmF18vwh9XG1o/qSVRNgY6ck9HCjdmH18vo"]; /* คำใบ้เข้ารหัสไว้ ไม่เห็นเป็นข้อความตรง ๆ ในโค้ด */
   function dh(s){var b=atob(s),k="sigma67",a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i)^k.charCodeAt(i%k.length);return new TextDecoder().decode(a);}
-  var solved=0; /* ไม่จำความคืบหน้า: รีเฟรชหน้าแล้วเริ่มรูปที่ 1 ใหม่ */
+  var solved=0, view=1; /* ไม่จำความคืบหน้า: รีเฟรชหน้าแล้วเริ่มรูปที่ 1 ใหม่ */
   var hinted=[false,false,false]; var vals=[];
   function norm(s){return String(s).replace(/\s+/g,"").toLowerCase();}
   function render(){
@@ -34,7 +34,8 @@
       var el=document.getElementById("s"+i), box=el.querySelector(".imgbox"), st=el.querySelector(".st");
       var inp=el.querySelector("input"), ck=el.querySelector(".ck"), hb=el.querySelector(".hb"), hl=el.querySelector(".hintline");
       var state = i<=solved ? "done" : (i===solved+1 ? "cur" : "lock");
-      el.className="stg"+(state==="cur"?" cur":"")+(state==="lock"?" lock":"");
+      el.className="stg"+(state==="cur"?" cur":"")+(state==="lock"?" lock":""); el.hidden=(i!==view);
+      var oldnx=el.querySelector(".nx"); if(oldnx) oldnx.remove();
       var tpl=document.getElementById(state==="lock"?"imgL":"img"+i);
       box.innerHTML=""; box.appendChild(tpl.content.cloneNode(true));
       if(state==="lock"){ var lm=box.querySelector("#lockmsg"); if(lm) lm.innerHTML="ไขรหัสรูปที่ "+(i-1)+" ให้ได้ก่อน<br>จึงจะเห็นรูปนี้"; }
@@ -44,10 +45,12 @@
       if(state==="done"){ inp.value=vals[i-1]||"ไขแล้ว"; }
       hl.hidden = !(hinted[i-1] && state==="cur"); if(!hl.hidden) hl.textContent="> ใบ้: "+dh(HINT[i-1]);
       if(state!=="cur") el.querySelector(".msg").hidden=true;
+      if(state==="done" && i===solved && i<3 && i===view){ var nb=document.createElement("button"); nb.type="button"; nb.className="ck nx"; nb.textContent="ไปรหัสที่ "+(i+1)+" ▶"; nb.addEventListener("click",function(){ view=solved+1; render(); }); el.appendChild(nb); }
     }
     var p=document.getElementById("prog");
-    function lab(i){ return i<=solved ? "[รหัส "+i+" ✓]" : (i===solved+1 ? "[รหัส "+i+" กำลังไข]" : "[รหัส "+i+" ล็อก]"); }
+    function lab(i){ var t = i<=solved ? "[รหัส "+i+" ✓]" : (i===solved+1 ? "[รหัส "+i+" กำลังไข]" : "[รหัส "+i+" ล็อก]"); if(i>solved+1) return t; return '<button type="button" data-view="'+i+'" aria-label="ดูรหัสที่ '+i+'" style="background:none;border:0;padding:6px 2px;margin:0;font:inherit;color:inherit;cursor:pointer;text-decoration:'+(i===view?"underline":"none")+'">'+t+'</button>'; }
     p.innerHTML='<span style="color:'+(solved>=1?"var(--g)":"var(--g2)")+'">'+lab(1)+'</span><span style="color:var(--gd)">──</span><span style="color:'+(solved>=2?"var(--g)":(solved===1?"var(--g2)":"#3C8F5F"))+'">'+lab(2)+'</span><span style="color:var(--gd)">──</span><span style="color:'+(solved>=3?"var(--g)":(solved===2?"var(--g2)":"#3C8F5F"))+'">'+lab(3)+'</span>';
+    var vb=p.querySelectorAll("[data-view]"); for(var q=0;q<vb.length;q++) vb[q].addEventListener("click",function(e){ view=parseInt(e.currentTarget.getAttribute("data-view"),10); render(); });
     document.getElementById("done").hidden = solved<3;
     document.getElementById("sysline").textContent = solved>=3 ? "ΣYS.UNLOCKED // เข้าได้แล้ว" : "ΣYS.LOCKED // ใส่รหัสลับ";
     if(solved>=3 && !window._ckAsked){ window._ckAsked=true; sigmaAfterSolve(2,"ckBox"); }

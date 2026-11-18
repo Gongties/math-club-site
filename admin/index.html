@@ -17,7 +17,7 @@
     <div class="pbox" style="gap:14px;flex:none">
       <div class="pf" style="font-weight:800;font-size:24px">รายชื่อที่เช็กชื่อ: <span id="cnt">0</span> คน</div>
       <div id="rankNote" class="muted" style="font-size:16px;line-height:1.5" hidden>สัปดาห์ที่เป็นเกม: ใส่ลำดับในเกมของแต่ละคน (1 = ชนะ) คนที่เว้นว่างจะได้ 1 คะแนน แล้วกดบันทึกอันดับ</div>
-      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:17px" id="tb"><thead><tr style="text-align:left;color:var(--muted);font-size:14px"><th style="padding:6px">ชื่อ-นามสกุล</th><th style="padding:6px">ชั้น/ห้อง/เลขที่</th><th style="padding:6px">ชื่อเล่น</th><th style="padding:6px" class="rk">ลำดับในเกม</th></tr></thead><tbody id="tbody"></tbody></table></div>
+      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:17px" id="tb"><thead><tr style="text-align:left;color:var(--muted);font-size:14px"><th style="padding:6px">ชื่อ-นามสกุล</th><th style="padding:6px">ชั้น/ห้อง/เลขที่</th><th style="padding:6px">ชื่อเล่น</th><th style="padding:6px" class="rk">ลำดับในเกม</th><th style="padding:6px">ลบ</th></tr></thead><tbody id="tbody"></tbody></table></div>
       <div class="row"><button class="btn b-gold" id="bRank" type="button" hidden>บันทึกอันดับเกม</button></div>
       <div class="fb f-ok" id="rkMsg" hidden></div>
     </div>
@@ -46,7 +46,7 @@
       $("rankNote").hidden=!game; $("bRank").hidden=!game;
       var th=document.querySelectorAll(".rk"); for(var i=0;i<th.length;i++) th[i].style.display=game?"":"none";
       $("tbody").innerHTML=ROWS.map(function(r){
-        return '<tr><td>'+esc(r.name)+'</td><td>ม.'+r.grade+'/'+r.room+'/'+r.number+'</td><td>'+esc(r.nick||"—")+'</td>'+(game?'<td class="rk"><input class="inp" data-id="'+r.id+'" value="'+(r.rank||"")+'" inputmode="numeric" style="min-height:40px;width:80px;font-size:18px;flex:none"></td>':'<td class="rk" style="display:none"></td>')+'</tr>';
+        return '<tr><td>'+esc(r.name)+'</td><td>ม.'+r.grade+'/'+r.room+'/'+r.number+'</td><td>'+esc(r.nick||"—")+'</td>'+(game?'<td class="rk"><input class="inp" data-id="'+r.id+'" value="'+(r.rank||"")+'" inputmode="numeric" style="min-height:40px;width:80px;font-size:18px;flex:none"></td>':'<td class="rk" style="display:none"></td>')+'<td><button class="rb" type="button" data-del="'+r.id+'" aria-label="ลบรายการของ '+esc(r.name)+'">ลบ</button></td></tr>';
       }).join("");
     });
   }
@@ -62,6 +62,15 @@
   $("bOpen").addEventListener("click",function(){ save(true); });
   $("bClose").addEventListener("click",function(){ save(false); });
   $("bRef").addEventListener("click",function(){ refresh(); });
+  $("tbody").addEventListener("click",function(e){
+    var b=e.target.closest("[data-del]"); if(!b) return;
+    var id=parseInt(b.getAttribute("data-del"),10), row=null;
+    for(var i=0;i<ROWS.length;i++) if(ROWS[i].id===id) row=ROWS[i];
+    if(!row || !confirm("ลบรายการเช็กชื่อของ "+row.name+" (ม."+row.grade+"/"+row.room+"/"+row.number+") ใช่ไหม? ลบแล้วกู้คืนไม่ได้")) return;
+    sigmaRpc("admin_delete_checkin",{p_pass:PW,p_id:id}).then(function(ok){
+      flash("rkMsg", ok?"ลบรายการแล้ว":"ลบไม่สำเร็จ", !ok); if(ok) return loadList(ST.week,ST.kind);
+    }).catch(function(){ flash("rkMsg","ลบไม่สำเร็จ (ยังไม่ได้เพิ่มฟังก์ชัน admin_delete_checkin ใน Supabase หรือเชื่อมต่อไม่ได้)",true); });
+  });
   $("bRank").addEventListener("click",function(){
     var inputs=document.querySelectorAll("#tbody input[data-id]"), arr=[];
     for(var i=0;i<inputs.length;i++){ var v=parseInt(inputs[i].value,10); if(v>=1) arr.push({id:parseInt(inputs[i].getAttribute("data-id"),10),r:v}); }

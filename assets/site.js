@@ -66,3 +66,14 @@ function sigmaAfterSolve(week, boxId) {
     });
   }).catch(function () {});
 }
+
+/* กรองชื่อเล่นไม่เหมาะสม (ต้องตรงกับฟังก์ชัน _nick_ok ใน supabase-nick-filter.sql) */
+function sigmaBadNick(nick) {
+  var n = String(nick || "").toLowerCase().replace(/[\s!-\/:-@\[-`{-~]/g, "");
+  if (!n) return false;
+  var exact = ["หี", "ห่า"];
+  var part = ["ควย", "เหี้ย", "เชี่ย", "สัส", "แม่ง", "เย็ด", "ชิบหาย", "ระยำ", "ตอแหล", "อีดอก", "ไอ้สัตว์", "ไอ้ควาย", "ปัญญาอ่อน", "ไอ้โง่", "ไอ้บ้า", "นิโกร", "ไอ้อ้วน", "fuck", "shit", "bitch", "dick", "pussy", "porn", "sex", "เซ็กส์", "admin", "แอดมิน", "ครู", "อาจารย์"];
+  if (exact.indexOf(n) >= 0) return true;
+  for (var i = 0; i < part.length; i++) if (n.indexOf(part[i]) >= 0) return true;
+  return false;
+}

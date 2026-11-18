@@ -46,6 +46,7 @@
     if(!(gr>=1&&gr<=6)){ er.textContent="เลือกชั้น"; er.hidden=false; return; }
     if(!(rm>=1&&rm<=30)){ er.textContent="กรอกห้อง (ตัวเลข 1–30)"; er.hidden=false; return; }
     if(!(no>=1&&no<=99)){ er.textContent="กรอกเลขที่ (ตัวเลข 1–99)"; er.hidden=false; return; }
+    if(sigmaBadNick(nk)){ er.textContent="ชื่อเล่นนี้ใช้ไม่ได้ ลองชื่ออื่น"; er.hidden=false; return; }
     $("ckSubmit").disabled=true;
     sigmaStore("sigma-student",JSON.stringify({nm:nm,gr:gr,rm:rm,no:no,nk:nk}));
     var solver=sigmaSolverId();
@@ -58,6 +59,7 @@
         d.innerHTML = r==="ok" ? "<b>เช็กชื่อสำเร็จ!</b> "+(nk?"ชื่อเล่น “"+nk.replace(/[<>&]/g,"")+"” จะขึ้นในอันดับ":"คุณไม่ได้กรอกชื่อเล่น จึงไม่ขึ้นในอันดับ")+"<br><a class=\"go\" href=\"/leaderboard/\" style=\"text-decoration:underline\">ดูอันดับ →</a>" : "<b>เช็กชื่อสัปดาห์นี้ไปแล้ว</b> นับเป็นคนเดียว ไม่ต้องกรอกซ้ำ";
       } else if(r==="closed"){ msg("<b>ปิดเช็กชื่อแล้ว</b> ครูปิดการเช็กชื่อรอบนี้แล้ว","f-no"); }
       else if(r==="not_solved"){ msg("<b>ยังไม่พบการตอบโจทย์ถูก</b> กลับไปตอบโจทย์สัปดาห์นี้ก่อน","f-no"); }
+      else if(r==="bad_nick"){ er.textContent="ชื่อเล่นนี้ใช้ไม่ได้ ลองชื่ออื่น"; er.hidden=false; }
       else { er.textContent="ข้อมูลไม่ถูกต้อง ตรวจชื่อ ชั้น ห้อง เลขที่ อีกครั้ง"; er.hidden=false; }
     }).catch(function(){ $("ckSubmit").disabled=false; er.textContent="ส่งไม่สำเร็จ ลองอีกครั้ง"; er.hidden=false; });
   });

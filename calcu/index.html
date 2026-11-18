@@ -1118,7 +1118,7 @@ function playerBoot() {
 
 /* ============================================================ start ============================================================ */
 function roleScreen() {
-  document.getElementById("app").innerHTML = '<div class="role"><h1>Calcuเหรอ? <span style="font-size:1rem;color:#B4BEDA">ต้นแบบเรียลไทม์</span></h1><p>เลือกว่าหน้านี้ทำหน้าที่อะไร</p>' +
+  document.getElementById("app").innerHTML = '<div class="role"><a href="/games/" style="align-self:flex-start;color:#9C8CFF;font-weight:700;text-decoration:none;padding:8px 0">← กลับเว็บชมรม</a><h1>Calcuเหรอ? <span style="font-size:1rem;color:#B4BEDA">ต้นแบบเรียลไทม์</span></h1><p>เลือกว่าหน้านี้ทำหน้าที่อะไร</p>' +
     '<button class="rbtn pri" data-r="host">Host (จอโปรเจกเตอร์)<small>แสดงกระดานบนจอใหญ่ และเป็นผู้ควบคุมเกม</small></button><button class="rbtn" data-r="player">ผู้เล่น (มือถือ)<small>เข้าห้องด้วยรหัส แล้วเล่นบนมือถือ</small></button>' +
     '<div class="note">ต้นแบบนี้เชื่อมกันได้เฉพาะแท็บในเบราว์เซอร์เดียวกัน เพราะยังไม่ได้ต่อระบบกลาง (Supabase) ลองด้วยการเปิดลิงก์นี้หลายแท็บ: แท็บหนึ่งเป็น Host ที่เหลือเป็นผู้เล่น แท็บผู้เล่นควรย่อหน้าต่างให้แคบเท่ามือถือ</div></div>';
   document.getElementById("app").onclick = function (e) { var b = e.target.closest("[data-r]"); if (!b) return; document.getElementById("app").onclick = null; (b.dataset.r === "host" ? hostBoot : playerBoot)(); };

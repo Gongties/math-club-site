@@ -947,20 +947,22 @@ function renderHost() {
 /* ---- host animations ---- */
 var FX = { seq: null, sum: null, end: null, tick: null };
 function reduceMotion() { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } }
-/* slot-machine roll: starting numbers stop one after another, then the 15 board cells stop tier by tier from the apex down.
+/* slot-machine roll in two steps: first the 4 starting numbers roll and stop one after another; only then the 15 board cells
+   (shown as "?" until their turn) roll and stop tier by tier from the apex down.
    The roll writes into whatever nodes are on screen at each tick, so a re-render (someone booking) does not stop it. */
 function spinBoard() {
   clearInterval(FX.tick);
   var now = Date.now(), tiles = document.querySelectorAll("#stage .nt"), cells = document.querySelectorAll("#stage .hc b");
-  var items = [];
-  [].forEach.call(tiles, function (el, i) { items.push({ sel: ".nt", i: i, real: el.textContent, max: 15, stop: now + 700 + i * 260 }); });
-  [].forEach.call(cells, function (el, i) { items.push({ sel: ".hc b", i: i, real: el.textContent, max: Number(G.maxV) || 200, stop: now + 1700 + i * 110 }); });
+  var items = [], tilesEnd = now + 500 + (tiles.length - 1) * 250, cellsStart = tilesEnd + 250;
+  [].forEach.call(tiles, function (el, i) { items.push({ sel: ".nt", i: i, real: el.textContent, max: 15, start: now, stop: now + 500 + i * 250 }); });
+  [].forEach.call(cells, function (el, i) { items.push({ sel: ".hc b", i: i, real: el.textContent, max: Number(G.maxV) || 200, start: cellsStart, stop: cellsStart + 500 + i * 90 }); });
   var last = items.reduce(function (m, x) { return Math.max(m, x.stop); }, 0), done = {};
   FX.tick = setInterval(function () {
     var t = Date.now();
     items.forEach(function (it, k) {
       var el = document.querySelectorAll("#stage " + it.sel)[it.i]; if (!el) return;
-      if (t < it.stop) { el.textContent = rint(1, it.max); el.classList.add("rolling"); }
+      if (t < it.start) { el.textContent = "?"; }
+      else if (t < it.stop) { el.textContent = rint(1, it.max); el.classList.add("rolling"); }
       else { el.textContent = it.real; el.classList.remove("rolling"); if (!done[k]) { done[k] = 1; el.classList.remove("fxpop"); void el.offsetWidth; el.classList.add("fxpop"); } }
     });
     if (t > last + 80) clearInterval(FX.tick);

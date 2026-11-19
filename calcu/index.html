@@ -705,7 +705,7 @@ var DEF_CFG = { room: "ห้องชมรม", target: 50, start: 0, ranges: 
    "king" = reach the target AND be the only leader at the end of 2 rounds in a row (overtaken -> the overtaker takes the throne and the count restarts);
    "kingsd" = like "king", but being overtaken in the 2nd round starts a Sudden Death between the holder and the overtaker */
 var SD_SECS = 60, SD_SKIP = 2;   /* Sudden Death: 60 s race, dropping a cell costs 2 points */
-var END_NAMES = { crown: "ชิงมงกุฎ (แบบเดิม)", king: "ศึกครองบัลลังก์", kingsd: "ศึกครองบัลลังก์ + Sudden Death" };
+var END_NAMES = { crown: "ศึกชิงมง (แบบเดิม)", king: "ศึกครองบัลลังก์", kingsd: "ศึกครองบัลลังก์ + Sudden Death" };
 var END_HELP = {
   crown: "มีคนถึงเป้า → เล่นอีก 1 รอบเป็นรอบสุดท้าย → คะแนนสูงสุดชนะ",
   king: "ต้องถึงเป้าและนำเดี่ยว 2 รอบติดกันจึงชนะ ถ้าถูกแซง บัลลังก์ตกเป็นของคนที่แซง (ต้องถึงเป้า) แล้วเริ่มนับใหม่",

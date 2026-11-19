@@ -447,17 +447,23 @@ function genBoard(pools, reach) {
   }
   return cells;
 }
-/* decoys: a few cells (more likely in the lower rows, which nobody dares to challenge otherwise) get a value that this round's numbers CANNOT build,
-   so a challenge on them can really succeed. At most DECOY_MAX per board, so at least 10 of the 15 cells stay buildable.
-   A decoy is drawn from its own tier's pool first and from the nearest tier otherwise; values inside a row are re-sorted, scores stay in place. */
-var DECOY_P = { 1: 0.05, 2: 0.10, 3: 0.20, 4: 0.30, 5: 0.40 }, DECOY_MAX = 5;
-function addDecoys(cells, pools, reach) {
+/* decoys: some cells get a value that this round's numbers CANNOT build, so a challenge on them can really succeed.
+   Each board picks one pattern [chance %, decoys among the 9 cells of the two bottom rows, decoys among the 6 cells of the three top rows]
+   (the chances add up to 100; the bottom rows always get at least 1). Which cells become decoys is random inside each group,
+   so at least 11 of the 15 cells stay buildable. A decoy value is drawn from its own tier's pool first and from the nearest tier otherwise;
+   values inside a row are re-sorted afterwards, scores stay in place. */
+var DECOY_PATTERNS = [[20, 3, 1], [25, 3, 0], [10, 2, 2], [10, 2, 1], [15, 2, 0], [10, 1, 1], [10, 1, 0]];
+function pickDecoyPattern() {
+  var r = Math.random() * 100, acc = 0;
+  for (var i = 0; i < DECOY_PATTERNS.length; i++) { acc += DECOY_PATTERNS[i][0]; if (r < acc) return DECOY_PATTERNS[i]; }
+  return DECOY_PATTERNS[DECOY_PATTERNS.length - 1];
+}
+function addDecoys(cells, pools, reach, pat) {
   if (!reach) return cells;
-  var taken = {}, n = 0;
+  pat = pat || pickDecoyPattern();
+  var taken = {};
   cells.forEach(function (c) { taken[c.value] = 1; });
-  shuffle(cells.map(function (c) { return c.id; })).forEach(function (id) {
-    var c = cells[id];
-    if (n >= DECOY_MAX || Math.random() >= DECOY_P[c.tier]) return;
+  function turn(c) {
     var v = null;
     for (var d = 0; d <= 4 && v === null; d++) {
       [c.tier - d, c.tier + d].forEach(function (k, i, a) {
@@ -467,8 +473,10 @@ function addDecoys(cells, pools, reach) {
       });
     }
     if (v === null) return;
-    delete taken[c.value]; taken[v] = 1; c.value = v; n++;
-  });
+    delete taken[c.value]; taken[v] = 1; c.value = v;
+  }
+  shuffle(cells.filter(function (c) { return c.tier >= 4; })).slice(0, pat[1]).forEach(turn);
+  shuffle(cells.filter(function (c) { return c.tier <= 3; })).slice(0, pat[2]).forEach(turn);
   for (var tier = 1; tier <= 5; tier++) {
     var row = cells.filter(function (c) { return c.tier === tier; }), vals = row.map(function (c) { return c.value; }).sort(function (x, y) { return x - y; });
     row.forEach(function (c, i) { c.value = vals[i]; });

@@ -700,7 +700,18 @@ var MODE = null;   /* "host" | "player" */
 
 /* ============================================================ HOST ============================================================ */
 var DEF_CFG = { room: "ห้องชมรม", target: 50, start: 0, ranges: [[1, 5], [1, 10], [1, 12], [1, 15]], showScores: true, maxMult: 3, penalty: "value",
-  negMode: "none", negCustom: -20, chMode: "none", chCustom: 3, t1: 20, t2: 15, t3: 30, maxResult: 200, earlyEnd: true, showSolution: true };
+  negMode: "none", negCustom: -20, chMode: "none", chCustom: 3, t1: 20, t2: 15, t3: 30, maxResult: 200, earlyEnd: true, showSolution: true, endMode: "crown" };
+/* how a game ends: "crown" = the original rule (someone reaches the target -> one more round -> top score wins);
+   "king" = reach the target AND be the only leader at the end of 2 rounds in a row (overtaken -> the overtaker takes the throne and the count restarts);
+   "kingsd" = like "king", but being overtaken in the 2nd round starts a Sudden Death between the holder and the overtaker */
+var SD_SECS = 60, SD_SKIP = 2;   /* Sudden Death: 60 s race, dropping a cell costs 2 points */
+var END_NAMES = { crown: "ชิงมงกุฎ (แบบเดิม)", king: "ศึกครองบัลลังก์", kingsd: "ศึกครองบัลลังก์ + Sudden Death" };
+var END_HELP = {
+  crown: "มีคนถึงเป้า → เล่นอีก 1 รอบเป็นรอบสุดท้าย → คะแนนสูงสุดชนะ",
+  king: "ต้องถึงเป้าและนำเดี่ยว 2 รอบติดกันจึงชนะ ถ้าถูกแซง บัลลังก์ตกเป็นของคนที่แซง (ต้องถึงเป้า) แล้วเริ่มนับใหม่",
+  kingsd: "เหมือนศึกครองบัลลังก์ แต่ถ้าในรอบที่ 2 ผู้ครองถูกแซง หรือคะแนนต่ำกว่าเป้าขณะที่คนอื่นถึงเป้าและนำ จะดวล Sudden Death 60 วินาทีกับคนที่นำ (นำเท่ากันหลายคนดวลพร้อมกัน) แข่งแก้ช่องเก็บแต้ม ทิ้งช่องเสีย 2 แต้ม"
+};
+function kingMode() { return H.cfg.endMode === "king" || H.cfg.endMode === "kingsd"; }
 var H = { code: "", cfg: JSON.parse(JSON.stringify(DEF_CFG)), players: [], nextIdx: 0, phase: "lobby", G: null, poolCache: {}, showCfg: false };
 var G = null;
 
@@ -720,7 +731,7 @@ function secsLeft() { return !G || (!G.deadline && !G.paused) ? "–" : String(M
 
 function hostNewGame() {
   var sc = {}; H.players.forEach(function (p) { sc[p.pid] = Number(H.cfg.start) || 0; });
-  G = H.G = { round: 0, isFinal: false, finalPending: false, ended: false, scores: sc, lastDelta: {}, breakdown: null };
+  G = H.G = { round: 0, isFinal: false, finalPending: false, ended: false, scores: sc, lastDelta: {}, breakdown: null, king: null, kingEv: null, kingWin: null, sd: null, sdPending: null };
   var key = JSON.stringify(cfgRanges()) + "|" + cfgMax();
   if (!H.poolCache[key]) H.poolCache[key] = buildPools(cfgRanges(), cfgMax());
   G.pools = H.poolCache[key]; G.maxV = cfgMax();
@@ -737,7 +748,7 @@ function resetBoard() {
 }
 function setPhase(ph) {
   H.phase = ph;
-  var c = H.cfg, t = ph === "p1" ? c.t1 : ph === "p2" ? c.t2 : ph === "p3" ? c.t3 : 0;
+  var c = H.cfg, t = ph === "p1" ? c.t1 : ph === "p2" ? c.t2 : ph === "p3" ? c.t3 : ph === "sd" ? SD_SECS : 0;
   G.paused = false; G.remaining = 0; G.deadline = t ? Date.now() + Number(t) * 1000 : 0;
 }
 function advance() {
@@ -748,7 +759,8 @@ function advance() {
   } else if (H.phase === "p2") {
     if (challengedList().length) setPhase("p3"); else enterReveal();
   } else if (H.phase === "p3") enterReveal();
-  else if (H.phase === "p4" && MODE === "head" && G.summarized && !G.ended) startRound();   /* phone-only room: the countdown ran out, start the next round by itself */
+  else if (H.phase === "p4" && MODE === "head" && G.summarized && !G.ended) { if (G.sdPending) startSD(); else startRound(); }   /* phone-only room: the countdown ran out, start the next round (or the Sudden Death) by itself */
+  else if (H.phase === "sd") finishSD();
 }
 function enterReveal() {
   var unch = Object.keys(G.res).filter(function (t) { return !(G.chal[t] || []).length; });
@@ -776,12 +788,86 @@ function summarize() {
   var fl = negFloor();
   H.players.forEach(function (p) { G.scores[p.pid] = clampScore(G.scores[p.pid] + (delta[p.pid] || 0), fl); });
   G.lastDelta = delta; G.summarized = true;
+  if (kingMode()) { kingStep(); return; }
   if (G.isFinal) G.ended = true;
   else if (H.players.some(function (p) { return G.scores[p.pid] >= Number(H.cfg.target); })) { G.finalPending = true; G.prevScores = JSON.parse(JSON.stringify(G.scores)); }   /* total scores at the end of the round before the final round: used to break a tie at the end */
 }
+/* throne rules ("king"/"kingsd"), run once at the end of every round.
+   G.king = {pid, n}: n = rounds held so far. Holding = score >= target and nobody higher (a tie with the holder keeps the holder).
+   "king": holder below the target -> loses it; overtaken by one leader -> that leader takes it (count 1); by several tied leaders -> nobody holds.
+   "kingsd": holder below the target or overtaken, while other leader(s) are at/over the target -> Sudden Death between the holder and those leader(s)
+   (several tied leaders = a duel of 3 or more); holder below the target with nobody else at/over it -> nobody holds.
+   No holder: a single leader at/over the target takes it (count 1).
+   Holding at the end of a 2nd round in a row wins. G.kingEv describes what happened, for the screens. */
+function kingStep() {
+  var T = Number(H.cfg.target), sc = G.scores, list = ranking(), top = sc[list[0].pid];
+  var tops = list.filter(function (p) { return sc[p.pid] === top; }), k = G.king, ev = { t: "none" };
+  if (k && !findP(k.pid)) k = null;
+  if (k) {
+    var ks = sc[k.pid], others = tops.filter(function (p) { return p.pid !== k.pid; }).map(function (p) { return p.pid; });
+    if (H.cfg.endMode === "kingsd" && (ks < T || top > ks) && top >= T && others.length) {
+      G.sdPending = { ps: [k.pid].concat(others) }; ev = { t: "sd", old: k.pid, ps: others, drop: ks < T }; k = null;
+    }
+    else if (ks < T) { ev = { t: "drop", old: k.pid }; k = null; }
+    else if (top > ks) {
+      if (tops.length === 1) { ev = { t: "pass", old: k.pid, pid: tops[0].pid }; k = { pid: tops[0].pid, n: 1 }; }
+      else { ev = { t: "lost", old: k.pid }; k = null; }
+    } else {
+      k = { pid: k.pid, n: k.n + 1 };
+      if (k.n >= 2) { G.ended = true; G.kingWin = k.pid; ev = { t: "win", pid: k.pid }; }
+      else ev = { t: "keep", pid: k.pid };
+    }
+  }
+  if (!k && ev.t !== "sd" && tops.length === 1 && top >= T) { k = { pid: tops[0].pid, n: 1 }; ev.pid = k.pid; ev.t = ev.t === "drop" ? "dropnew" : "new"; }
+  G.king = k; G.kingEv = ev;
+}
+/* ----- Sudden Death: the throne holder and the overtaker race for 60 s on a fresh board.
+   Tap a free cell -> it is yours to solve; solved = its points, "drop" = −2 and the cell is gone for both. A cell taken once is never free again.
+   More points wins; equal = shared win. These points only decide the duel, they are not added to the total scores. ----- */
+function startSD() {
+  var d = G.sdPending; if (!d) return;
+  G.sdPending = null; G.toast = "";
+  G.nums = genNums(cfgRanges()); G.best = solveAll(G.nums, G.maxV); G.cells = addDecoys(genBoard(G.pools, G.best), G.pools, G.best); G.boardSeq = (G.boardSeq || 0) + 1;
+  G.res = {}; G.chal = {}; G.subs = {}; G.subTree = {}; G.steps = []; G.rev = 0; G.summarized = false; G.lastDelta = {}; G.breakdown = null;
+  var pts = {}, cur = {}; d.ps.forEach(function (p) { pts[p] = 0; cur[p] = null; });
+  G.sd = { ps: d.ps.slice(), pts: pts, cur: cur, used: {}, over: false, winners: null };
+  setPhase("sd");
+}
+function sdIn(pid) { return !!(G.sd && G.sd.ps.indexOf(pid) >= 0); }
+function sdFree(id) { var s = G.sd; return !s.used[id] && s.ps.every(function (p) { return s.cur[p] !== id; }); }
+function finishSD() {
+  var s = G.sd; if (!s || s.over) return;
+  var best = Math.max.apply(null, s.ps.map(function (p) { return s.pts[p]; }));
+  s.ps.forEach(function (p) { s.cur[p] = null; });
+  s.over = true; s.winners = s.ps.filter(function (p) { return s.pts[p] === best; });
+  G.ended = true; G.toast = "";
+  setPhase("sdr");
+}
 function ranking() { return H.players.slice().sort(function (a, b) { return G.scores[b.pid] - G.scores[a.pid]; }); }
-/* winner(s): highest score; if tied, the higher total score at the end of the round before the final round; still tied = shared win */
+/* final order for the end screens: the winner(s) first; after a Sudden Death the other duellists next (by Sudden Death points); then everyone else by total score.
+   rk = the place shown (equal scores share a place among the rest) */
+function endOrder() {
+  var ei = endInfo(), win = ranking().filter(function (p) { return ei.winners.indexOf(p.pid) >= 0; }), out = [], rk = 1;
+  win.forEach(function (p) { out.push({ p: p, rk: 1 }); });
+  rk = win.length + 1;
+  var s = G.sd && G.sd.over ? G.sd : null, lose = s ? s.ps.filter(function (p) { return s.winners.indexOf(p) < 0 && findP(p); }) : [];
+  lose.sort(function (x, y) { return s.pts[y] - s.pts[x]; });
+  var lp = null, lrk = rk;
+  lose.forEach(function (pid, i) { if (s.pts[pid] !== lp) { lrk = rk + i; lp = s.pts[pid]; } out.push({ p: findP(pid), rk: lrk }); });
+  rk += lose.length;
+  var rest = ranking().filter(function (p) { return ei.winners.indexOf(p.pid) < 0 && lose.indexOf(p.pid) < 0; }), prev = null, prk = rk;
+  rest.forEach(function (p, i) { var sc0 = G.scores[p.pid]; if (sc0 !== prev) { prk = rk + i; prev = sc0; } out.push({ p: p, rk: prk }); });
+  return out;
+}
+/* winner(s): highest score; if tied, the higher total score at the end of the round before the final round; still tied = shared win.
+   Throne modes: the Sudden Death winner(s), or the throne holder who held 2 rounds; a game stopped by the end button = highest score (tied = shared) */
 function endInfo() {
+  if (kingMode()) {
+    if (G.sd && G.sd.over) return { top: G.scores[G.sd.winners[0]], tied: G.sd.winners.length, winners: G.sd.winners.slice(), decided: false, sd: true };
+    if (G.kingWin) return { top: G.scores[G.kingWin], tied: 1, winners: [G.kingWin], decided: false, king: true };
+    var l2 = ranking(), t2 = G.scores[l2[0].pid], w2 = l2.filter(function (p) { return G.scores[p.pid] === t2; });
+    return { top: t2, tied: w2.length, winners: w2.map(function (p) { return p.pid; }), decided: false };
+  }
   var list = ranking(), top = G.scores[list[0].pid], tied = list.filter(function (p) { return G.scores[p.pid] === top; }), w = tied, pv = G.prevScores;
   if (tied.length > 1 && pv) {
     var val = function (p) { return pv[p.pid] === undefined ? -Infinity : pv[p.pid]; };
@@ -830,6 +916,9 @@ function publicState() {
     st.owners = owners; st.remaining = G.deadline || G.paused ? (G.paused ? G.remaining : Math.max(0, G.deadline - Date.now())) : null;
     st.paused = G.paused; st.summarized = G.summarized; st.finalPending = G.finalPending; st.ended = G.ended; st.rows = rows; st.toast = G.toast;
     var ei = endInfo(); st.winners = ei.winners; st.tieDecided = ei.decided;
+    st.endMode = H.cfg.endMode; st.king = G.king; st.kev = G.summarized ? G.kingEv : null; st.sdPending = G.sdPending; st.kingWin = G.kingWin;
+    if (G.sd) st.sd = { ps: G.sd.ps, pts: G.sd.pts, cur: G.sd.cur, used: G.sd.used, over: G.sd.over, winners: G.sd.winners };
+    if (H.phase === "end" && kingMode()) st.rows = endOrder().map(function (o) { return { pid: o.p.pid, name: o.p.name, idx: o.p.idx, score: G.scores[o.p.pid], d: null, rk: o.rk }; });
     st.me = {}; H.players.forEach(function (p) { st.me[p.pid] = myInfo(p.pid); });
   } else {
     st.me = {}; H.players.forEach(function (p) { st.me[p.pid] = { res: null, myChals: [], challenged: null, solved: false, solHtml: "", lines: null, rank: 0, score: 0, delta: null }; });
@@ -866,7 +955,7 @@ function broadcast() {   /* coalesce bursts: at most one full state per gap, a t
   else if (!BC.t) BC.t = setTimeout(function () { BC.t = null; BC.last = Date.now(); Net.send(publicState()); }, gap - (now - BC.last));
 }
 var SV = { t: null };
-var G_KEYS = ["round", "isFinal", "finalPending", "ended", "scores", "lastDelta", "breakdown", "nums", "cells", "res", "chal", "subs", "subTree", "steps", "rev", "summarized", "paused", "remaining", "deadline", "toast", "maxV", "prevScores"];
+var G_KEYS = ["round", "isFinal", "finalPending", "ended", "scores", "lastDelta", "breakdown", "nums", "cells", "res", "chal", "subs", "subTree", "steps", "rev", "summarized", "paused", "remaining", "deadline", "toast", "maxV", "prevScores", "king", "kingEv", "kingWin", "sd", "sdPending"];
 function saveHost() {   /* the host keeps the whole game in this browser, so a reload of the host page can continue it */
   clearTimeout(SV.t);
   SV.t = setTimeout(function () {
@@ -944,7 +1033,27 @@ function onHostMsg(m) {
       G.toast = "ทุกคนไขได้แล้ว ไปเฟสเฉลยใน 2 วินาที";
     }
     changed();
+  } else if (H.phase === "sd" && sdIn(pid) && !G.sd.over && !G.paused) {   /* Sudden Death */
+    var s = G.sd;
+    if (m.type === "sdpick" && s.cur[pid] === null) {
+      var sc2 = G.cells[m.cell]; if (!sc2 || !sdFree(sc2.id)) return;
+      s.cur[pid] = sc2.id; changed();
+    } else if (m.type === "sdsub" && s.cur[pid] !== null) {
+      var cc = G.cells[s.cur[pid]], tk;
+      if (m.cell !== cc.id) return;   /* an answer for a cell the player has already left */
+      try { tk = treeTokens(m.node); } catch (e3) { return; }
+      var r3; try { r3 = checkEquation(tk, G.nums, cc.value); } catch (e4) { return; }
+      if (!r3.pass) return;
+      s.used[cc.id] = { p: pid, s: "done", eq: treeHtml(m.node) }; s.pts[pid] += cc.score; s.cur[pid] = null;
+      sdCheckDone(); changed();
+    } else if (m.type === "sdskip" && s.cur[pid] !== null && m.cell === s.cur[pid]) {
+      s.used[s.cur[pid]] = { p: pid, s: "drop" }; s.pts[pid] -= SD_SKIP; s.cur[pid] = null;
+      sdCheckDone(); changed();
+    }
   }
+}
+function sdCheckDone() {   /* every cell used up: the duel ends at once */
+  if (G.cells.every(function (c) { return G.sd.used[c.id]; })) finishSD();
 }
 
 /* ----- host actions ----- */
@@ -962,6 +1071,7 @@ var HACT = {
   next: function () { if (G.rev < G.steps.length) G.rev++; changed(); },
   toSum: function () { if (!G.summarized) summarize(); changed(); },
   nextRound: function () { startRound(); changed(); },
+  startSD: function () { if (G && G.sdPending && G.summarized) { startSD(); changed(); } },
   askEnd: function () { if (!G || H.ce) return; H.ce = true; H.ceTimer = !!(G.deadline && !G.paused); if (H.ceTimer) { G.remaining = Math.max(0, G.deadline - Date.now()); G.paused = true; } changed(); },
   cancelEnd: function () { if (!H.ce) return; H.ce = false; if (H.ceTimer && G.paused) { G.deadline = Date.now() + G.remaining; G.paused = false; } H.ceTimer = false; changed(); },
   doEnd: function () { if (!H.ce) return; H.ce = false; H.ceTimer = false; H.phase = "end"; G.deadline = 0; G.paused = false; changed(); },
@@ -978,7 +1088,7 @@ var HACT = {
 
 /* ----- host views (1920x1080 stage, same layout as the design boards) ----- */
 function hdr(title, sub, right) {
-  return '<div class="hdr"><div class="hl"><div class="s1" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">รหัสห้อง <b class="hd" style="font-size:38px;color:#FFD65A;letter-spacing:.08em">' + H.code + '</b> · ' + esc(H.cfg.room) + " · เป้า " + H.cfg.target + '</div><div class="s2">รอบที่ ' + G.round + (G.isFinal ? " · รอบสุดท้าย" : "") +
+  return '<div class="hdr"><div class="hl"><div class="s1" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">รหัสห้อง <b class="hd" style="font-size:38px;color:#FFD65A;letter-spacing:.08em">' + H.code + '</b> · ' + esc(H.cfg.room) + " · เป้า " + H.cfg.target + '</div><div class="s2">' + (H.phase === "sd" || H.phase === "sdr" ? "Sudden Death" : "รอบที่ " + G.round) + (G.isFinal ? " · รอบสุดท้าย" : "") + (kingMode() && G.king && H.phase !== "sd" && H.phase !== "sdr" ? " · บัลลังก์: " + esc(hname(G.king.pid)) : "") +
     '</div></div><div class="hc2"><div class="ti">' + title + '</div><div class="su">' + sub + '</div></div><div class="hr">' + right + "</div></div>";
 }
 function ring() { return '<div class="ring" id="tm">' + secsLeft() + "</div>"; }
@@ -1007,7 +1117,7 @@ function hLobby() {
   var csz = H.players.length > 30 ? " xs" : H.players.length > 14 ? " sm" : "";
   var chips = H.players.map(function (p) { return '<div class="chip' + csz + '"><i style="background:' + hcol(p.pid) + '"></i>' + esc(p.name) + "</div>"; }).join("");
   return '<div style="display:flex;gap:80px;flex:1;min-height:0"><div style="width:760px;display:flex;flex-direction:column;gap:28px">' +
-    '<div><div class="hd" style="font-weight:700;font-size:120px;line-height:1.15">Calcuเหรอ?</div><div style="font-size:44px;line-height:1.3;color:#B4BEDA">' + esc(H.cfg.room) + " · เป้าหมาย " + H.cfg.target + ' คะแนน</div></div>' +
+    '<div><div class="hd" style="font-weight:700;font-size:120px;line-height:1.15">Calcuเหรอ?</div><div style="font-size:44px;line-height:1.3;color:#B4BEDA">' + esc(H.cfg.room) + " · เป้าหมาย " + H.cfg.target + ' คะแนน</div><div style="font-size:34px;line-height:1.3;color:#9C8CFF">วิธีจบเกม: ' + END_NAMES[H.cfg.endMode || "crown"] + '</div></div>' +
     '<div><div style="font-size:34px;line-height:1.3;color:#B4BEDA">รหัสห้อง</div><div class="hd" style="font-weight:700;font-size:170px;line-height:1.1;letter-spacing:.12em;color:#FFD65A">' + H.code + '</div></div>' +
     '<div style="font-size:36px;line-height:1.55"><div>1  เปิดเว็บไซต์ของชมรมบนมือถือ</div><div>2  เลือก “ผู้เล่น” แล้วใส่รหัสห้อง</div><div>3  ตั้งชื่อเล่น (เล่นเป็นคู่/กลุ่มใช้เครื่องเดียวกันได้)</div></div>' +
     '<div style="display:flex;align-items:center;gap:24px"><button class="gb" data-a="resetRoom" style="white-space:nowrap">' + (H.cr ? "กดอีกครั้งเพื่อล้างห้องและสร้างรหัสใหม่" : "สร้างห้องใหม่") + '</button><a href="/games/" style="font-size:30px;font-weight:700;color:#9C8CFF;text-decoration:none;white-space:nowrap">← กลับเว็บชมรม</a></div></div>' +
@@ -1113,6 +1223,10 @@ function hP4() {
 function ownD2(t) { return (G.res[t] !== undefined) ? cellOf(t).score : 0; }
 /* plain-text ranking for the Copy button: everyone, not just the top 10 */
 function rankText() {
+  if (kingMode() && (G.ended || H.phase === "end")) {
+    var eo = endOrder();
+    return "Calcuเหรอ? · " + H.cfg.room + " · ผลสุดท้าย (เป้า " + H.cfg.target + ")\n" + eo.map(function (o) { return o.rk + ". " + o.p.name + " — " + G.scores[o.p.pid]; }).join("\n") + (G.sd && G.sd.over ? "\n" + sdScoreLine(hname).replace(/<[^>]*>/g, "") : "");
+  }
   var list = ranking(), head = "Calcuเหรอ? · " + H.cfg.room + " · " + (G.ended || H.phase === "end" ? "ผลสุดท้าย" : "สรุปรอบที่ " + G.round) + " (เป้า " + H.cfg.target + ")";
   return head + "\n" + list.map(function (p) { return rankOf(p.pid) + ". " + p.name + " — " + G.scores[p.pid]; }).join("\n");
 }
@@ -1124,19 +1238,44 @@ function hSummary() {
   var oldList = rankingBy(oldSc);
   var rows = shown.map(function (p, i) {
     var sc = G.scores[p.pid], d = G.lastDelta[p.pid] || 0, rk = rankOf(p.pid), oi = oldList.indexOf(p), rk0 = rankIn(oldSc, p.pid);
-    return '<div class="lr ab' + (sc >= target && (G.finalPending || G.ended) ? ' crowned' : '') + '" data-y="' + i * P + '" data-y0="' + oi * P + '" style="top:' + i * P + 'px"><div class="rk" data-t="' + rk + '" data-t0="' + rk0 + '">' + rk + '</div><div class="nm"><i style="background:' + hcol(p.pid) + '"></i>' + esc(p.name) + '</div><div class="bar2"><div data-w="' + Math.max(0, Math.min(100, Math.round(100 * sc / target))) + '" data-w0="' + Math.max(0, Math.min(100, Math.round(100 * (sc - d) / target))) + '" style="width:' + Math.max(0, Math.min(100, Math.round(100 * sc / target))) + '%"></div></div><div class="sc2">' + fmtN(sc) + '</div><div class="dl2 ' + (d > 0 ? "up" : d < 0 ? "dn" : "ze") + '">' + (d > 0 ? "▲ +" : d < 0 ? "▼ −" : "") + Math.abs(d) + "</div></div>";
+    return '<div class="lr ab' + ((kingMode() ? (G.king && G.king.pid === p.pid) || G.kingWin === p.pid || (G.sdPending && G.sdPending.ps.indexOf(p.pid) >= 0) : sc >= target && (G.finalPending || G.ended)) ? ' crowned' : '') + '" data-y="' + i * P + '" data-y0="' + oi * P + '" style="top:' + i * P + 'px"><div class="rk" data-t="' + rk + '" data-t0="' + rk0 + '">' + rk + '</div><div class="nm"><i style="background:' + hcol(p.pid) + '"></i>' + esc(p.name) + '</div><div class="bar2"><div data-w="' + Math.max(0, Math.min(100, Math.round(100 * sc / target))) + '" data-w0="' + Math.max(0, Math.min(100, Math.round(100 * (sc - d) / target))) + '" style="width:' + Math.max(0, Math.min(100, Math.round(100 * sc / target))) + '%"></div></div><div class="sc2">' + fmtN(sc) + '</div><div class="dl2 ' + (d > 0 ? "up" : d < 0 ? "dn" : "ze") + '">' + (d > 0 ? "▲ +" : d < 0 ? "▼ −" : "") + Math.abs(d) + "</div></div>";
   }).join("");
   var lead = list[0], crowned = list.filter(function (p) { return G.scores[p.pid] >= target; });
+  var kt = kingMode() ? kingText(G.kingEv, G.king, hname) : null;
   var side = '<div style="width:420px;flex:none;padding:32px;border-radius:28px;background:#171E38;border:3px solid #2B3560;display:flex;flex-direction:column;gap:12px"><div style="font-size:32px;line-height:1.3;color:#B4BEDA">แถบเต็ม = เป้าหมาย</div><div class="hd" style="font-weight:700;font-size:140px;line-height:1.1;color:#FFD65A">' + target + "</div>" +
-    (G.ended ? '<div style="font-size:36px;line-height:1.4">จบรอบสุดท้ายแล้ว</div>' :
-      G.finalPending ? '<div style="font-size:36px;line-height:1.4">ครองบัลลังก์: ' + crowned.map(function (p) { return esc(p.name); }).join(", ") + '<br><span style="color:#B4BEDA">รอบถัดไปเป็นรอบสุดท้าย</span></div>' :
+    (kt ? '<div style="font-size:36px;line-height:1.4">' + kt[0] + "</div>" + (kt[1] ? '<div style="font-size:30px;line-height:1.4;color:#B4BEDA">' + kt[1] + "</div>" : "") :
+    G.ended ?'<div style="font-size:36px;line-height:1.4">จบรอบสุดท้ายแล้ว</div>' :
+      G.finalPending ? '<div style="font-size:36px;line-height:1.4">' + crowned.map(function (p) { return esc(p.name); }).join(", ") + ' กำลังสวมมงกุฎ<br><span style="color:#B4BEDA">รอบถัดไปเป็นรอบสุดท้าย</span></div>' :
         '<div style="font-size:36px;line-height:1.4">ยังไม่มีใครถึงเป้า</div><div style="font-size:36px;line-height:1.4;color:#B4BEDA">' + esc(lead.name) + " นำอยู่ ขาดอีก " + Math.max(0, target - G.scores[lead.pid]) + " คะแนน</div>") +
     (list.length > 10 ? '<div style="font-size:28px;line-height:1.4;color:#B4BEDA;margin-top:16px">จอนี้แสดง 10 อันดับแรก (ปุ่มคัดลอกได้ทุกคน)</div>' : "") + "</div>";
   return hdr("สรุปคะแนน", "ตัวเลขสีเขียว/แดงคือคะแนนที่เปลี่ยนในรอบนี้", "") + '<div class="main" style="gap:64px;align-items:flex-start"><div style="flex:1;min-width:0;' + (shown.length > 8 ? "zoom:.85;" : "") + '"><div style="position:relative;height:' + shown.length * P + 'px">' + rows + "</div></div>" + side + "</div>" +
-    '<div class="ftr"><div style="display:flex;align-items:center;gap:24px">' + copyBtn() + '<div class="hint">' + (G.finalPending ? "ถ้าครองบัลลังก์หลายคน คนคะแนนสูงสุดเมื่อจบรอบสุดท้ายชนะ" : "") + '</div></div><button class="pb" data-a="' + (G.ended ? "toEnd" : "nextRound") + '">' + (G.ended ? "ดูผู้ชนะ" : "ไปรอบถัดไป") + "</button></div>";
+    '<div class="ftr"><div style="display:flex;align-items:center;gap:24px">' + copyBtn() + '<div class="hint">' + (!kingMode() && G.finalPending ? "ตอนนี้มีคนคว้ามงกุฎแล้ว มีเพียงคนได้คะแนนสูงสุดในรอบถัดไปเท่านั้นที่จะเป็นผู้ชนะ" : G.sdPending ? "แข่งเก็บแต้ม " + SD_SECS + " วินาที เฉพาะ " + G.sdPending.ps.length + " คนนี้" : "") + '</div></div><button class="pb" data-a="' + (G.ended ? "toEnd" : G.sdPending ? "startSD" : "nextRound") + '">' + (G.ended ? "ดูผู้ชนะ" : G.sdPending ? "เริ่ม Sudden Death" : "ไปรอบถัดไป") + "</button></div>";
+}
+/* what happened to the throne at the end of this round, as [main line, second line] html; nm = name lookup (host or phone) */
+function kingText(ev, k, nm) {
+  function b(pid) { return "<b>" + esc(nm(pid)) + "</b>"; }
+  var hold = k ? b(k.pid) + " ครองบัลลังก์ " + k.n + "/2 รอบ" : "", more = k && k.n === 1 ? "ครองต่ออีก 1 รอบเพื่อชนะ" : "";
+  if (!ev) return [k ? hold : "ยังไม่มีใครครองบัลลังก์", more];
+  switch (ev.t) {
+    case "win": return [b(ev.pid) + " ครองบัลลังก์ครบ 2 รอบ ชนะ!", ""];
+    case "new": return [b(ev.pid) + " ขึ้นครองบัลลังก์", more];
+    case "keep": return [hold, more];
+    case "pass": return [b(ev.pid) + " แซง " + b(ev.old) + " ขึ้นครองบัลลังก์แทน", "เริ่มนับใหม่ · " + more];
+    case "drop": return [b(ev.old) + " คะแนนต่ำกว่าเป้า หลุดบัลลังก์", "ยังไม่มีใครครองบัลลังก์"];
+    case "dropnew": return [b(ev.old) + " คะแนนต่ำกว่าเป้า หลุดบัลลังก์", b(ev.pid) + " ขึ้นครองแทน · " + more];
+    case "lost": return [b(ev.old) + " ถูกแซง หลุดบัลลังก์", "ยังไม่มีใครครองบัลลังก์ เริ่มนับใหม่"];
+    case "sd": var who = ev.ps.map(b).join(" และ ");
+      return [ev.drop ? b(ev.old) + " คะแนนต่ำกว่าเป้า และ " + who + " ขึ้นนำในรอบตัดสิน!" : who + " แซง " + b(ev.old) + " ในรอบตัดสิน!", "ต่อด้วย Sudden Death ระหว่าง " + (ev.ps.length + 1) + " คนนี้"];
+  }
+  return ["ยังไม่มีใครครองบัลลังก์", "ต้องถึงเป้าและนำเดี่ยว 2 รอบติดกันจึงชนะ"];
 }
 /* podium: place 1 = the winner(s); places 2 and 3 = the next two different scores (people with the same score share a place) */
 function podiumGroups() {
+  if (kingMode()) {   /* throne modes: places follow endOrder (Sudden Death loser is 2nd) */
+    var eo = endOrder(), gs = [], last = null, stop = false;
+    eo.forEach(function (o) { if (stop) return; if (o.rk !== last) { if (gs.length >= 3) { stop = true; return; } last = o.rk; gs.push([]); } gs[gs.length - 1].push(o.p); });
+    return { groups: gs, ei: endInfo(), list: eo.map(function (o) { return o.p; }), rk: eo };
+  }
   var list = ranking(), ei = endInfo(), win = list.filter(function (p) { return ei.winners.indexOf(p.pid) >= 0; }), rest = list.filter(function (p) { return ei.winners.indexOf(p.pid) < 0; }), groups = [win];
   var cur = null;
   rest.forEach(function (p) {
@@ -1151,18 +1290,61 @@ function hEnd() {
   function col(g, place) {
     g.forEach(function (p) { onPod[p.pid] = 1; });
     var fs = place === 1 ? 84 : 64, names = g.slice(0, 3).map(function (p) { var base = g.length > 1 ? Math.round(fs * .7) : fs, fz = Math.max(36, Math.min(base, Math.round(base * 10 / Math.max(10, p.name.length)))); return '<div class="pn" style="font-size:' + fz + 'px;animation-delay:' + (place === 1 ? 2.3 : place === 2 ? 1.5 : .7) + 's"><i style="background:' + hcol(p.pid) + '"></i><span>' + esc(p.name) + "</span></div>"; }).join("") + (g.length > 3 ? '<div class="ps">และอีก ' + (g.length - 3) + " คน</div>" : "");
-    return '<div class="pcol">' + names + '<div class="ps" style="animation-delay:' + (place === 1 ? 2.4 : place === 2 ? 1.6 : .8) + 's">' + G.scores[g[0].pid] + ' คะแนน' + (g.length > 1 ? " (เท่ากัน)" : "") + '</div><div class="pblk p' + place + '" style="animation-delay:' + (place === 1 ? 1.7 : place === 2 ? .9 : .1) + 's">' + place + "</div></div>";
+    return '<div class="pcol">' + names + '<div class="ps" style="animation-delay:' + (place === 1 ? 2.4 : place === 2 ? 1.6 : .8) + 's">' + (place === 1 && ei.sd ? "Sudden Death " + G.sd.pts[g[0].pid] + " แต้ม" : G.scores[g[0].pid] + ' คะแนน' + (g.length > 1 ? " (เท่ากัน)" : "")) + '</div><div class="pblk p' + place + '" style="animation-delay:' + (place === 1 ? 1.7 : place === 2 ? .9 : .1) + 's">' + place + "</div></div>";
   }
   var cols = [];
   if (groups[1]) cols.push(col(groups[1], 2));
   cols.push(col(groups[0], 1));
   if (groups[2]) cols.push(col(groups[2], 3));
-  var others = pg.list.filter(function (p) { return !onPod[p.pid]; }), chips = others.slice(0, 6).map(function (p) { return '<div class="chip sm"><i style="background:' + hcol(p.pid) + '"></i>อันดับ ' + rankOf(p.pid) + " · " + esc(p.name) + " · " + G.scores[p.pid] + "</div>"; }).join("");
+  var others = pg.list.filter(function (p) { return !onPod[p.pid]; }), chips = others.slice(0, 6).map(function (p) { return '<div class="chip sm"><i style="background:' + hcol(p.pid) + '"></i>อันดับ ' + (pg.rk ? pg.rk.filter(function (o) { return o.p === p; })[0].rk : rankOf(p.pid)) + " · " + esc(p.name) + " · " + G.scores[p.pid] + "</div>"; }).join("");
   return '<div style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px"><div class="hd" style="font-weight:700;font-size:64px;line-height:1.2;color:#FFD65A">' + (groups[0].length > 1 ? "ผู้ชนะร่วม" : "ผู้ชนะ") + '</div>' +
     '<div class="pod' + (anim ? " anim" : "") + '">' + cols.join("") + "</div>" +
     (ei.decided ? '<div style="font-size:32px;line-height:1.4;color:#B4BEDA">คะแนนเท่ากัน ตัดสินด้วยคะแนนรวมก่อนรอบสุดท้าย</div>' : "") +
+    (ei.sd ? '<div style="font-size:32px;line-height:1.4;color:#B4BEDA">' + sdScoreLine(hname) + (G.sd.winners.length > 1 ? " · แต้มเท่ากัน ครองบัลลังก์ร่วม" : "") + '</div>' : ei.king ? '<div style="font-size:32px;line-height:1.4;color:#B4BEDA">ครองบัลลังก์ครบ 2 รอบติดกัน</div>' : "") +
     (chips ? '<div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:1500px">' + chips + (others.length > 6 ? '<div class="chip sm">และอีก ' + (others.length - 6) + " คน</div>" : "") + "</div>" : "") + "</div>" +
     '<div class="ftr"><div>' + copyBtn() + '</div><div style="display:flex;gap:16px"><button class="gb" data-a="toLobby">กลับล็อบบี้</button><button class="pb" data-a="again">เล่นใหม่ด้วยผู้เล่นเดิม</button></div></div>';
+}
+/* ----- Sudden Death on the projector ----- */
+function sdLine(s, nm) { return "Sudden Death: " + s.ps.map(function (p) { return esc(nm(p)) + " " + fmtN(s.pts[p]); }).join(" · "); }
+function sdScoreLine(nm) { return sdLine(G.sd, nm); }
+function sdVs(s, nm) { return s.ps.map(function (p) { return esc(nm(p)); }).join(" ปะทะ "); }
+function sdSide() {
+  var s = G.sd;
+  function box(pid) {
+    var cur = s.cur[pid], win = s.over && s.winners.indexOf(pid) >= 0;
+    return '<div style="padding:18px 24px;border-radius:22px;background:#171E38;border:5px solid ' + (win ? "#FFD65A" : hcol(pid)) + '"><div style="display:flex;align-items:center;gap:14px"><i style="width:26px;height:26px;border-radius:50%;flex:none;background:' + hcol(pid) + '"></i><div class="hd" style="font-weight:700;font-size:40px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">' + esc(hname(pid)) + '</div></div>' +
+      '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px"><div class="hd" style="font-weight:700;font-size:84px;line-height:1.1;color:#FFD65A">' + fmtN(s.pts[pid]) + '</div><div style="font-size:28px;color:#B4BEDA;text-align:right">' + (s.over ? (win ? (s.winners.length > 1 ? "ชนะร่วม" : "ชนะ!") : "") : cur !== null ? "กำลังแก้ " + G.cells[cur].value : "กำลังเลือกช่อง") + "</div></div></div>";
+  }
+  return '<div style="width:480px;flex:none;display:flex;flex-direction:column;gap:14px"><div style="font-size:28px;line-height:1.3;color:#B4BEDA">เลขตั้งต้น · ใช้ได้ตัวละครั้ง</div><div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">' +
+    G.nums.map(function (n) { return '<div class="nt" style="width:auto;height:110px;font-size:64px">' + n + "</div>"; }).join("") + "</div>" + s.ps.map(box).join("") + "</div>";
+}
+function sdPyrHost() {
+  var s = G.sd, by = {}, rows = "";
+  s.ps.forEach(function (p) { if (s.cur[p] !== null) by[s.cur[p]] = p; });
+  for (var tier = 1; tier <= 5; tier++) {
+    rows += '<div class="prow2">' + G.cells.filter(function (c) { return c.tier === tier; }).map(function (c) {
+      var u = s.used[c.id], w = by[c.id];
+      if (u && u.s === "done") return '<div class="hc t" style="background:' + hcol(u.p) + '"><b>' + c.value + '</b><span class="nm">✓ ' + esc(hname(u.p)) + '</span><span class="sc">+' + c.score + "</span></div>";
+      if (u) return '<div class="hc" style="opacity:.45;border-style:dashed"><b style="text-decoration:line-through">' + c.value + '</b><span class="nm">✗ ' + esc(hname(u.p)) + ' ทิ้ง</span><span class="sc">−' + SD_SKIP + "</span></div>";
+      if (w) return '<div class="hc" style="border:6px solid ' + hcol(w) + '"><b>' + c.value + '</b><span class="nm">' + esc(hname(w)) + ' กำลังแก้</span><span class="sc">' + c.score + " แต้ม</span></div>";
+      return '<div class="hc"><b>' + c.value + '</b><span class="sc">' + c.score + " แต้ม</span></div>";
+    }).join("") + "</div>";
+  }
+  return '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px;align-items:center;zoom:.94">' + rows + "</div>";
+}
+function hSD() {
+  var s = G.sd, used = Object.keys(s.used).length;
+ return hdr("Sudden Death", sdVs(s, hname) + (s.ps.length > 2 ? "" : " · แก้ได้ได้แต้มของช่อง") + " · ทิ้งช่องเสีย " + SD_SKIP, ring()) + '<div class="main">' + sdSide() + sdPyrHost() + "</div>" +
+    '<div class="ftr">' + progress("ใช้ไปแล้ว", used, G.cells.length) + ctlBtns() + "</div>";
+}
+function hSDR() {
+  var s = G.sd, list = G.cells.filter(function (c) { return s.used[c.id] && s.used[c.id].s === "done"; });
+  var solved = list.map(function (c) { var u = s.used[c.id]; return '<div style="display:flex;align-items:center;gap:16px;font-size:30px;line-height:1.4"><i style="width:20px;height:20px;border-radius:50%;flex:none;background:' + hcol(u.p) + '"></i><b style="min-width:80px">' + c.value + '</b><span style="color:#B4BEDA">' + u.eq + " = " + c.value + '</span><span style="margin-left:auto;color:#5BD98F">+' + c.score + "</span></div>"; }).join("");
+  var title = s.winners.length > 1 ? s.winners.map(function (p) { return esc(hname(p)); }).join(" และ ") + " แต้มเท่ากัน · ครองบัลลังก์ร่วม" : esc(hname(s.winners[0])) + " ชนะ Sudden Death!";
+  return hdr("Sudden Death · จบแล้ว", sdVs(s, hname), "") + '<div class="main" style="align-items:flex-start">' + sdSide() +
+    '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:18px"><div class="hd" style="font-weight:700;font-size:72px;line-height:1.25;color:#FFD65A">' + title + '</div>' +
+    '<div style="font-size:30px;color:#B4BEDA">ช่องที่แก้ได้ ' + list.length + " ช่อง · ทิ้ง " + (Object.keys(s.used).length - list.length) + ' ช่อง · แต้ม Sudden Death ไม่บวกเข้าคะแนนรวม</div><div style="display:flex;flex-direction:column;gap:8px;overflow:hidden">' + solved + "</div></div></div>" +
+    '<div class="ftr"><div></div><button class="pb" data-a="toEnd">ดูผู้ชนะ</button></div>';
 }
 function renderHost() {
   if (MODE === "head") { headFeed(); return; }
@@ -1173,6 +1355,8 @@ function renderHost() {
   else if (H.phase === "p2") h = hP2();
   else if (H.phase === "p3") h = hP3();
   else if (H.phase === "p4") h = hP4();
+  else if (H.phase === "sd") h = hSD();
+  else if (H.phase === "sdr") h = hSDR();
   else h = hEnd();
   var inGame = G && H.phase !== "lobby" && H.phase !== "end";
   var endUi = !inGame ? "" : '<button class="gb endb" data-a="askEnd">จบเกม</button>' + (H.ce ?
@@ -1252,7 +1436,7 @@ function hostFx() {
       slideRows("#stage .lr.ab", 1.1);
       void document.body.offsetWidth;
       setTimeout(function () { [].forEach.call(document.querySelectorAll("#stage .bar2 > div[data-w]"), function (b) { b.style.width = b.getAttribute("data-w") + "%"; }); }, 120);
-      if (G.finalPending || G.ended) confetti(90);
+      if (G.finalPending || G.ended || G.sdPending) confetti(90);
     }
   } else if (H.phase === "end") {
     if (FX.end !== H.code) { FX.end = H.code; confetti(140); }
@@ -1295,7 +1479,9 @@ function renderCfg() {
   function num(key, label, min, max) { return '<div class="field"><label>' + label + '</label><input type="number" inputmode="numeric" data-cfg="' + key + '" value="' + c[key] + '" min="' + min + '" max="' + max + '"></div>'; }
   ov.hidden = false;
   ov.innerHTML = '<div class="box"><h2>ตั้งค่าห้อง</h2><div class="field wide"><label>ชื่อห้อง</label><input type="text" maxlength="30" data-cfg="room" value="' + esc(c.room) + '"></div>' +
-    num("target", "คะแนนเป้าหมาย", 1, 9999) + num("start", "คะแนนเริ่มต้น", -999, 999) + rangesFormHtml() + num("maxResult", "ผลลัพธ์สูงสุดบนกระดาน (100–400)", 100, 400) +
+    num("target", "คะแนนเป้าหมาย", 1, 9999) +
+    '<div class="field wide"><label>วิธีจบเกม</label><select data-cfg="endMode">' + opt("crown", END_NAMES.crown, c.endMode) + opt("king", END_NAMES.king, c.endMode) + opt("kingsd", END_NAMES.kingsd, c.endMode) + "</select></div>" +
+    '<p class="sm">' + END_HELP[c.endMode || "crown"] + "</p>" + num("start", "คะแนนเริ่มต้น", -999, 999) + rangesFormHtml() + num("maxResult", "ผลลัพธ์สูงสุดบนกระดาน (100–400)", 100, 400) +
     '<p class="warn" id="max-warn"' + (maxOk() ? " hidden" : "") + ">ต้องเป็นจำนวนเต็ม 100 ถึง 400</p>" +
     '<label class="check"><input type="checkbox" data-cfg="showScores"' + (c.showScores ? " checked" : "") + "> แสดงคะแนนของแต่ละช่องในเฟส 1</label>" + num("maxMult", "ตัวคูณสูงสุดเมื่อถูกรุมท้า", 1, 20) +
     '<div class="field"><label>บทลงโทษเมื่อแก้สมการไม่ได้</label><select data-cfg="penalty">' + opt("value", "เสียตามมูลค่าช่อง", c.penalty) + opt("count", "เสียตามจำนวนคนรุม", c.penalty) + "</select></div>" +
@@ -1337,7 +1523,7 @@ function pplayer(pid) { var l = P.st ? P.st.players : []; for (var i = 0; i < l.
 function pnm(pid) { var p = pplayer(pid); return p ? p.name : "?"; }
 function pLeft() { if (!P.st || P.st.remaining === null || P.st.remaining === undefined) return null; return P.st.paused ? P.st.remaining : Math.max(0, P.st.remaining - (Date.now() - P.recvAt)); }
 function tmHtml() { var l = pLeft(); return '<div class="tm" id="tm">' + (l === null ? "–" : Math.ceil(l / 1000)) + "</div>"; }
-function phd(title, right) { return '<div class="ph"><div><div class="a">' + esc(P.name) + " · รอบที่ " + P.st.round + (P.st.isFinal ? " · รอบสุดท้าย" : "") + '</div><div class="b">' + title + "</div></div>" + dkWrap(right) + "</div>"; }
+function phd(title, right) { return '<div class="ph"><div><div class="a">' + esc(P.name) + (P.st.phase === "sd" || P.st.phase === "sdr" ? " · Sudden Death" : " · รอบที่ " + P.st.round) + (P.st.isFinal ? " · รอบสุดท้าย" : "") + '</div><div class="b">' + title + "</div></div>" + dkWrap(right) + "</div>"; }
 function numsCard(small) { return '<div class="card"' + (small ? ' style="padding:8px 10px"' : "") + '><div class="lab">เลขตั้งต้น · ใช้ได้ตัวละครั้ง อย่างน้อย 2 ตัว</div><div class="nts' + (small ? " sm" : "") + '">' + P.st.nums.map(function (n) { return "<div>" + n + "</div>"; }).join("") + "</div></div>"; }
 function pyrPhone(mode) {
   var st = P.st, m = me(), rows = "";
@@ -1361,8 +1547,15 @@ function opSvg(o) {
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true">' + d + "</svg>";
 }
 function freshWork(nums) { var w = newWork(nums); w.slots = w.items.map(function (x) { return x.id; }); w.shist = []; return w; }   /* every number keeps its own place; a combined result takes the place of the first number and the second place stays empty */
+/* what the equation pad is solving: the challenged result in phase 3, or the cell being solved in a Sudden Death */
+function workTarget() {
+  var st = P.st, m = me(); if (!st || !m) return null;
+  if (st.phase === "sd" && st.sd && st.sd.cur && st.sd.cur[P.pid] !== null && st.sd.cur[P.pid] !== undefined && !st.sd.over) { var c = st.cells[st.sd.cur[P.pid]]; return { v: c.value, score: c.score, kind: "sd", cell: c.id }; }
+  if (st.phase === "p3" && m.challenged && !m.solved) return { v: m.challenged.value, score: m.challenged.score, kind: "p3" };
+  return null;
+}
 function getWork() {
-  var st = P.st, key = st.round + "|" + st.nums.join(",") + "|" + (me().challenged ? me().challenged.value : "");
+  var st = P.st, t = workTarget(), key = st.round + "|" + st.nums.join(",") + "|" + (t ? t.kind + t.v + "|" + (t.cell === undefined ? "" : t.cell) : (me().challenged ? me().challenged.value : ""));
   if (P.workKey !== key) { P.workKey = key; P.work = freshWork(st.nums); P.sent = false; }
   return P.work;
 }
@@ -1400,14 +1593,7 @@ function viewGameP() {
       if (m.solved) {
         h = phd("เฟส 3 · พิมพ์สมการ", tmHtml()) + '<div class="good" role="status"><div class="t1">✓ สมการถูกต้อง</div><div class="eq">' + m.solHtml + '</div></div><div class="card" style="padding:14px 16px"><span class="muted">ล็อกคำตอบแล้ว ไม่ต้องทำอะไรต่อ รอเวลาหมดหรือรอเพื่อนที่ถูกท้าคนอื่น ๆ</span></div>';
       } else {
-        var w = getWork(), A = w.a ? w.items.filter(function (x) { return x.id === w.a; })[0] : null;
-        var pv = !A ? '<span class="muted" style="font-size:18px">แตะตัวเลขตัวแรก</span>' : fstr(A.f) + (w.op ? (w.op === "^" ? "<sup>?</sup>" : " " + w.op + " ?") : ' <span class="muted" style="font-size:15px">แล้วเลือกเครื่องหมาย</span>');
-        var byId = {}; w.items.forEach(function (x) { byId[x.id] = x; });
-        var items = w.slots.map(function (sid) { if (sid === null || !byId[sid]) return '<div class="it ph" aria-hidden="true"></div>'; var it = byId[sid]; var lab = fstr(it.f), sel = w.a === it.id; return '<button class="it' + (sel ? " on" : "") + (lab.length > 6 ? " long" : "") + '" data-a="pickItem" data-id="' + it.id + '" aria-pressed="' + sel + '">' + esc(lab) + "</button>"; }).join("");
-        var ops = ["+", "−", "×", "÷", "^"].map(function (o) { return '<button class="op' + (w.op === o ? " on" : "") + '" data-a="pickOp" data-o="' + o + '"' + (A && !P.sent ? "" : " disabled") + ' aria-pressed="' + (w.op === o) + '" aria-label="' + ({ "+": "บวก", "−": "ลบ", "×": "คูณ", "÷": "หาร", "^": "ยกกำลัง" })[o] + '">' + (o === "^" ? '<span class="xn">x<sup>n</sup></span>' : opSvg(o)) + "</button>"; }).join("");
-        var slot = P.sent ? '<div class="slot">กำลังตรวจสมการ…</div>' : w.err ? '<div class="slot err" role="alert">' + esc(w.err) + "</div>" : w.last ? '<div class="slot">ขั้นล่าสุด: <span style="color:#14213D;margin-left:4px">' + w.last + "</span></div>" : '<div class="slot">แตะเลข แล้วแตะเครื่องหมาย แล้วแตะเลขตัวที่สอง</div>';
-        h = phd("เฟส 3 · พิมพ์สมการ", tmHtml()) + '<div class="tg"><b>' + m.challenged.value + "</b><span>ทำให้ได้ผลลัพธ์นี้<br>" + m.challenged.score + " แต้ม · ถูกท้า " + m.challenged.count + ' คน</span></div><div class="pv' + (pv.replace(/<[^>]*>/g, "").length > 12 ? " long" : "") + '" aria-live="polite"><span>' + pv + "</span></div>" + slot +
-          '<div class="items">' + items + '</div><div class="ops">' + ops + '</div><div style="display:flex;gap:8px"><button class="gh" data-a="undo"' + (w.hist.length && !P.sent ? "" : " disabled") + '>ย้อนหนึ่งขั้น</button><button class="gh" data-a="reset"' + (w.hist.length && !P.sent ? "" : " disabled") + ">Reset</button></div>";
+        h = phd("เฟส 3 · พิมพ์สมการ", tmHtml()) + '<div class="tg"><b>' + m.challenged.value + "</b><span>ทำให้ได้ผลลัพธ์นี้<br>" + m.challenged.score + " แต้ม · ถูกท้า " + m.challenged.count + ' คน</span></div>' + workPad(getWork());
       }
     } else {
       h = phd("เฟส 3 · พิมพ์สมการ", tmHtml()) + '<div class="box"><h2>' + (m.res !== null ? "คุณไม่ถูกท้าในรอบนี้" : "รอเพื่อนไขสมการ") + '</h2><div class="muted">ไม่ต้องทำอะไรในเฟสนี้ ลองคิดวิธีทำผลลัพธ์ที่ถูกท้าบนจอใหญ่ดูได้</div></div>' + numsCard();
@@ -1415,20 +1601,73 @@ function viewGameP() {
   } else if (st.phase === "p4") {
     if (st.hostless) h = viewRevealP(m);
     else if (!st.summarized) h = phd("เฟส 4 · เฉลย", '<div class="tm tag">ดูจอใหญ่</div>') + '<div class="box"><h2>ดูเฉลยบนจอใหญ่</h2><div class="muted">Host กำลังเปิดสมการของผู้ที่ถูกท้าทีละใบ เสร็จแล้วจะสรุปคะแนนของคุณที่นี่</div></div>';
-    else h = phd("เฟส 4 · สรุปของคุณ", '<div class="tm tag">รอ Host<br>ไปรอบถัดไป</div>') + summaryP(m);
+    else h = phd("เฟส 4 · สรุปของคุณ", '<div class="tm tag">รอ Host<br>' + (st.sdPending ? "เริ่ม Sudden Death" : "ไปรอบถัดไป") + "</div>") + summaryP(m);
+  } else if ((st.phase === "sd" || st.phase === "sdr") && st.sd) {
+    h = viewSDP();
   } else {
     var rows = st.rows, top = rows[0].score, ws = st.winners ? rows.filter(function (r) { return st.winners.indexOf(r.pid) >= 0; }) : rows.filter(function (r) { return r.score === top; });
-    h = '<div class="ph"><div><div class="a">' + esc(P.name) + '</div><div class="b">จบเกมแล้ว</div></div>' + dkWrap("") + '</div><div class="box" style="text-align:center"><div class="muted">ผู้ชนะ</div><div class="hd" style="font-size:32px;font-weight:700;line-height:1.3">' + ws.map(function (r) { return esc(r.name); }).join(" และ ") + '</div><div>' + top + ' คะแนน</div>' + (st.tieDecided ? '<div class="muted" style="font-size:14px">คะแนนเท่ากัน ตัดสินด้วยคะแนนรวมก่อนรอบสุดท้าย</div>' : "") + '</div>' + summaryP(m, true) + (st.hostless ? rankAllP() : "");
+    h = '<div class="ph"><div><div class="a">' + esc(P.name) + '</div><div class="b">จบเกมแล้ว</div></div>' + dkWrap("") + '</div><div class="box" style="text-align:center"><div class="muted">ผู้ชนะ</div><div class="hd" style="font-size:32px;font-weight:700;line-height:1.3">' + ws.map(function (r) { return esc(r.name); }).join(" และ ") + '</div><div>' + (st.sd && st.sd.over ? sdLine(st.sd, pnm) : (ws[0] ? ws[0].score : top) + " คะแนน" + (st.kingWin ? " · ครองบัลลังก์ครบ 2 รอบ" : "")) + '</div>' + (st.tieDecided ? '<div class="muted" style="font-size:14px">คะแนนเท่ากัน ตัดสินด้วยคะแนนรวมก่อนรอบสุดท้าย</div>' : "") + '</div>' + summaryP(m, true) + (st.hostless ? rankAllP() : "");
   }
   return '<div id="pw">' + h + "</div>";
+}
+/* the step-by-step equation pad (preview, last step, numbers, operators, undo/reset); shared by phase 3 and the Sudden Death */
+function workPad(w) {
+  var A = w.a ? w.items.filter(function (x) { return x.id === w.a; })[0] : null;
+  var pv = !A ? '<span class="muted" style="font-size:18px">แตะตัวเลขตัวแรก</span>' : fstr(A.f) + (w.op ? (w.op === "^" ? "<sup>?</sup>" : " " + w.op + " ?") : ' <span class="muted" style="font-size:15px">แล้วเลือกเครื่องหมาย</span>');
+  var byId = {}; w.items.forEach(function (x) { byId[x.id] = x; });
+  var items = w.slots.map(function (sid) { if (sid === null || !byId[sid]) return '<div class="it ph" aria-hidden="true"></div>'; var it = byId[sid]; var lab = fstr(it.f), sel = w.a === it.id; return '<button class="it' + (sel ? " on" : "") + (lab.length > 6 ? " long" : "") + '" data-a="pickItem" data-id="' + it.id + '" aria-pressed="' + sel + '">' + esc(lab) + "</button>"; }).join("");
+  var ops = ["+", "−", "×", "÷", "^"].map(function (o) { return '<button class="op' + (w.op === o ? " on" : "") + '" data-a="pickOp" data-o="' + o + '"' + (A && !P.sent ? "" : " disabled") + ' aria-pressed="' + (w.op === o) + '" aria-label="' + ({ "+": "บวก", "−": "ลบ", "×": "คูณ", "÷": "หาร", "^": "ยกกำลัง" })[o] + '">' + (o === "^" ? '<span class="xn">x<sup>n</sup></span>' : opSvg(o)) + "</button>"; }).join("");
+  var slot = P.sent ? '<div class="slot">กำลังตรวจสมการ…</div>' : w.err ? '<div class="slot err" role="alert">' + esc(w.err) + "</div>" : w.last ? '<div class="slot">ขั้นล่าสุด: <span style="color:#14213D;margin-left:4px">' + w.last + "</span></div>" : '<div class="slot">แตะเลข แล้วแตะเครื่องหมาย แล้วแตะเลขตัวที่สอง</div>';
+  return '<div class="pv' + (pv.replace(/<[^>]*>/g, "").length > 12 ? " long" : "") + '" aria-live="polite"><span>' + pv + "</span></div>" + slot +
+    '<div class="items">' + items + '</div><div class="ops">' + ops + '</div><div style="display:flex;gap:8px"><button class="gh" data-a="undo"' + (w.hist.length && !P.sent ? "" : " disabled") + '>ย้อนหนึ่งขั้น</button><button class="gh" data-a="reset"' + (w.hist.length && !P.sent ? "" : " disabled") + ">Reset</button></div>";
+}
+/* ----- Sudden Death on the phones ----- */
+function sdBarP() {
+  var s = P.st.sd;
+  function one(pid) { var pl = pplayer(pid), win = s.over && s.winners.indexOf(pid) >= 0; return '<div style="flex:1;min-width:0;padding:8px 12px;border-radius:12px;color:#fff;background:' + pcol(pl ? pl.idx : 0) + (win ? ";box-shadow:0 0 0 3px #FFD84D" : "") + '"><div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(pnm(pid)) + (pid === P.pid ? " (คุณ)" : "") + '</div><div class="hd" style="font-weight:700;font-size:28px;line-height:1.1">' + fmtN(s.pts[pid]) + ' <span style="font-size:13px;font-weight:400">แต้ม</span></div></div>'; }
+  return '<div style="display:flex;gap:8px;flex:none">' + s.ps.map(one).join("") + "</div>";
+}
+function sdPyrP(canPick) {
+  var st = P.st, s = st.sd, by = {}, rows = "";
+  s.ps.forEach(function (p) { if (s.cur[p] !== null && s.cur[p] !== undefined) by[s.cur[p]] = p; });
+  for (var tier = 1; tier <= 5; tier++) {
+    rows += '<div class="pr">' + st.cells.filter(function (c) { return c.tier === tier; }).map(function (c) {
+      var u = s.used[c.id], w = by[c.id];
+      if (u && u.s === "done") return '<button class="pc t" disabled style="background:' + pcol(pplayer(u.p).idx) + '"><b>' + c.value + "</b><small>✓ " + esc(pnm(u.p)) + "</small></button>";
+      if (u) return '<button class="pc gray" disabled><b style="text-decoration:line-through">' + c.value + "</b><small>ทิ้งแล้ว</small></button>";
+      if (w) return '<button class="pc" disabled style="border:3px solid ' + pcol(pplayer(w).idx) + '"><b>' + c.value + "</b><small>" + esc(pnm(w)) + "</small></button>";
+      return '<button class="pc"' + (canPick ? ' data-a="sdpick" data-id="' + c.id + '"' : " disabled") + ' aria-label="ผลลัพธ์ ' + c.value + '"><b>' + c.value + "</b><small>" + c.score + " แต้ม</small></button>";
+    }).join("") + "</div>";
+  }
+  return '<div class="card" style="padding:10px 10px 12px"><div class="lab" style="text-align:center;margin-bottom:6px">' + (canPick ? "แตะช่องที่จะแก้ แก้ได้ได้แต้มของช่อง" : "กระดาน Sudden Death") + '</div><div style="display:flex;flex-direction:column;gap:6px">' + rows + "</div></div>";
+}
+function viewSDP() {
+  var st = P.st, s = st.sd, mine = s.ps.indexOf(P.pid) >= 0, cur = mine ? s.cur[P.pid] : null;
+  if (st.phase === "sdr") {
+    var title = s.winners.length > 1 ? s.winners.map(function (p) { return esc(pnm(p)); }).join(" และ ") + " แต้มเท่ากัน · ครองบัลลังก์ร่วม" : esc(pnm(s.winners[0])) + (s.winners[0] === P.pid ? " (คุณ)" : "") + " ชนะ Sudden Death!";
+    return phd("Sudden Death · จบแล้ว", '<div class="tm tag">' + (MODE === "head" ? "กดดูผู้ชนะ<br>ด้านล่าง" : st.hostless ? "รอหัวห้อง<br>ดูผู้ชนะ" : "รอ Host<br>ดูผู้ชนะ") + "</div>") + sdBarP() +
+      '<div class="box" style="text-align:center"><div class="hd" style="font-size:24px;font-weight:700;line-height:1.35">' + title + '</div><div class="muted" style="font-size:14px">แต้ม Sudden Death ใช้ตัดสินอย่างเดียว ไม่บวกเข้าคะแนนรวม</div></div>' + sdPyrP(false);
+  }
+  var h = phd("Sudden Death", tmHtml()) + sdBarP();
+  if (mine && cur !== null && cur !== undefined) {
+    var c = st.cells[cur], armed = P.sdArm === c.id;
+    return h + '<div class="tg"><b>' + c.value + "</b><span>ทำให้ได้ผลลัพธ์นี้<br>" + c.score + " แต้ม · แก้ได้แล้วเลือกช่องใหม่ต่อ</span></div>" + workPad(getWork()) +
+      '<button class="gh" data-a="sdskip" style="flex:none;' + (armed ? "background:#FF8A80;color:#14213D;border-color:#FF8A80;font-weight:700" : "") + '"' + (P.sent ? " disabled" : "") + ">" + (armed ? "แตะอีกครั้งเพื่อยืนยันทิ้งช่อง (−" + SD_SKIP + ")" : "ทิ้งช่องนี้ (−" + SD_SKIP + " แต้ม)") + "</button>";
+  }
+  return h + numsCard(true) + sdPyrP(mine) + (mine ? '<div class="st">เลือกช่องว่าง 1 ช่อง <small>ช่องที่ถูกเลือกแล้วเลือกซ้ำไม่ได้ · ทิ้งช่องเสีย ' + SD_SKIP + " แต้ม</small></div>" : '<div class="st">ดูการดวลของ ' + s.ps.map(function (p) { return esc(pnm(p)); }).join(", ") + " <small>ใครได้แต้มมากกว่าเมื่อหมดเวลา ชนะเกม</small></div>");
+}
+function kingBoxP() {
+  var st = P.st; if (!st.kev || (st.endMode !== "king" && st.endMode !== "kingsd")) return "";
+  var t = kingText(st.kev, st.king, pnm);
+  return '<div class="st" style="flex-direction:column;align-items:flex-start;gap:2px"><span>👑 ' + t[0] + "</span>" + (t[1] ? "<small>" + t[1] + "</small>" : "") + "</div>";
 }
 function summaryP(m, endMode, hl) {
   var st = P.st, d = m.delta || 0, rows = st.rows, i = rows.map(function (r) { return r.pid; }).indexOf(P.pid), top3 = rows.slice(0, 3);
   if (i >= 3) top3 = rows.slice(0, 2).concat([rows[i]]);
   var lines = (m.lines || []).filter(function (l) { return !(l.d === 0 && !l.sub); }).map(function (l) { return '<div class="br"><span>' + esc(l.label) + (l.sub ? '<br><span class="muted" style="font-size:14px">' + l.sub + "</span>" : "") + '</span><span class="p ' + (l.d > 0 ? "pos" : l.d < 0 ? "neg" : "") + '">' + (l.d > 0 ? "+" : l.d < 0 ? "−" : "") + Math.abs(l.d) + "</span></div>"; }).join("");
-  return (endMode ? "" : '<div class="box" style="padding-bottom:4px"><div class="muted" style="font-size:14px">' + (hl ? "คะแนนที่ได้ในรอบนี้" : "คะแนนที่เปลี่ยนในรอบนี้") + '</div><div class="big ' + (d > 0 ? "pos" : d < 0 ? "neg" : "") + '"><span style="font-size:30px">' + (d > 0 ? "▲" : d < 0 ? "▼" : "") + "</span>" + (d > 0 ? "+" : d < 0 ? "−" : "") + Math.abs(d) + "</div>" + lines + "</div>") +
-    '<div class="box" style="padding:12px 16px"><div style="display:flex;align-items:baseline;justify-content:space-between"><span class="hd" style="font-weight:700;font-size:20px">คะแนนรวม ' + fmtN(m.score) + '</span><span class="muted">' + (hl ? "คุณอยู่อันดับ " + m.rank : "อันดับ " + m.rank + " จาก " + rows.length + " · เป้า " + st.target) + "</span></div>" +
-    top3.map(function (r) { var rk = rows.filter(function (x) { return x.score > r.score; }).length + 1; return '<div class="tr' + (r.pid === P.pid ? " me" : "") + '"><span style="width:20px" class="muted">' + rk + '</span><b style="flex:1">' + esc(r.name) + (r.pid === P.pid ? " (คุณ)" : "") + "</b><b>" + fmtN(r.score) + "</b></div>"; }).join("") + "</div>";
+  return (endMode ? "" : kingBoxP()) + (endMode ? "" : '<div class="box" style="padding-bottom:4px"><div class="muted" style="font-size:14px">' + (hl ? "คะแนนที่ได้ในรอบนี้" : "คะแนนที่เปลี่ยนในรอบนี้") + '</div><div class="big ' + (d > 0 ? "pos" : d < 0 ? "neg" : "") + '"><span style="font-size:30px">' + (d > 0 ? "▲" : d < 0 ? "▼" : "") + "</span>" + (d > 0 ? "+" : d < 0 ? "−" : "") + Math.abs(d) + "</div>" + lines + "</div>") +
+    '<div class="box" style="padding:12px 16px"><div style="display:flex;align-items:baseline;justify-content:space-between"><span class="hd" style="font-weight:700;font-size:20px">คะแนนรวม ' + fmtN(m.score) + '</span><span class="muted">' + (hl ? "คุณอยู่อันดับ " + (i >= 0 && rows[i].rk ? rows[i].rk : m.rank) : "อันดับ " + (i >= 0 && rows[i].rk ? rows[i].rk : m.rank) + " จาก " + rows.length + " · เป้า " + st.target) + "</span></div>" +
+    top3.map(function (r) { var rk = r.rk || rows.filter(function (x) { return x.score > r.score; }).length + 1; return '<div class="tr' + (r.pid === P.pid ? " me" : "") + '"><span style="width:20px" class="muted">' + rk + '</span><b style="flex:1">' + esc(r.name) + (r.pid === P.pid ? " (คุณ)" : "") + "</b><b>" + fmtN(r.score) + "</b></div>"; }).join("") + "</div>";
 }
 function renderPlayer() {
   if (MODE === "head") { headRender(); return; }
@@ -1461,7 +1700,7 @@ function renderPlayerForce() { var app2 = document.getElementById("app"); app2.i
 function rankAllP() {
   var rows = P.st.rows;
   return '<div class="box" style="flex:none"><div class="hd" style="font-weight:700;font-size:18px;margin-bottom:6px">อันดับทั้งหมด</div>' + rows.map(function (r) {
-    var rk = rows.filter(function (x) { return x.score > r.score; }).length + 1;
+    var rk = r.rk || rows.filter(function (x) { return x.score > r.score; }).length + 1;
     return '<div class="tr' + (r.pid === P.pid ? " me" : "") + '"><span style="width:24px" class="muted">' + rk + '</span><b style="flex:1">' + esc(r.name) + (r.pid === P.pid ? " (คุณ)" : "") + "</b><b>" + fmtN(r.score) + "</b></div>";
   }).join("") + "</div>";
 }
@@ -1476,7 +1715,7 @@ function viewRevealP(m) {
   var anim = !reduce && el < total + 0.6;
   function an(delay, kind, dur) { return anim ? "animation:" + kind + " " + (dur || ".35s") + " ease both;animation-delay:" + (delay - el).toFixed(2) + "s;" : ""; }
   function dot(pid) { var pl = pplayer(pid); return '<i style="width:12px;height:12px;border-radius:50%;flex:none;background:' + pcol(pl ? pl.idx : 0) + '"></i>'; }
-  var ender = st.ended, tagH = ender ? '<div class="tm tag">' + (isHead ? "กดดูผู้ชนะ<br>ด้านล่าง" : "รอหัวห้อง<br>ดูผู้ชนะ") + "</div>" : '<div class="tm tag" style="' + an(total, "pFade") + '"><span>รอบถัดไปใน<br><span id="tm">' + (pLeft() === null ? "–" : Math.ceil(pLeft() / 1000)) + "</span> วินาที</span></div>";
+  var ender = st.ended, tagH = ender ? '<div class="tm tag">' + (isHead ? "กดดูผู้ชนะ<br>ด้านล่าง" : "รอหัวห้อง<br>ดูผู้ชนะ") + "</div>" : '<div class="tm tag" style="' + an(total, "pFade") + '"><span>' + (st.sdPending ? "Sudden Death ใน" : "รอบถัดไปใน") + '<br><span id="tm">' + (pLeft() === null ? "–" : Math.ceil(pLeft() / 1000)) + "</span> วินาที</span></div>";
   head = phd("เฟส 4 · เฉลย", tagH);
   var out = head;
   if (n) {
@@ -1557,8 +1796,14 @@ var PACT = {
   leave: function () { P.code = ""; JSTEP = 1; P.joined = false; P.st = null; Net.close(); ss("calcu-joined", "0"); PL.clear(); renderPlayerForce(); },
   pick: function (b) { sendMsg({ type: "pick", pid: P.pid, cell: Number(b.dataset.id) }); },
   chal: function (b) { sendMsg({ type: "chal", pid: P.pid, target: b.dataset.id }); },
+  sdpick: function (b) { sendMsg({ type: "sdpick", pid: P.pid, cell: Number(b.dataset.id) }); },
+  sdskip: function () {
+    var t = workTarget(); if (!t || t.kind !== "sd" || P.sent) return;
+    if (P.sdArm !== t.cell) { P.sdArm = t.cell; renderPlayer(); clearTimeout(P.sdArmT); P.sdArmT = setTimeout(function () { if (P.sdArm === t.cell) { P.sdArm = null; renderPlayer(); } }, 3000); return; }
+    P.sdArm = null; sendMsg({ type: "sdskip", pid: P.pid, cell: t.cell });
+  },
   pickItem: function (b) {
-    var m = me(); if (!m || !m.challenged || m.solved || P.sent) return;
+    var m = me(), t = workTarget(); if (!m || !t || P.sent) return;
     var w = getWork(), id = b.dataset.id; w.err = "";
     if (w.a === null) w.a = id;
     else if (w.a === id) { w.a = null; w.op = null; }
@@ -1566,13 +1811,13 @@ var PACT = {
     else {
       var hit;
       var aId = w.a;
-      try { hit = workCombine(w, id, m.challenged.value); } catch (e) { if (e && e.msg) { w.err = e.msg; w.a = null; w.op = null; renderPlayer(); return; } throw e; }
+      try { hit = workCombine(w, id, t.v); } catch (e) { if (e && e.msg) { w.err = e.msg; w.a = null; w.op = null; renderPlayer(); return; } throw e; }
       w.shist.push(w.slots.slice()); var ia = w.slots.indexOf(aId), ib = w.slots.indexOf(id); w.slots[ia] = w.items[w.items.length - 1].id; w.slots[ib] = null;
-      if (hit) { P.sent = true; P.sentAt = Date.now(); sendMsg({ type: "submit", pid: P.pid, node: hit.node }); }
+      if (hit) { P.sent = true; P.sentAt = Date.now(); sendMsg(t.kind === "sd" ? { type: "sdsub", pid: P.pid, cell: t.cell, node: hit.node } : { type: "submit", pid: P.pid, node: hit.node }); }
     }
     renderPlayer();
   },
-  pickOp: function (b) { var m = me(); if (!m || !m.challenged || m.solved || P.sent) return; var w = getWork(); if (!w.a) return; w.err = ""; w.op = w.op === b.dataset.o ? null : b.dataset.o; renderPlayer(); },
+  pickOp: function (b) { if (!workTarget() || P.sent) return; var w = getWork(); if (!w.a) return; w.err = ""; w.op = w.op === b.dataset.o ? null : b.dataset.o; renderPlayer(); },
   undo: function () { var w = getWork(); if (P.sent || !w.hist.length) return; w.items = w.hist.pop(); if (w.shist.length) w.slots = w.shist.pop(); w.a = null; w.op = null; w.err = ""; w.last = ""; renderPlayer(); },
   reset: function () { if (P.sent) return; P.work = freshWork(P.st.nums); renderPlayer(); }
 };
@@ -1633,13 +1878,14 @@ function headLobby() {
   return '<div id="pw"><div class="ph"><div><div class="a">หัวห้อง · เล่นกับเพื่อน · ไม่นับคะแนนชมรม</div><div class="b">Calcuเหรอ?</div></div>' + dkWrap("") + '</div>' +
     '<div class="box"><div class="muted">รหัสห้อง</div><div class="hcode">' + H.code + '</div><button class="go" data-a="share" style="width:100%">' + (HEAD.shared ? "คัดลอกแล้ว ✓" : "คัดลอกลิงก์ชวนเพื่อน") + '</button><div class="muted" style="margin-top:8px">เพื่อนเปิดลิงก์นี้ หรือเข้าเว็บชมรมแล้วกด “เข้าห้อง” ใส่รหัสห้อง</div></div>' +
     '<div class="box"><h2>ผู้เล่น ' + H.players.length + ' คน</h2><div style="display:flex;flex-wrap:wrap;gap:6px">' + chips + "</div></div>" +
-    '<div class="box"><div class="muted">เป้าหมาย ' + c.target + " คะแนน · เวลา " + c.t1 + "/" + c.t2 + "/" + c.t3 + ' วินาที</div><button class="gh" data-a="cfg" style="width:100%;margin-top:8px">ตั้งค่าห้อง</button></div>' +
+    '<div class="box"><div class="muted">เป้าหมาย ' + c.target + " คะแนน · เวลา " + c.t1 + "/" + c.t2 + "/" + c.t3 + ' วินาที<br>วิธีจบเกม: ' + END_NAMES[c.endMode || "crown"] + '</div><button class="gh" data-a="cfg" style="width:100%;margin-top:8px">ตั้งค่าห้อง</button></div>' +
     headWake() + '<button class="go" data-a="start"' + (startOk() ? "" : " disabled") + ' style="width:100%;margin-top:auto">เริ่มเกม' + (H.players.length < 2 ? " (ต้องมีผู้เล่นอย่างน้อย 2 คน)" : "") + "</button></div>";
 }
 function headBar() {
   var ph = H.phase, b = "";
   if (H.ce) return '<div class="hbar"><div class="hmsg">จบเกมตอนนี้และไปหน้าผู้ชนะ?</div><button class="pri" data-a="doEnd">จบเกม</button><button data-a="cancelEnd">ยกเลิก</button></div>';
-  if (ph === "p1" || ph === "p2" || ph === "p3") b = '<button data-a="askEnd">จบเกม</button>';
+  if (ph === "p1" || ph === "p2" || ph === "p3" || ph === "sd") b = '<button data-a="askEnd">จบเกม</button>';
+  else if (ph === "sdr") b = '<button class="pri" data-a="toEnd">ดูผู้ชนะ</button>';
   else if (ph === "p4") b = G.summarized ? (G.ended ? '<button class="pri" data-a="toEnd">ดูผู้ชนะ</button>' : "") + '<button data-a="askEnd">จบเกม</button>' : "";
   else if (ph === "end") b = '<button class="pri" data-a="again">เล่นอีกครั้ง</button><button data-a="toLobby">กลับล็อบบี้</button><button data-a="copy">' + (COPIED ? "คัดลอกแล้ว ✓" : "คัดลอกอันดับ") + "</button>";
   return b ? '<div class="hbar">' + b + "</div>" : "";

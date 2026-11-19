@@ -1879,7 +1879,8 @@ function headLobby() {
     '<div class="box"><div class="muted">รหัสห้อง</div><div class="hcode">' + H.code + '</div><button class="go" data-a="share" style="width:100%">' + (HEAD.shared ? "คัดลอกแล้ว ✓" : "คัดลอกลิงก์ชวนเพื่อน") + '</button><div class="muted" style="margin-top:8px">เพื่อนเปิดลิงก์นี้ หรือเข้าเว็บชมรมแล้วกด “เข้าห้อง” ใส่รหัสห้อง</div></div>' +
     '<div class="box"><h2>ผู้เล่น ' + H.players.length + ' คน</h2><div style="display:flex;flex-wrap:wrap;gap:6px">' + chips + "</div></div>" +
     '<div class="box"><div class="muted">เป้าหมาย ' + c.target + " คะแนน · เวลา " + c.t1 + "/" + c.t2 + "/" + c.t3 + ' วินาที<br>วิธีจบเกม: ' + END_NAMES[c.endMode || "crown"] + '</div><button class="gh" data-a="cfg" style="width:100%;margin-top:8px">ตั้งค่าห้อง</button></div>' +
-    headWake() + '<button class="go" data-a="start"' + (startOk() ? "" : " disabled") + ' style="width:100%;margin-top:auto">เริ่มเกม' + (H.players.length < 2 ? " (ต้องมีผู้เล่นอย่างน้อย 2 คน)" : "") + "</button></div>";
+    headWake() + '<button class="go" data-a="start"' + (startOk() ? "" : " disabled") + ' style="width:100%;margin-top:auto">เริ่มเกม' + (H.players.length < 2 ? " (ต้องมีผู้เล่นอย่างน้อย 2 คน)" : "") + "</button>" +
+    '<button class="gh" data-a="closeRoom" style="flex:none;width:100%' + (HEAD.closing ? ";background:#FF8A80;color:#14213D;border-color:#FF8A80;font-weight:700" : "") + '">' + (HEAD.closing ? "แตะอีกครั้งเพื่อปิดห้องและกลับเว็บชมรม" : "ปิดห้อง") + "</button></div>";
 }
 function headBar() {
   var ph = H.phase, b = "";
@@ -1902,6 +1903,18 @@ var HEADACT = {
     H.cfg.room = "ห้องเพื่อน"; H.players = [{ pid: P.pid, name: name, idx: H.nextIdx++ }];
     HACT.newRoom(); HEAD.req();
     if (!HEAD.timers) { HEAD.timers = true; startHostTimers(); }
+  },
+  /* close this room for good: tell the players, forget the saved room, go back to the club site (a later "สร้างห้อง" makes a new room) */
+  closeRoom: function () {
+    if (H.phase !== "lobby") return;
+    if (!HEAD.closing) { HEAD.closing = true; headFeed(); clearTimeout(HEAD.closeT); HEAD.closeT = setTimeout(function () { HEAD.closing = false; headFeed(); }, 3000); return; }
+    HEAD.closing = false;
+    H.players.forEach(function (p) { if (p.pid !== P.pid) Net.send({ type: "reject", to: p.pid, reason: "หัวห้องปิดห้องแล้ว" }); });
+    try { localStorage.removeItem("calcu-host"); } catch (e) {}
+    ss("calcu-role", ""); ss("calcu-hostcode", "");
+    clearTimeout(SV.t); H.code = "";   /* stop saveHost from writing the room back */
+    document.getElementById("app").innerHTML = '<div id="pw"><div class="box"><h2>ปิดห้องแล้ว</h2><div class="muted">กำลังกลับเว็บชมรม…</div></div></div>';
+    setTimeout(function () { Net.close(); location.href = "/games/"; }, 900);
   },
   share: function () {
     var url = location.origin + "/calcu/#join=" + H.code, done = function () { HEAD.shared = 1; headFeed(); setTimeout(function () { HEAD.shared = 0; headFeed(); }, 2000); };

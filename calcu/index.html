@@ -227,6 +227,11 @@ body.ph #netb.ok { background: #2E9E6B; } body.ph #netb.local { background: #D9A
 .pblk.p1 { height: 300px; background: #FFD65A; } .pblk.p2 { height: 210px; background: #C9D2E8; } .pblk.p3 { height: 150px; background: #E0A472; }
 .pod.anim .pblk { animation: fxRise .8s cubic-bezier(.2, .8, .2, 1) both; }
 .pod.anim .pn, .pod.anim .ps { animation: fxFade .6s ease-out both; }
+#pw .hcode { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 56px; line-height: 1.2; letter-spacing: .12em; color: #4B35C9; margin: 2px 0 8px; }
+#pw .hbar { margin-top: auto; padding-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; flex: none; }
+#pw .hbar button { flex: 1; min-width: 96px; min-height: 48px; border-radius: 12px; border: 2px solid #4B35C9; background: #fff; color: #4B35C9; font-weight: 700; font-size: 15px; }
+#pw .hbar button.pri { background: #4B35C9; color: #fff; }
+#pw .hbar .hmsg { flex-basis: 100%; font-weight: 700; text-align: center; }
 </style>
 </head>
 <body>
@@ -694,6 +699,7 @@ function enterReveal() {
   challengedList().forEach(function (t) { steps.push({ type: "chal", id: t }); });
   G.steps = steps; G.rev = 1; G.summarized = false;
   setPhase("p4");
+  if (MODE === "head") summarize();   /* head mode has no projector: the phone reveal screens are a later stage, so go straight to the summary */
 }
 function targetResult(tid) { return checkEquation(G.subs[tid] || [], G.nums, cellOf(tid).value); }
 function passMap() { var m = {}; challengedList().forEach(function (t) { m[t] = targetResult(t).pass; }); return m; }
@@ -779,7 +785,7 @@ function saveHost() {   /* the host keeps the whole game in this browser, so a r
     try {
       if (!H.code) return;
       var g = null; if (G) { g = {}; G_KEYS.forEach(function (k) { g[k] = G[k]; }); }
-      localStorage.setItem("calcu-host", JSON.stringify({ t: Date.now(), code: H.code, cfg: H.cfg, players: H.players, nextIdx: H.nextIdx, phase: H.phase, G: g }));
+      localStorage.setItem("calcu-host", JSON.stringify({ mode: MODE, hp: MODE === "head" ? P.pid : "", t: Date.now(), code: H.code, cfg: H.cfg, players: H.players, nextIdx: H.nextIdx, phase: H.phase, G: g }));
     } catch (e) {}
   }, 300);
 }
@@ -788,7 +794,8 @@ function restoreHost() {
   if (!raw) return false;
   try {
     var d = JSON.parse(raw);
-    if (!d || Date.now() - d.t > 12 * 3600 * 1000 || !/^\d{4}$/.test(d.code)) return false;
+    if (!d || Date.now() - d.t > 12 * 3600 * 1000 || !/^\d{4}$/.test(d.code) || (d.mode || "host") !== MODE) return false;
+    if (MODE === "head") { if (!d.hp) return false; P.pid = d.hp; ss("calcu-pid", P.pid); }
     var pl = d.players || [], g = d.G || null;
     if (g) { g = JSON.parse(JSON.stringify(g)); if (!g.cells || !g.nums || !g.scores) return false; }
     H.code = d.code; H.cfg = Object.assign({}, DEF_CFG, d.cfg); H.players = pl; H.nextIdx = d.nextIdx || 0; H.phase = d.phase || "lobby";
@@ -1067,6 +1074,7 @@ function hEnd() {
     '<div class="ftr"><div>' + copyBtn() + '</div><div style="display:flex;gap:16px"><button class="gb" data-a="toLobby">กลับล็อบบี้</button><button class="pb" data-a="again">เล่นใหม่ด้วยผู้เล่นเดิม</button></div></div>';
 }
 function renderHost() {
+  if (MODE === "head") { headFeed(); return; }
   var el = document.getElementById("stage"); if (!el) return;
   var h;
   if (H.phase === "lobby") h = hLobby();
@@ -1173,10 +1181,13 @@ function hostBoot() {
     var b = e.target.closest("[data-a]"); if (!b || b.disabled) return;
     if (HACT[b.dataset.a]) HACT[b.dataset.a](b);
   });
+  startHostTimers();
+}
+function startHostTimers() {
   setInterval(function () {
     if (!G || G.paused || !G.deadline || H.ce) return;
     if (Date.now() >= G.deadline) { advance(); changed(); return; }
-    var t = document.getElementById("tm"); if (t) t.textContent = secsLeft();
+    var t = document.getElementById("tm"); if (t) t.textContent = MODE === "head" ? (pLeft() === null ? "–" : Math.ceil(pLeft() / 1000)) : secsLeft();
   }, 200);
   setInterval(function () { if (Net.ch) broadcast(); }, 3000);
 }
@@ -1328,6 +1339,7 @@ function summaryP(m, endMode) {
     top3.map(function (r) { var rk = rows.filter(function (x) { return x.score > r.score; }).length + 1; return '<div class="tr' + (r.pid === P.pid ? " me" : "") + '"><span style="width:20px" class="muted">' + rk + '</span><b style="flex:1">' + esc(r.name) + (r.pid === P.pid ? " (คุณ)" : "") + "</b><b>" + fmtN(r.score) + "</b></div>"; }).join("") + "</div>";
 }
 function renderPlayer() {
+  if (MODE === "head") { headRender(); return; }
   if (!P.joined || !P.st) return;
   document.getElementById("app").innerHTML = viewGameP();
 }
@@ -1362,6 +1374,7 @@ function setJoinCode(v) {
   if (v.length === 4 && JSTEP === 1) setTimeout(function () { if (JSTEP === 1 && joinCode().length === 4 && document.getElementById("cdisp")) { JSTEP = 2; renderPlayerForce(); var n = document.getElementById("nick"); if (n && !n.value) n.focus(); } }, 250);
 }
 function joinCode() { var c = document.getElementById("code"); return c ? c.value : ""; }
+function sendMsg(m) { if (MODE === "head") { m.from = P.pid; onHostMsg(JSON.parse(JSON.stringify(m))); if (m.type === "submit") setTimeout(headFeed, 2600); } else Net.send(m); }
 var PACT = {
   join: pjoin,
   key: function (b) { var v = joinCode(); setJoinCode(v.length < 4 ? v + b.dataset.k : b.dataset.k); },
@@ -1369,8 +1382,8 @@ var PACT = {
   clr: function () { setJoinCode(""); },
   editcode: function () { var n = document.getElementById("nick"); if (n) P.name = n.value.trim(); JSTEP = 1; renderPlayerForce(); },
   leave: function () { P.code = ""; JSTEP = 1; P.joined = false; P.st = null; Net.close(); ss("calcu-joined", "0"); PL.clear(); renderPlayerForce(); },
-  pick: function (b) { Net.send({ type: "pick", pid: P.pid, cell: Number(b.dataset.id) }); },
-  chal: function (b) { Net.send({ type: "chal", pid: P.pid, target: b.dataset.id }); },
+  pick: function (b) { sendMsg({ type: "pick", pid: P.pid, cell: Number(b.dataset.id) }); },
+  chal: function (b) { sendMsg({ type: "chal", pid: P.pid, target: b.dataset.id }); },
   pickItem: function (b) {
     var m = me(); if (!m || !m.challenged || m.solved || P.sent) return;
     var w = getWork(), id = b.dataset.id; w.err = "";
@@ -1382,7 +1395,7 @@ var PACT = {
       var aId = w.a;
       try { hit = workCombine(w, id, m.challenged.value); } catch (e) { if (e && e.msg) { w.err = e.msg; w.a = null; w.op = null; renderPlayer(); return; } throw e; }
       w.shist.push(w.slots.slice()); var ia = w.slots.indexOf(aId), ib = w.slots.indexOf(id); w.slots[ia] = w.items[w.items.length - 1].id; w.slots[ib] = null;
-      if (hit) { P.sent = true; P.sentAt = Date.now(); Net.send({ type: "submit", pid: P.pid, node: hit.node }); }
+      if (hit) { P.sent = true; P.sentAt = Date.now(); sendMsg({ type: "submit", pid: P.pid, node: hit.node }); }
     }
     renderPlayer();
   },
@@ -1411,19 +1424,110 @@ function playerBoot() {
     }
   }
   if (P.code && P.name && ss("calcu-joined") === "1") { JSTEP = 2; renderPlayerForce(); document.getElementById("code").value = P.code; document.getElementById("nick").value = P.name; pjoin(); }
-  else { P.code = ""; JSTEP = 1; renderPlayerForce(); }
+  else {
+    var jm = /^#join=(\d{4})$/.exec(location.hash || "");
+    if (jm) { P.code = jm[1]; JSTEP = 2; renderPlayerForce(); var nn = document.getElementById("nick"); if (nn && !nn.value) nn.focus(); }
+    else { P.code = ""; JSTEP = 1; renderPlayerForce(); }
+  }
+}
+
+/* ============================================================ HEAD (a player phone that also runs the room) ============================================================
+   The head phone runs the same engine as the Host page (H, G, onHostMsg, broadcast, timers) and shows the normal player screens.
+   Its own state goes straight to its own screen (the network never echoes a sender's messages back) and its taps call onHostMsg directly.
+   Stage 1: lobby with settings, controls bar, screen wake lock. The phone reveal screens are a later stage, so p4 jumps to the summary. */
+var HEAD = { ok: false, shared: 0, err: "", timers: false,
+  req: function () {
+    try {
+      if (!navigator.wakeLock) { HEAD.ok = false; return; }
+      navigator.wakeLock.request("screen").then(function (l) { HEAD.ok = true; l.addEventListener("release", function () { HEAD.ok = false; headFeed(); }); headFeed(); }, function () { HEAD.ok = false; });
+    } catch (e) { HEAD.ok = false; }
+  }
+};
+function headFeed() {
+  if (!H.code || MODE !== "head") return;
+  P.st = publicState(); P.recvAt = Date.now(); P.joined = true; P.code = H.code;
+  var mm = P.st.me && P.st.me[P.pid];
+  if (P.sent && P.sentAt && Date.now() - P.sentAt > 2500 && !(mm && mm.solved)) P.sent = false;
+  headRender();
+}
+function headRender() {
+  var app = document.getElementById("app"); if (!app || !P.st) return;
+  app.innerHTML = P.st.phase === "lobby" ? headLobby() : headGame();
+}
+function headWake() { return HEAD.ok ? '<div class="st ok">✓ กันหน้าจอดับอยู่ ห้ามสลับแอปหรือปิดหน้านี้</div>' : '<div class="st">เครื่องนี้กันจอดับไม่ได้ ตั้งเวลาปิดจอให้นานที่สุด และห้ามสลับแอปหรือปิดหน้านี้ ไม่งั้นเกมของทั้งห้องจะค้าง</div>'; }
+function headLobby() {
+  var c = H.cfg, chips = H.players.map(function (p) { return '<span style="padding:4px 12px;border-radius:99px;color:#fff;background:' + pcol(p.idx) + '">' + esc(p.name) + (p.pid === P.pid ? " (คุณ)" : "") + "</span>"; }).join("");
+  return '<div id="pw"><div class="ph"><div><div class="a">หัวห้อง · เล่นกับเพื่อน · ไม่นับคะแนนชมรม</div><div class="b">Calcuเหรอ?</div></div></div>' +
+    '<div class="box"><div class="muted">รหัสห้อง</div><div class="hcode">' + H.code + '</div><button class="go" data-a="share" style="width:100%">' + (HEAD.shared ? "คัดลอกแล้ว ✓" : "คัดลอกลิงก์ชวนเพื่อน") + '</button><div class="muted" style="margin-top:8px">เพื่อนเปิดลิงก์นี้ หรือเข้าเว็บชมรมแล้วกด “เข้าห้อง” ใส่รหัสห้อง</div></div>' +
+    '<div class="box"><h2>ผู้เล่น ' + H.players.length + ' คน</h2><div style="display:flex;flex-wrap:wrap;gap:6px">' + chips + "</div></div>" +
+    '<div class="box"><div class="muted">เป้าหมาย ' + c.target + " คะแนน · เวลา " + c.t1 + "/" + c.t2 + "/" + c.t3 + ' วินาที</div><button class="gh" data-a="cfg" style="width:100%;margin-top:8px">ตั้งค่าห้อง</button></div>' +
+    headWake() + '<button class="go" data-a="start"' + (startOk() ? "" : " disabled") + ' style="width:100%;margin-top:auto">เริ่มเกม' + (H.players.length < 2 ? " (ต้องมีผู้เล่นอย่างน้อย 2 คน)" : "") + "</button></div>";
+}
+function headBar() {
+  var ph = H.phase, b = "";
+  if (H.ce) return '<div class="hbar"><div class="hmsg">จบเกมตอนนี้และไปหน้าผู้ชนะ?</div><button class="pri" data-a="doEnd">จบเกม</button><button data-a="cancelEnd">ยกเลิก</button></div>';
+  if (ph === "p1" || ph === "p2" || ph === "p3") b = '<button data-a="pause">' + (G.paused ? "เดินเวลาต่อ" : "หยุดเวลา") + '</button><button data-a="skip">ข้ามเฟส</button><button data-a="askEnd">จบเกม</button>';
+  else if (ph === "p4") b = G.summarized ? '<button class="pri" data-a="' + (G.ended ? "toEnd" : "nextRound") + '">' + (G.ended ? "ดูผู้ชนะ" : "ไปรอบถัดไป") + '</button><button data-a="askEnd">จบเกม</button>' : "";
+  else if (ph === "end") b = '<button class="pri" data-a="again">เล่นอีกครั้ง</button><button data-a="toLobby">กลับล็อบบี้</button><button data-a="copy">' + (COPIED ? "คัดลอกแล้ว ✓" : "คัดลอกอันดับ") + "</button>";
+  return b ? '<div class="hbar">' + b + "</div>" : "";
+}
+function headGame() {
+  var h = viewGameP().replace("รอ Host<br>ไปรอบถัดไป", "หัวห้องกดไปต่อ");
+  return h.replace(/<\/div>$/, (HEAD.ok || H.phase === "end" ? "" : headWake()) + headBar() + "</div>");
+}
+var HEADACT = {
+  make: function () {
+    var n = document.getElementById("hname"), name = n ? n.value.trim().slice(0, 20) : "";
+    if (!name) { HEAD.err = "กรอกชื่อเล่นก่อน"; document.getElementById("app").innerHTML = headName(); return; }
+    HEAD.err = ""; P.name = name; ss("calcu-name", name);
+    H.cfg.room = "ห้องเพื่อน"; H.players = [{ pid: P.pid, name: name, idx: H.nextIdx++ }];
+    HACT.newRoom(); HEAD.req();
+    if (!HEAD.timers) { HEAD.timers = true; startHostTimers(); }
+  },
+  share: function () {
+    var url = location.origin + "/calcu/#join=" + H.code, done = function () { HEAD.shared = 1; headFeed(); setTimeout(function () { HEAD.shared = 0; headFeed(); }, 2000); };
+    function fb() { try { var ta = document.createElement("textarea"); ta.value = url; ta.style.cssText = "position:fixed;left:-9999px;top:0"; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); done(); } catch (e) {} }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, fb); else fb();
+  }
+};
+function headName() {
+  return '<div id="pw"><a href="/games/" style="align-self:flex-start;color:#4B35C9;font-weight:700;text-decoration:none;padding:4px 0">← กลับเว็บชมรม</a><div class="ph"><div><div class="a">เล่นกับเพื่อน · ไม่นับคะแนนชมรม</div><div class="b">เป็นหัวห้อง</div></div></div>' +
+    '<div class="box"><div class="muted">เครื่องนี้จะเป็นตัวกลางของห้อง ต้องเปิดหน้านี้ค้างไว้ตลอดเกม และคุณเล่นด้วยได้</div>' +
+    '<label class="lab" for="hname" style="display:block;margin-top:10px">ชื่อเล่นของคุณ</label><input id="hname" maxlength="20" autocomplete="off" value="' + esc(P.name || "") + '" style="width:100%;box-sizing:border-box;min-height:48px;font-size:18px;padding:6px 12px;border:2px solid #CBD5E8;border-radius:12px">' +
+    (HEAD.err ? '<div class="st" role="alert" style="margin-top:8px">' + esc(HEAD.err) + "</div>" : "") + '<button class="go" data-a="make" style="width:100%;margin-top:12px">สร้างห้อง</button></div></div>';
+}
+function headBoot() {
+  MODE = "head"; document.body.className = "ph"; ss("calcu-role", "head");
+  var app = document.getElementById("app");
+  app.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-a]"); if (!b || b.disabled) return;
+    var a = b.dataset.a;
+    if (HEADACT[a]) HEADACT[a](b); else if (PACT[a]) PACT[a](b); else if (HACT[a]) HACT[a](b);
+  });
+  document.addEventListener("visibilitychange", function () { if (!document.hidden && H.code) { HEAD.req(); broadcast(); headFeed(); } });
+  if (restoreHost()) {
+    var me0 = H.players.filter(function (p) { return p.pid === P.pid; })[0]; if (me0) P.name = me0.name;
+    ss("calcu-hostcode", H.code); Net.open(H.code, "host", onHostMsg); HEAD.req(); HEAD.timers = true; startHostTimers(); changed();
+  } else app.innerHTML = headName();
 }
 
 /* ============================================================ start ============================================================ */
 function roleScreen() {
   document.getElementById("app").innerHTML = '<div class="role"><a href="/games/" style="align-self:flex-start;color:#9C8CFF;font-weight:700;text-decoration:none;padding:8px 0">← กลับเว็บชมรม</a><h1>Calcuเหรอ? <span style="font-size:1rem;color:#B4BEDA">ต้นแบบเรียลไทม์</span></h1><p>เลือกว่าหน้านี้ทำหน้าที่อะไร</p>' +
-    '<button class="rbtn pri" data-r="host">Host (จอโปรเจกเตอร์)<small>แสดงกระดานบนจอใหญ่ และเป็นผู้ควบคุมเกม</small></button><button class="rbtn" data-r="player">ผู้เล่น (มือถือ)<small>เข้าห้องด้วยรหัส แล้วเล่นบนมือถือ</small></button>' +
+    '<button class="rbtn pri" data-r="create">สร้างห้อง<small>เปิดห้องใหม่ แล้วชวนเพื่อนเข้าด้วยรหัสห้อง</small></button><button class="rbtn" data-r="player">เข้าห้อง<small>ใส่รหัสห้อง แล้วเล่นบนมือถือ</small></button>' +
     '<div class="note">ต้นแบบนี้เชื่อมกันได้เฉพาะแท็บในเบราว์เซอร์เดียวกัน เพราะยังไม่ได้ต่อระบบกลาง (Supabase) ลองด้วยการเปิดลิงก์นี้หลายแท็บ: แท็บหนึ่งเป็น Host ที่เหลือเป็นผู้เล่น แท็บผู้เล่นควรย่อหน้าต่างให้แคบเท่ามือถือ</div></div>';
-  document.getElementById("app").onclick = function (e) { var b = e.target.closest("[data-r]"); if (!b) return; document.getElementById("app").onclick = null; (b.dataset.r === "host" ? hostBoot : playerBoot)(); };
+  document.getElementById("app").onclick = function (e) { var b = e.target.closest("[data-r]"); if (!b) return; document.getElementById("app").onclick = null; (b.dataset.r === "create" ? createScreen : playerBoot)(); };
+}
+function createScreen() {
+  var app = document.getElementById("app");
+  app.innerHTML = '<div class="role"><a href="/games/" style="align-self:flex-start;color:#9C8CFF;font-weight:700;text-decoration:none;padding:8px 0">← กลับเว็บชมรม</a><h1>สร้างห้อง</h1><p>เลือกว่าเครื่องนี้ทำหน้าที่อะไร</p>' +
+    '<button class="rbtn pri" data-r="host">ใช้จอนี้เป็น Host<small>เล่นในห้องเรียน แสดงกระดานบนจอใหญ่หรือโปรเจกเตอร์ เพื่อนเล่นด้วยมือถือ</small></button>' +
+    '<button class="rbtn" data-r="head">หัวห้องเล่นด้วย<small>ใช้มือถือเครื่องนี้เป็นหัวห้องและเล่นด้วย ไม่ต้องมีจอ Host ไม่นับคะแนนชมรม</small></button></div>';
+  app.onclick = function (e) { var b = e.target.closest("[data-r]"); if (!b) return; app.onclick = null; (b.dataset.r === "host" ? hostBoot : headBoot)(); };
 }
 (function () {
   var r = ss("calcu-role");
-  if (location.hash === "#host") hostBoot(); else if (location.hash === "#player") playerBoot(); else if (r === "host") hostBoot(); else if (r === "player") playerBoot(); else roleScreen();
+  if (location.hash === "#host") hostBoot(); else if (location.hash === "#head") headBoot(); else if (location.hash === "#create") createScreen(); else if (location.hash === "#player" || /^#join=\d{4}$/.test(location.hash)) playerBoot(); else if (r === "host") hostBoot(); else if (r === "head") headBoot(); else if (r === "player") playerBoot(); else roleScreen();
 })();
 </script>
 </body>

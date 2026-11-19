@@ -102,6 +102,14 @@ body.ph #netb.ok { background: #2E9E6B; } body.ph #netb.local { background: #D9A
 #cfgov .row3 label { display: block; font-size: .85rem; color: #B4BEDA; }
 #cfgov .warn { padding: 8px 12px; border-radius: 10px; background: #3A3010; color: #FFD65A; margin: 0 0 10px; }
 #cfgov .sm { font-size: .9rem; color: #B4BEDA; margin: 10px 0 4px; }
+#cfgov .grp { border: 1px solid #2B3560; border-radius: 12px; margin-bottom: 8px; background: #121934; }
+#cfgov .ghd { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 48px; padding: 10px 12px; background: none; border: 0; color: #EEF1FA; font: inherit; text-align: left; cursor: pointer; }
+#cfgov .ghd b { flex: 1; }
+#cfgov .ghd .ar { color: #9C8CFF; width: 16px; flex: none; }
+#cfgov .gst { font-size: .82rem; color: #B4BEDA; text-align: right; }
+#cfgov .gst.mod { color: #FFD65A; }
+#cfgov .gst.bad { color: #FF8A80; font-weight: 700; }
+#cfgov .gbd { padding: 0 12px 10px; }
 #cfgov .done { width: 100%; margin-top: 10px; min-height: 52px; border-radius: 12px; border: 0; background: #9C8CFF; color: #0E1326; font-weight: 700; font-size: 1.05rem; }
 
 /* ---------- PLAYER (phone) ---------- */
@@ -700,7 +708,7 @@ var MODE = null;   /* "host" | "player" */
 /* page version: RAISE THIS NUMBER EVERY TIME THIS FILE CHANGES (YYYYMMDD + 2 digits).
    The Host/head sends it in every state and players send it when they join: a phone with an older page is told to refresh,
    a phone with a newer page than the Host/head warns that the Host/head should refresh, and the lobby marks players on an old page. */
-var CALCU_V = 2026111903;
+var CALCU_V = 2026112001;
 
 /* ============================================================ HOST ============================================================ */
 var DEF_CFG = { room: "ห้องชมรม", target: 50, start: 0, ranges: [[1, 5], [1, 10], [1, 12], [1, 15]], showScores: true, maxMult: 3, penalty: "value",
@@ -709,7 +717,7 @@ var DEF_CFG = { room: "ห้องชมรม", target: 50, start: 0, ranges: 
    "king" = reach the target AND be the only leader at the end of 2 rounds in a row (overtaken -> the overtaker takes the throne and the count restarts);
    "kingsd" = like "king", but being overtaken in the 2nd round starts a Sudden Death between the holder and the overtaker */
 var SD_SECS = 60, SD_SKIP = 2;   /* Sudden Death: 60 s race, dropping a cell costs 2 points */
-var END_NAMES = { crown: "ศึกชิงมง (แบบเดิม)", king: "ศึกครองบัลลังก์", kingsd: "ศึกครองบัลลังก์ + Sudden Death" };
+var END_NAMES = { crown: "ศึกชิงมง", king: "ศึกครองบัลลังก์", kingsd: "ศึกครองบัลลังก์ + Sudden Death" };
 var END_HELP = {
   crown: "มีคนถึงเป้า → เล่นอีก 1 รอบเป็นรอบสุดท้าย → คะแนนสูงสุดชนะ",
   king: "ต้องถึงเป้าและนำเดี่ยว 2 รอบติดกันจึงชนะ ถ้าถูกแซง บัลลังก์ตกเป็นของคนที่แซง (ต้องถึงเป้า) แล้วเริ่มนับใหม่",
@@ -1480,39 +1488,76 @@ function rangesFormHtml() {
     return '<div class="rng"><span>ตัวที่ ' + (i + 1) + '</span><input type="number" inputmode="numeric" data-r="' + i + '-0" value="' + r[0] + '" min="1"><span>ถึง</span><input type="number" inputmode="numeric" data-r="' + i + '-1" value="' + r[1] + '" min="1"></div>';
   }).join("") + '<p class="warn" id="rng-warn"' + (rangesFeasible(cfgRanges()) ? " hidden" : "") + ">ช่วงที่ตั้งไว้สุ่มเลข 4 ตัวที่ไม่ซ้ำกันไม่ได้</p>";
 }
+/* settings box: the often-used settings on top, the rest in three groups that open with a tap.
+   A closed group says whether it still has the default values ("ค่าปกติ") or how many were changed. */
+var CFG_GROUPS = [
+  { id: "score", title: "กติกาคะแนน", keys: ["start", "maxMult", "penalty", "negMode", "negCustom", "chMode", "chCustom"] },
+  { id: "board", title: "กระดานและเลขตั้งต้น", keys: ["ranges", "maxResult", "showScores"] },
+  { id: "play", title: "ระหว่างเล่น", keys: ["earlyEnd", "showSolution"] }
+];
+var CFG_OPEN = {};
+function cfgChanged(g) {
+  var c = H.cfg;
+  return g.keys.filter(function (k) {
+    if (k === "negCustom" && c.negMode !== "custom") return false;
+    if (k === "chCustom" && c.chMode !== "custom") return false;
+    return JSON.stringify(k === "ranges" ? cfgRanges() : c[k]) !== JSON.stringify(DEF_CFG[k]);
+  }).length;
+}
+function cfgBad(g) { return g.id === "board" && (!rangesFeasible(cfgRanges()) || !maxOk()); }
+function grpStatus(g) {
+  var c = H.cfg, n = cfgChanged(g), id = ' id="gst-' + g.id + '"';
+  if (cfgBad(g)) return '<span class="gst bad"' + id + ">⚠ ค่าไม่ถูกต้อง</span>";
+  if (g.id === "play") return '<span class="gst' + (n ? " mod" : "") + '"' + id + ">" + ([c.showSolution ? "แสดงเฉลย" : "", c.earlyEnd ? "จบเฟส 3 เร็ว" : ""].filter(Boolean).join(" · ") || "ปิดทั้งหมด") + "</span>";
+  return '<span class="gst' + (n ? " mod" : "") + '"' + id + ">" + (n ? "ปรับแล้ว " + n + " ค่า" : "ค่าปกติ") + "</span>";
+}
+function refreshGrpStatus() { CFG_GROUPS.forEach(function (g) { var el = document.getElementById("gst-" + g.id); if (el) el.outerHTML = grpStatus(g); }); }
 function renderCfg() {
-  var c = H.cfg, ov = document.getElementById("cfgov");
+  var c = H.cfg, ov = document.getElementById("cfgov"), old = ov.querySelector(".box"), y = old ? old.scrollTop : 0;
   function opt(v, label, cur) { return '<option value="' + v + '"' + (String(cur) === String(v) ? " selected" : "") + ">" + label + "</option>"; }
   function num(key, label, min, max) { return '<div class="field"><label>' + label + '</label><input type="number" inputmode="numeric" data-cfg="' + key + '" value="' + c[key] + '" min="' + min + '" max="' + max + '"></div>'; }
+  function sel(key, label, opts) { return '<div class="field wide"><label>' + label + '</label><select data-cfg="' + key + '">' + opts + "</select></div>"; }
+  function chk(key, label) { return '<label class="check"><input type="checkbox" data-cfg="' + key + '"' + (c[key] ? " checked" : "") + "> " + label + "</label>"; }
+  var body = {
+    score: num("start", "คะแนนเริ่มต้น", -999, 999) + num("maxMult", "ตัวคูณสูงสุดเมื่อถูกรุมท้า", 1, 20) +
+      sel("penalty", "บทลงโทษเมื่อแก้สมการไม่ได้", opt("value", "เสียตามมูลค่าช่อง", c.penalty) + opt("count", "เสียตามจำนวนคนรุม", c.penalty)) +
+      sel("negMode", "ลิมิตคะแนนติดลบ", opt("none", "ไม่จำกัด", c.negMode) + opt("0", "ต่ำสุด 0", c.negMode) + opt("-10", "ต่ำสุด −10", c.negMode) + opt("custom", "ระบุเอง", c.negMode)) +
+      (c.negMode === "custom" ? num("negCustom", "คะแนนต่ำสุด", -9999, 0) : "") +
+      sel("chMode", "จำกัดการกดท้าต่อรอบ", opt("none", "ไม่จำกัด", c.chMode) + opt("custom", "ระบุเอง", c.chMode)) + (c.chMode === "custom" ? num("chCustom", "ท้าได้สูงสุด (คนต่อรอบ)", 1, 99) : ""),
+    board: rangesFormHtml() + num("maxResult", "ผลลัพธ์สูงสุดบนกระดาน (100–400)", 100, 400) + '<p class="warn" id="max-warn"' + (maxOk() ? " hidden" : "") + ">ต้องเป็นจำนวนเต็ม 100 ถึง 400</p>" +
+      chk("showScores", "แสดงคะแนนของแต่ละช่องในเฟส 1"),
+    play: chk("earlyEnd", "จบเฟส 3 ทันทีเมื่อทุกคนที่ถูกท้าไขได้แล้ว") + chk("showSolution", "แสดงเฉลยจากระบบ (เมื่อผู้ถูกท้าไม่ผ่าน และของผู้ที่ไม่ถูกท้า)")
+  };
+  var groups = CFG_GROUPS.map(function (g) {
+    var open = CFG_OPEN[g.id] || cfgBad(g), st = grpStatus(g);
+    return '<div class="grp"><button type="button" class="ghd" data-a="cfgGrp" data-g="' + g.id + '" aria-expanded="' + !!open + '"><span class="ar">' + (open ? "▾" : "▸") + "</span><b>" + g.title + "</b>" + st + "</button>" + (open ? '<div class="gbd">' + body[g.id] + "</div>" : "") + "</div>";
+  }).join("");
   ov.hidden = false;
   ov.innerHTML = '<div class="box"><h2>ตั้งค่าห้อง</h2><div class="field wide"><label>ชื่อห้อง</label><input type="text" maxlength="30" data-cfg="room" value="' + esc(c.room) + '"></div>' +
     num("target", "คะแนนเป้าหมาย", 1, 9999) +
-    '<div class="field wide"><label>วิธีจบเกม</label><select data-cfg="endMode">' + opt("crown", END_NAMES.crown, c.endMode) + opt("king", END_NAMES.king, c.endMode) + opt("kingsd", END_NAMES.kingsd, c.endMode) + "</select></div>" +
-    '<p class="sm">' + END_HELP[c.endMode || "crown"] + "</p>" + num("start", "คะแนนเริ่มต้น", -999, 999) + rangesFormHtml() + num("maxResult", "ผลลัพธ์สูงสุดบนกระดาน (100–400)", 100, 400) +
-    '<p class="warn" id="max-warn"' + (maxOk() ? " hidden" : "") + ">ต้องเป็นจำนวนเต็ม 100 ถึง 400</p>" +
-    '<label class="check"><input type="checkbox" data-cfg="showScores"' + (c.showScores ? " checked" : "") + "> แสดงคะแนนของแต่ละช่องในเฟส 1</label>" + num("maxMult", "ตัวคูณสูงสุดเมื่อถูกรุมท้า", 1, 20) +
-    '<div class="field"><label>บทลงโทษเมื่อแก้สมการไม่ได้</label><select data-cfg="penalty">' + opt("value", "เสียตามมูลค่าช่อง", c.penalty) + opt("count", "เสียตามจำนวนคนรุม", c.penalty) + "</select></div>" +
-    '<div class="field"><label>ลิมิตคะแนนติดลบ</label><select data-cfg="negMode">' + opt("none", "ไม่จำกัด", c.negMode) + opt("0", "ต่ำสุด 0", c.negMode) + opt("-10", "ต่ำสุด −10", c.negMode) + opt("custom", "ระบุเอง", c.negMode) + "</select></div>" +
-    (c.negMode === "custom" ? num("negCustom", "คะแนนต่ำสุด", -9999, 0) : "") +
-    '<div class="field"><label>จำกัดการกดท้าต่อรอบ</label><select data-cfg="chMode">' + opt("none", "ไม่จำกัด", c.chMode) + opt("custom", "ระบุเอง", c.chMode) + "</select></div>" + (c.chMode === "custom" ? num("chCustom", "ท้าได้สูงสุด (คนต่อรอบ)", 1, 99) : "") +
-    '<label class="check"><input type="checkbox" data-cfg="earlyEnd"' + (c.earlyEnd ? " checked" : "") + "> จบเฟส 3 ทันทีเมื่อทุกคนที่ถูกท้าไขได้แล้ว</label>" +
-    '<label class="check"><input type="checkbox" data-cfg="showSolution"' + (c.showSolution ? " checked" : "") + "> แสดงเฉลยจากระบบ (เมื่อผู้ถูกท้าไม่ผ่าน และของผู้ที่ไม่ถูกท้า)</label>" +
-    '<p class="sm">เวลาแต่ละเฟส (วินาที)</p><div class="row3"><div><label>เฟส 1</label><input type="number" inputmode="numeric" data-cfg="t1" value="' + c.t1 + '" min="5" max="600"></div><div><label>เฟส 2</label><input type="number" inputmode="numeric" data-cfg="t2" value="' + c.t2 + '" min="5" max="600"></div><div><label>เฟส 3</label><input type="number" inputmode="numeric" data-cfg="t3" value="' + c.t3 + '" min="5" max="600"></div></div>' +
+    sel("endMode", "วิธีจบเกม", opt("crown", END_NAMES.crown, c.endMode) + opt("king", END_NAMES.king, c.endMode) + opt("kingsd", END_NAMES.kingsd, c.endMode)) +
+    '<p class="sm" style="margin-top:0">' + END_HELP[c.endMode || "crown"] + "</p>" +
+    '<p class="sm">เวลาแต่ละเฟส (วินาที)</p><div class="row3"><div><label>จอง</label><input type="number" inputmode="numeric" data-cfg="t1" value="' + c.t1 + '" min="5" max="600"></div><div><label>ท้า</label><input type="number" inputmode="numeric" data-cfg="t2" value="' + c.t2 + '" min="5" max="600"></div><div><label>พิมพ์สมการ</label><input type="number" inputmode="numeric" data-cfg="t3" value="' + c.t3 + '" min="5" max="600"></div></div>' +
+    '<div style="height:10px"></div>' + groups +
     '<button class="done" data-a="closeCfg">เสร็จ</button></div>';
+  var nb = ov.querySelector(".box"); if (nb && y) nb.scrollTop = y;
 }
 document.addEventListener("change", function (e) {
   var t = e.target; if (!t.closest || !t.closest("#cfgov")) return;
   var c = H.cfg;
-  if (t.dataset.r) { var p = t.dataset.r.split("-"); c.ranges[+p[0]][+p[1]] = t.value === "" ? "" : Number(t.value); var w = document.getElementById("rng-warn"); if (w) w.hidden = rangesFeasible(cfgRanges()); return; }
+  if (t.dataset.r) { var p = t.dataset.r.split("-"); c.ranges[+p[0]][+p[1]] = t.value === "" ? "" : Number(t.value); var w = document.getElementById("rng-warn"); if (w) w.hidden = rangesFeasible(cfgRanges()); refreshGrpStatus(); return; }
   var k = t.dataset.cfg; if (!k) return;
   if (t.type === "checkbox") c[k] = t.checked;
   else if (t.tagName === "SELECT") { c[k] = t.value; renderCfg(); return; }
   else if (t.type === "number") { c[k] = t.value === "" ? "" : Number(t.value); if (k === "maxResult") { var m = document.getElementById("max-warn"); if (m) m.hidden = maxOk(); } }
   else c[k] = t.value;
+  refreshGrpStatus();
 });
 document.addEventListener("click", function (e) {
   var b = e.target.closest ? e.target.closest("#cfgov [data-a=closeCfg]") : null;
-  if (b) { H.showCfg = false; document.getElementById("cfgov").hidden = true; renderHost(); broadcast(); }
+  if (b) { H.showCfg = false; document.getElementById("cfgov").hidden = true; renderHost(); broadcast(); return; }
+  var g = e.target.closest ? e.target.closest("#cfgov [data-a=cfgGrp]") : null;
+  if (g) { CFG_OPEN[g.dataset.g] = !CFG_OPEN[g.dataset.g]; renderCfg(); }
 });
 
 /* ============================================================ PLAYER ============================================================ */

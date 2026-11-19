@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ภาพจำยังชัดเจน · Mathmory</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { font-family: Sarabun, "Noto Sans Thai", system-ui, sans-serif; background: #0E1326; color: #EEF1FA; -webkit-text-size-adjust: 100%; }
+[hidden] { display: none !important; }
+button { font: inherit; cursor: pointer; }
+button[disabled] { cursor: not-allowed; opacity: .45; }
+.hd { font-family: Prompt, "Noto Sans Thai", sans-serif; }
+a { color: #9C8CFF; }
+
+/* ---------- connection badge ---------- */
+#netb { position: fixed; left: 8px; bottom: 6px; font-size: 11px; color: #B4BEDA; z-index: 40; pointer-events: none; }
+#netb.local { color: #FFD65A; } #netb.bad { color: #FF8A80; }
+
+/* ---------- phone pages ---------- */
+#pw { max-width: 520px; margin: 0 auto; min-height: 100%; padding: 14px 14px 18px; display: flex; flex-direction: column; gap: 12px; }
+#pw .box { background: #171E38; border: 1px solid #2B3560; border-radius: 16px; padding: 14px 16px; }
+#pw h1 { font-family: Prompt, "Noto Sans Thai", sans-serif; font-size: 1.9rem; line-height: 1.25; margin: 0; }
+#pw h2 { font-family: Prompt, "Noto Sans Thai", sans-serif; font-size: 1.25rem; line-height: 1.3; margin: 0 0 6px; }
+#pw .muted { color: #B4BEDA; line-height: 1.5; }
+#pw .top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#pw .top .a { font-size: .85rem; color: #B4BEDA; }
+#pw .top .b { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 1.15rem; line-height: 1.3; }
+#pw .tm { min-width: 54px; height: 54px; border-radius: 50%; border: 4px solid #9C8CFF; display: flex; align-items: center; justify-content: center; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 1.35rem; flex: none; }
+#pw .tag { padding: 4px 12px; border-radius: 99px; background: #2B3560; font-size: .85rem; font-weight: 700; }
+#pw .go { min-height: 54px; border-radius: 14px; border: 0; background: #9C8CFF; color: #0E1326; font-weight: 700; font-size: 1.1rem; width: 100%; }
+#pw .gh { min-height: 50px; border-radius: 14px; border: 2px solid #9C8CFF; background: transparent; color: #EEF1FA; font-weight: 700; font-size: 1.05rem; width: 100%; }
+#pw label { display: block; font-size: .9rem; color: #B4BEDA; margin: 8px 0 4px; }
+#pw input { font: inherit; font-size: 1.1rem; min-height: 50px; width: 100%; padding: 8px 12px; color: #EEF1FA; background: #0E1326; border: 1px solid #2B3560; border-radius: 12px; }
+#pw .err { padding: 8px 12px; border-radius: 10px; background: #3A1C24; color: #FFB3AD; }
+#pw .rule { background: #FFD84D; color: #14213D; border-radius: 16px; padding: 14px 16px; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 1.3rem; line-height: 1.4; text-align: center; }
+#pw .rule small { display: block; font-family: Sarabun, "Noto Sans Thai", sans-serif; font-weight: 500; font-size: .9rem; }
+#pw .row { display: flex; gap: 8px; }
+#pw .tr { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-bottom: 1px solid #2B3560; }
+#pw .tr:last-child { border-bottom: 0; }
+#pw .tr.me { background: #232C55; border-radius: 8px; }
+#pw .ok { color: #6EDC9A; } #pw .no { color: #FF8A80; }
+#pw .num3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+/* the 4x4 board on phones */
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; max-width: 420px; margin: 0 auto; }
+.cell { aspect-ratio: 1; border-radius: 14px; border: 2px solid #2B3560; background: #05070F; color: #14213D; display: flex; align-items: center; justify-content: center; position: relative; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 2.1rem; padding: 0; }
+.cell.p { background: #FF8FC8; border-color: #FF8FC8; } .cell.g { background: #63D68F; border-color: #63D68F; } .cell.w { background: #F4F6FB; border-color: #F4F6FB; }
+.cell.sel { border: 3px solid #FFD84D; box-shadow: 0 0 0 2px #FFD84D inset; }
+.cell .ord { position: absolute; top: 4px; left: 6px; min-width: 24px; height: 24px; padding: 0 4px; border-radius: 8px; background: #FFD84D; color: #14213D; font-size: .95rem; line-height: 24px; text-align: center; }
+.cell.ex { box-shadow: 0 0 0 4px #9C8CFF; }
+.cell .mine { position: absolute; right: 4px; bottom: 3px; font-size: .7rem; color: #14213D; background: #FFD84D; border-radius: 6px; padding: 0 4px; line-height: 16px; }
+
+/* ---------- role screen ---------- */
+.role { min-height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 14px; max-width: 520px; margin: 0 auto; padding: 24px 16px; }
+.role h1 { font-family: Prompt, "Noto Sans Thai", sans-serif; font-size: 2rem; margin: 0; line-height: 1.3; }
+.role p { margin: 0; color: #B4BEDA; line-height: 1.5; }
+.rbtn { min-height: 64px; border-radius: 16px; border: 2px solid #9C8CFF; background: transparent; color: #EEF1FA; font-weight: 700; font-size: 1.15rem; padding: 10px 16px; text-align: left; }
+.rbtn.pri { background: #9C8CFF; color: #0E1326; }
+.rbtn small { display: block; font-weight: 400; font-size: .9rem; opacity: .9; }
+
+/* ---------- host (1920x1080 stage, scaled to fit) ---------- */
+body.host { overflow: hidden; background: #0A0E1D; }
+#stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; padding: 40px 64px; display: flex; flex-direction: column; gap: 24px; overflow: hidden; color: #EEF1FA; background: #0E1326; }
+#stage .hdr { height: 110px; display: flex; align-items: center; justify-content: space-between; flex: none; gap: 24px; }
+#stage .s1 { font-size: 30px; color: #B4BEDA; white-space: nowrap; }
+#stage .s2 { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 46px; line-height: 1.2; }
+#stage .ring { width: 120px; height: 120px; border-radius: 50%; border: 10px solid #9C8CFF; display: flex; align-items: center; justify-content: center; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 60px; flex: none; }
+#stage .main { flex: 1; min-height: 0; display: flex; align-items: center; gap: 64px; }
+#stage .ftr { height: 72px; display: flex; align-items: center; justify-content: space-between; flex: none; }
+#stage .pb { min-height: 72px; padding: 0 44px; border-radius: 18px; border: 0; background: #9C8CFF; color: #0E1326; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 36px; }
+#stage .gb { min-height: 60px; padding: 0 28px; border-radius: 16px; border: 3px solid #5A6785; background: transparent; color: #EEF1FA; font-size: 28px; font-weight: 700; }
+#stage .hgrid { display: grid; grid-template-columns: repeat(4, 176px); gap: 18px; flex: none; }
+#stage .hcell { width: 176px; height: 176px; border-radius: 24px; background: #05070F; border: 4px solid #2B3560; display: flex; align-items: center; justify-content: center; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 104px; color: #14213D; position: relative; }
+#stage .hcell.p { background: #FF8FC8; border-color: #FF8FC8; } #stage .hcell.g { background: #63D68F; border-color: #63D68F; } #stage .hcell.w { background: #F4F6FB; border-color: #F4F6FB; }
+#stage .hcell.ex { box-shadow: 0 0 0 10px #FFD84D; }
+#stage .hcell .ord { position: absolute; top: 8px; left: 10px; min-width: 44px; height: 44px; border-radius: 12px; background: #FFD84D; color: #14213D; font-size: 30px; line-height: 44px; text-align: center; padding: 0 6px; }
+#stage .rulebig { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 64px; line-height: 1.3; background: #FFD84D; color: #14213D; border-radius: 32px; padding: 36px 44px; }
+#stage .chip { display: inline-flex; align-items: center; gap: 12px; padding: 10px 22px; border-radius: 99px; background: #171E38; border: 3px solid #2B3560; font-size: 34px; font-weight: 700; }
+#stage .chip.sm { font-size: 26px; padding: 6px 16px; }
+#stage .chip i { width: 18px; height: 18px; border-radius: 50%; display: inline-block; }
+#stage .lr { display: flex; align-items: center; gap: 22px; padding: 10px 22px; border-radius: 18px; background: #171E38; font-size: 36px; }
+#stage .lr .rk { width: 56px; color: #B4BEDA; font-weight: 700; }
+#stage .lr .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+#stage .lr .pt { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; color: #FFD84D; }
+#stage .lr .sub { font-size: 26px; color: #B4BEDA; }
+#stage .field { display: flex; align-items: center; justify-content: space-between; gap: 18px; font-size: 30px; }
+#stage .field input { font: inherit; width: 150px; min-height: 60px; padding: 4px 14px; color: #EEF1FA; background: #05070F; border: 2px solid #2B3560; border-radius: 14px; font-size: 32px; }
+#stage .field input.wide { width: 360px; }
+.endov { position: absolute; inset: 0; background: rgba(5, 8, 20, .82); display: flex; align-items: center; justify-content: center; z-index: 20; }
+.endbox { background: #171E38; border: 3px solid #2B3560; border-radius: 32px; padding: 48px 64px; text-align: center; display: flex; flex-direction: column; gap: 18px; }
+@media (prefers-reduced-motion: no-preference) { .pop { animation: pop .35s ease both; } @keyframes pop { from { transform: scale(.85); opacity: 0; } to { transform: none; opacity: 1; } } }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<div id="app"></div>
+<div id="netb"></div>
+<script>
+/* ============================================================ GAME LOGIC ============================================================
+   Mathmory (ภาพจำยังชัดเจน): a 4x4 board of digits 0-9 in pink / green / white is shown for a few seconds, then every cell turns black,
+   a rule appears and the players tap the cells that satisfy it (one answer each). Correct = seconds left (to 0.1) + bonus 10 / (number correct)
+   (big-screen mode only), times the question's multiplier. */
+var MM_V = 2026112001;   /* page version: RAISE THIS NUMBER EVERY TIME THIS FILE CHANGES (YYYYMMDD + 2 digits) */
+var COLORS = [{ id: "p", name: "ชมพู" }, { id: "g", name: "เขียว" }, { id: "w", name: "ขาว" }];
+var PRIMES = { 2: 1, 3: 1, 5: 1, 7: 1 };
+function rint(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function genGrid() { var g = []; for (var i = 0; i < 16; i++) g.push({ n: rint(0, 9), c: rint(0, 2) }); return g; }
+function pairs(f) { for (var i = 0; i < 16; i++) for (var j = i + 1; j < 16; j++) f(i, j); }
+function triples(f) { for (var i = 0; i < 16; i++) for (var j = i + 1; j < 16; j++) for (var k = j + 1; k < 16; k++) f(i, j, k); }
+function adjacent(i, j) { var ri = i >> 2, ci = i & 3, rj = j >> 2, cj = j & 3; return Math.abs(ri - rj) + Math.abs(ci - cj) === 1; }
+function uniq(sel) { return sel.every(function (x, i) { return sel.indexOf(x) === i; }); }
+function sumOf(g, sel) { return sel.reduce(function (s, i) { return s + g[i].n; }, 0); }
+/* ---------- the rules ----------
+   One entry per rule. tier: 1 = easy (×1 questions), 2 = medium (×2), 3 = hard (×3 and ×4).
+   k = number of cells to pick (null = "all cells that ..."; the player decides how many).
+   make(grid) -> params, or null when this board has no answer (a new board is drawn then).
+   text(params) -> the rule shown to the players.  ok(grid, sel, params) -> is the answer right (sel = cell numbers 0-15 in tap order).
+   ex(grid, params) -> one right answer, shown on the reveal screen.
+   To add a rule: add one entry here. */
+var RULES = {
+  same4: { tier: 1, k: 4,
+    make: function (g) { var cs = [0, 1, 2].filter(function (c) { return g.filter(function (x) { return x.c === c; }).length >= 4; }); return cs.length ? {} : null; },
+    text: function () { return "เลือก 4 ช่อง ที่มีสีเหมือนกัน"; },
+    ok: function (g, s) { return s.every(function (i) { return g[i].c === g[s[0]].c; }); },
+    ex: function (g) { for (var c = 0; c < 3; c++) { var l = []; g.forEach(function (x, i) { if (x.c === c) l.push(i); }); if (l.length >= 4) return l.slice(0, 4); } return []; } },
+  prime3: { tier: 1, k: 3,
+    make: function (g) { return g.filter(function (x) { return PRIMES[x.n]; }).length >= 3 ? {} : null; },
+    text: function () { return "เลือก 3 ช่อง ที่เป็นจำนวนเฉพาะ"; },
+    ok: function (g, s) { return s.every(function (i) { return PRIMES[g[i].n]; }); },
+    ex: function (g) { var l = []; g.forEach(function (x, i) { if (PRIMES[x.n]) l.push(i); }); return l.slice(0, 3); } },
+  diff2: { tier: 1, k: 2,
+    make: function (g) { var ds = {}; pairs(function (i, j) { var d = Math.abs(g[i].n - g[j].n); if (d > 0) ds[d] = 1; }); var l = Object.keys(ds); return l.length ? { d: Number(pick(l)) } : null; },
+    text: function (p) { return "เลือก 2 ช่อง ที่ผลต่างเป็น " + p.d; },
+    ok: function (g, s, p) { return Math.abs(g[s[0]].n - g[s[1]].n) === p.d; },
+    ex: function (g, p) { var r = null; pairs(function (i, j) { if (!r && Math.abs(g[i].n - g[j].n) === p.d) r = [i, j]; }); return r || []; } },
+  prod2: { tier: 1, k: 2,
+    make: function (g) { var ps = {}; pairs(function (i, j) { var v = g[i].n * g[j].n; if (v > 0) ps[v] = 1; }); var l = Object.keys(ps); return l.length ? { v: Number(pick(l)) } : null; },
+    text: function (p) { return "เลือก 2 ช่อง ที่ผลคูณเป็น " + p.v; },
+    ok: function (g, s, p) { return g[s[0]].n * g[s[1]].n === p.v; },
+    ex: function (g, p) { var r = null; pairs(function (i, j) { if (!r && g[i].n * g[j].n === p.v) r = [i, j]; }); return r || []; } },
+  sum3: { tier: 2, k: 3,
+    make: function (g) { var ss = {}; triples(function (i, j, k) { ss[g[i].n + g[j].n + g[k].n] = 1; }); var l = Object.keys(ss).filter(function (v) { return v >= 4 && v <= 25; }); return l.length ? { v: Number(pick(l)) } : null; },
+    text: function (p) { return "เลือก 3 ช่อง ที่ผลรวมเป็น " + p.v; },
+    ok: function (g, s, p) { return sumOf(g, s) === p.v; },
+    ex: function (g, p) { var r = null; triples(function (i, j, k) { if (!r && g[i].n + g[j].n + g[k].n === p.v) r = [i, j, k]; }); return r || []; } },
+  distinct3: { tier: 2, k: 3,
+    make: function (g) { return RULES.distinct3.ex(g).length ? {} : null; },
+    text: function () { return "เลือก 3 ช่อง ที่มีสีและตัวเลขไม่ซ้ำกัน"; },
+    ok: function (g, s) { var a = g[s[0]], b = g[s[1]], c = g[s[2]]; return a.c !== b.c && a.c !== c.c && b.c !== c.c && a.n !== b.n && a.n !== c.n && b.n !== c.n; },
+    ex: function (g) { var r = null; triples(function (i, j, k) { if (!r && RULES.distinct3.ok(g, [i, j, k])) r = [i, j, k]; }); return r || []; } },
+  colorOdd3: { tier: 2, k: 3,
+    make: function (g) { var cs = [0, 1, 2].filter(function (c) { return g.filter(function (x) { return x.c === c && x.n % 2 === 1; }).length >= 3; }); return cs.length ? { c: pick(cs) } : null; },
+    text: function (p) { return "เลือก 3 ช่องสี" + COLORS[p.c].name + " ที่เป็นเลขคี่"; },
+    ok: function (g, s, p) { return s.every(function (i) { return g[i].c === p.c && g[i].n % 2 === 1; }); },
+    ex: function (g, p) { var l = []; g.forEach(function (x, i) { if (x.c === p.c && x.n % 2 === 1) l.push(i); }); return l.slice(0, 3); } },
+  sum3mod7: { tier: 2, k: 3,
+    make: function (g) { return RULES.sum3mod7.ex(g).length ? {} : null; },
+    text: function () { return "เลือก 3 ช่อง ที่ผลรวมหารด้วย 7 ลงตัว"; },
+    ok: function (g, s) { return sumOf(g, s) % 7 === 0; },
+    ex: function (g) { var r = null; triples(function (i, j, k) { if (!r && (g[i].n + g[j].n + g[k].n) % 7 === 0) r = [i, j, k]; }); return r || []; } },
+  inc5: { tier: 3, k: 5,
+    make: function (g) { var d = {}; g.forEach(function (x) { d[x.n] = 1; }); return Object.keys(d).length >= 5 ? {} : null; },
+    text: function () { return "เลือก 5 ช่อง ให้เลขเรียงจากน้อยไปมาก"; },
+    ok: function (g, s) { for (var i = 1; i < s.length; i++) if (g[s[i]].n <= g[s[i - 1]].n) return false; return true; },
+    ex: function (g) { var seen = {}, l = []; g.map(function (x, i) { return i; }).sort(function (a, b) { return g[a].n - g[b].n; }).forEach(function (i) { if (!seen[g[i].n]) { seen[g[i].n] = 1; l.push(i); } }); return l.slice(0, 5); } },
+  even8: { tier: 3, k: 8,
+    make: function (g) { return g.filter(function (x) { return x.n % 2 === 0; }).length >= 8 ? {} : null; },
+    text: function () { return "เลือก 8 ช่อง ที่เป็นจำนวนคู่"; },
+    ok: function (g, s) { return s.every(function (i) { return g[i].n % 2 === 0; }); },
+    ex: function (g) { var l = []; g.forEach(function (x, i) { if (x.n % 2 === 0) l.push(i); }); return l.slice(0, 8); } },
+  adjSum: { tier: 3, k: 2,
+    make: function (g) { var ss = {}; pairs(function (i, j) { if (adjacent(i, j)) ss[g[i].n + g[j].n] = 1; }); var l = Object.keys(ss).filter(function (v) { return v > 0; }); return l.length ? { v: Number(pick(l)) } : null; },
+    text: function (p) { return "เลือก 2 ช่อง ที่อยู่ติดกัน (บน ล่าง ซ้าย ขวา) และผลรวมเป็น " + p.v; },
+    ok: function (g, s, p) { return adjacent(s[0], s[1]) && g[s[0]].n + g[s[1]].n === p.v; },
+    ex: function (g, p) { var r = null; pairs(function (i, j) { if (!r && adjacent(i, j) && g[i].n + g[j].n === p.v) r = [i, j]; }); return r || []; } },
+  allOf: { tier: 3, k: null,
+    make: function (g) { var cnt = {}; g.forEach(function (x) { cnt[x.n] = (cnt[x.n] || 0) + 1; }); var l = Object.keys(cnt).filter(function (n) { return cnt[n] >= 2; }); if (!l.length) l = Object.keys(cnt); return { n: Number(pick(l)) }; },
+    text: function (p) { return "เลือกทุกช่องที่เป็นเลข " + p.n; },
+    ok: function (g, s, p) { var want = g.filter(function (x) { return x.n === p.n; }).length; return s.length === want && s.every(function (i) { return g[i].n === p.n; }); },
+    ex: function (g, p) { var l = []; g.forEach(function (x, i) { if (x.n === p.n) l.push(i); }); return l; } }
+};
+/* check one answer against a question; sel = cell numbers in tap order */
+function checkAnswer(q, sel) {
+  var R = RULES[q.type];
+  if (!Array.isArray(sel) || !sel.length || sel.length > 16 || !uniq(sel) || !sel.every(function (i) { return i === (i | 0) && i >= 0 && i < 16; })) return false;
+  if (R.k !== null && sel.length !== R.k) return false;
+  return !!R.ok(q.grid, sel, q.p);
+}
+/* a question of this rule: draw boards until the rule has an answer on it */
+function makeQuestion(type) {
+  var R = RULES[type];
+  for (var t = 0; t < 500; t++) {
+    var g = genGrid(), p = R.make(g);
+    if (p) { var q = { type: type, grid: g, p: p, text: R.text(p), k: R.k }; q.ex = R.ex(g, p); if (q.ex.length && checkAnswer(q, q.ex)) return q; }
+  }
+  return null;
+}
+/* multipliers for n questions: the last one ×4, the others split 4 : 3 : 2 into ×1, ×2, ×3 (10 questions = 4, 3, 2, 1) */
+function multipliers(n) {
+  n = Math.max(1, n | 0); var m = n - 1, a = Math.round(m * 4 / 9), b = Math.round(m * 3 / 9), c = m - a - b, out = [];
+  if (c < 0) { b += c; c = 0; }
+  for (var i = 0; i < a; i++) out.push(1); for (i = 0; i < b; i++) out.push(2); for (i = 0; i < c; i++) out.push(3); out.push(4);
+  return out;
+}
+/* the rule of every question: easy rules for ×1, medium for ×2, hard for ×3 and ×4; inside a tier no rule repeats until all were used */
+function planRules(mults) {
+  var bags = {}, out = [];
+  function draw(t) { if (!bags[t] || !bags[t].length) bags[t] = shuffle(Object.keys(RULES).filter(function (k) { return RULES[k].tier === t; })); return bags[t].pop(); }
+  mults.forEach(function (m) { out.push(draw(m >= 3 ? 3 : m)); });
+  return out;
+}
+function t10(x) { return Math.round(x * 10) / 10; }                     /* to 0.1 */
+function f1(x) { return (Math.round(x * 10) / 10).toFixed(1); }          /* show with 1 decimal */
+function letter(i) { return String.fromCharCode(65 + i); }               /* A, B, C, ... */
+/*LOGIC-END*/
+
+/* ============================================================ shared helpers ============================================================ */
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+function ss(k, v) { try { if (v === undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k, v); } catch (e) { return null; } }
+function rid() { return Math.random().toString(36).slice(2, 10); }
+function pcol(idx) { return "hsl(" + ((idx * 47) % 360) + " 65% 64%)"; }
+function cellCls(x) { return COLORS[x.c].id; }
+
+/* ---------- transport (same as Calcu): Supabase Realtime broadcast channel "mathmory-<code>", BroadcastChannel fallback ---------- */
+var SB = { url: "https://pmiwrnbpoumkpmbbylvw.supabase.co", key: "sb_publishable_XhPC1F8vvNzOt7KoaEaQKw_C_0pJksR" };
+var Net = {
+  ch: null, me: null, mode: "", ready: false, q: [], client: null, timer: null, code: "", onmsg: null,
+  setStatus: function (st) { var b = document.getElementById("netb"); if (!b) return; b.className = st; b.textContent = st === "ok" ? "เชื่อมต่อแล้ว" : st === "local" ? "โหมดทดสอบ: ใช้ได้เฉพาะแท็บในเบราว์เซอร์เดียวกัน" : st === "bad" ? "ขาดการเชื่อมต่อ กำลังลองใหม่" : "กำลังเชื่อมต่อ…"; },
+  open: function (code, me, onmsg) {
+    this.close(); this.me = me; this.code = code; this.onmsg = onmsg; this.q = []; this.ready = false;
+    var self = this;
+    if (window.supabase && window.supabase.createClient) {
+      try {
+        this.mode = "supabase"; this.setStatus("wait");
+        this.client = window.supabase.createClient(SB.url, SB.key, { realtime: { params: { eventsPerSecond: 40 } } });
+        var ch = this.client.channel("mathmory-" + code, { config: { broadcast: { self: false, ack: false } } });
+        this.ch = ch;
+        ch.on("broadcast", { event: "m" }, function (p) { try { onmsg(p.payload); } catch (err) { if (window.console) console.error(err); } });
+        this.timer = setTimeout(function () { if (self.ch === ch && !self.ready) self.fallback(); }, 5000);
+        ch.subscribe(function (s) {
+          if (self.ch !== ch) return;
+          if (s === "SUBSCRIBED") { clearTimeout(self.timer); self.ready = true; self.setStatus("ok"); self.flush(); }
+          else if (s === "CHANNEL_ERROR" || s === "TIMED_OUT" || s === "CLOSED") { if (!self.ready) self.fallback(); else self.setStatus("bad"); }
+        });
+        return;
+      } catch (err) { if (window.console) console.error(err); this.teardown(); }
+    }
+    this.local();
+  },
+  teardown: function () {
+    clearTimeout(this.timer);
+    try { if (this.client && this.ch) this.client.removeChannel(this.ch); } catch (e) {}
+    try { if (this.client && this.client.realtime && this.client.realtime.disconnect) this.client.realtime.disconnect(); } catch (e) {}
+    this.client = null; this.ch = null; this.ready = false;
+  },
+  fallback: function () { this.teardown(); this.local(); },
+  local: function () {
+    var onmsg = this.onmsg; this.mode = "local";
+    this.ch = new BroadcastChannel("mathmory-" + this.code);
+    this.ch.onmessage = function (e) { try { onmsg(e.data); } catch (err) { if (window.console) console.error(err); } };
+    this.ready = true; this.setStatus("local"); this.flush();
+  },
+  flush: function () { var q = this.q; this.q = []; for (var i = 0; i < q.length; i++) this.post(q[i]); },
+  post: function (m) { if (this.mode === "supabase") { try { this.ch.send({ type: "broadcast", event: "m", payload: m }); } catch (e) {} } else this.ch.postMessage(m); },
+  send: function (m) {
+    if (!this.ch) return;
+    m.from = this.me; m = JSON.parse(JSON.stringify(m));
+    if (!this.ready) { if (m.type === "state") this.q = this.q.filter(function (x) { return x.type !== "state"; }); if (this.q.length < 60) this.q.push(m); return; }
+    this.post(m);
+  },
+  close: function () {
+    if (this.mode === "supabase") this.teardown(); else if (this.ch) { try { this.ch.close(); } catch (e) {} }
+    this.ch = null; this.ready = false; this.q = []; clearTimeout(this.timer);
+    var b = document.getElementById("netb"); if (b) { b.className = ""; b.textContent = ""; }
+  }
+};
+var MODE = null;   /* "host" | "player" | "solo" */
+
+/* ============================================================ HOST (big screen) ============================================================
+   phases: lobby -> mem (board shown, big screen only) -> ask (rule shown, board black, phones answer) -> rev (board + answers) -> ... -> end
+   The board is never sent to the phones before the reveal, and the Host checks every answer. */
+var DEF_CFG = { room: "ห้องชมรม", mem: 10, ans: 15, nq: 10 };
+var H = { code: "", cfg: JSON.parse(JSON.stringify(DEF_CFG)), players: [], nextIdx: 0, phase: "lobby" };
+var G = null;
+function findP(pid) { for (var i = 0; i < H.players.length; i++) if (H.players[i].pid === pid) return H.players[i]; return null; }
+function hname(pid) { var p = findP(pid); return p ? p.name : "?"; }
+function hcol(pid) { var p = findP(pid); return pcol(p ? p.idx : 0); }
+function cfgNum(k, lo, hi) { var v = Math.round(Number(H.cfg[k])); return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : DEF_CFG[k]; }
+function hostNewGame() {
+  var n = cfgNum("nq", 1, 30), mults = multipliers(n), sc = {};
+  H.players.forEach(function (p) { sc[p.pid] = 0; });
+  G = { qi: -1, n: n, mults: mults, plan: planRules(mults), scores: sc, q: null, ans: {}, deadline: 0, last: null };
+  nextQuestion();
+}
+function nextQuestion() {
+  G.qi++;
+  if (G.qi >= G.n) { H.phase = "end"; G.deadline = 0; return; }
+  G.q = makeQuestion(G.plan[G.qi]) || makeQuestion("same4");
+  G.ans = {}; G.last = null; H.phase = "mem"; G.deadline = Date.now() + cfgNum("mem", 3, 60) * 1000;
+}
+function advance() {
+  if (H.phase === "mem") { H.phase = "ask"; G.askAt = Date.now(); G.deadline = G.askAt + cfgNum("ans", 5, 120) * 1000; }
+  else if (H.phase === "ask") finishQuestion();
+}
+/* end of a question: bonus = 10 / (number of right answers) to 0.1, points = (seconds left + bonus) × multiplier */
+function finishQuestion() {
+  var right = Object.keys(G.ans).filter(function (p) { return G.ans[p].ok; }), bonus = right.length ? t10(10 / right.length) : 0, m = G.mults[G.qi];
+  Object.keys(G.ans).forEach(function (p) { var a = G.ans[p]; a.pts = a.ok ? t10((a.left + bonus) * m) : 0; if (G.scores[p] === undefined) G.scores[p] = 0; G.scores[p] = t10(G.scores[p] + a.pts); });
+  G.last = { bonus: bonus, right: right.length, m: m };
+  H.phase = "rev"; G.deadline = 0;
+}
+function ranking() { return H.players.slice().sort(function (a, b) { return (G.scores[b.pid] || 0) - (G.scores[a.pid] || 0); }); }
+function rankOf(pid) { var s = G.scores[pid] || 0, r = 1; H.players.forEach(function (p) { if ((G.scores[p.pid] || 0) > s) r++; }); return r; }
+function winners() { if (!G || !H.players.length) return []; var top = Math.max.apply(null, H.players.map(function (p) { return G.scores[p.pid] || 0; })); return H.players.filter(function (p) { return (G.scores[p.pid] || 0) === top; }).map(function (p) { return p.pid; }); }
+function publicState() {
+  var st = { type: "state", v: MM_V, phase: H.phase, room: H.cfg.room, now: Date.now(), players: H.players.map(function (p) { return { pid: p.pid, name: p.name, idx: p.idx }; }) };
+  if (G) {
+    st.qi = G.qi; st.n = G.n; st.m = G.mults[Math.min(G.qi, G.n - 1)]; st.remaining = G.deadline ? Math.max(0, G.deadline - Date.now()) : null;
+    st.rows = ranking().map(function (p) { return { pid: p.pid, name: p.name, idx: p.idx, score: G.scores[p.pid] || 0, rk: rankOf(p.pid) }; });
+    if (H.phase === "ask" || H.phase === "rev") { st.text = G.q.text; st.k = G.q.k; }
+    st.answered = Object.keys(G.ans).length;
+    st.me = {}; H.players.forEach(function (p) { var a = G.ans[p.pid]; st.me[p.pid] = { sent: !!a, sel: a ? a.sel : null, ok: H.phase === "rev" && a ? a.ok : null, pts: H.phase === "rev" && a ? a.pts : null, left: a ? a.left : null }; });
+    if (H.phase === "rev") { st.grid = G.q.grid; st.ex = G.q.ex; st.last = G.last; }
+    if (H.phase === "end") st.winners = winners();
+  }
+  return st;
+}
+var BC = { last: 0, t: null };
+function broadcast() {
+  var now = Date.now(), gap = Math.min(1000, Math.max(150, H.players.length * 25));
+  if (now - BC.last >= gap) { BC.last = now; Net.send(publicState()); }
+  else if (!BC.t) BC.t = setTimeout(function () { BC.t = null; BC.last = Date.now(); Net.send(publicState()); }, gap - (now - BC.last));
+}
+function saveHost() { try { if (H.code) localStorage.setItem("mathmory-host", JSON.stringify({ t: Date.now(), code: H.code, cfg: H.cfg, players: H.players, nextIdx: H.nextIdx, phase: H.phase, G: G })); } catch (e) {} }
+function restoreHost() {
+  try {
+    var d = JSON.parse(localStorage.getItem("mathmory-host") || "null");
+    if (!d || Date.now() - d.t > 12 * 3600 * 1000 || !/^\d{4}$/.test(d.code)) return false;
+    H.code = d.code; H.cfg = Object.assign({}, DEF_CFG, d.cfg); H.players = d.players || []; H.nextIdx = d.nextIdx || 0; H.phase = d.phase || "lobby"; G = d.G || null;
+    if (G && G.deadline) G.deadline = Math.max(G.deadline, Date.now() + 5000);   /* a reloaded Host gives everyone at least 5 s more */
+    if (!G && H.phase !== "lobby") H.phase = "lobby";
+    return true;
+  } catch (e) { return false; }
+}
+function changed() { broadcast(); renderHost(); saveHost(); }
+function onHostMsg(m) {
+  if (!m || !m.type) return;
+  if (m.type === "hello") { broadcast(); return; }
+  if (m.type === "join") {
+    var ex = findP(m.pid);
+    if (!ex) {
+      var nm = String(m.name || "").trim().slice(0, 20) || "ผู้เล่น";
+      if (H.phase !== "lobby") {   /* same nickname = the same player coming back on a new page */
+        var old = H.players.filter(function (p) { return p.name === nm; })[0];
+        if (old) { Net.send({ type: "adopt", to: m.pid, pid: old.pid }); return; }
+        Net.send({ type: "reject", to: m.pid, reason: "เกมเริ่มไปแล้ว ถ้าเคยเข้าห้องนี้ ให้พิมพ์ชื่อเล่นเดิมเพื่อกลับเข้าห้อง" }); return;
+      }
+      var base = nm, k = 2; while (H.players.some(function (p) { return p.name === nm; })) nm = base + " " + (k++);
+      H.players.push({ pid: m.pid, name: nm, idx: H.nextIdx++, v: m.v || 0 });
+    } else ex.v = m.v || 0;
+    changed(); return;
+  }
+  if (m.type === "ans" && G && H.phase === "ask" && findP(m.pid) && !G.ans[m.pid] && m.qi === G.qi) {
+    var sel = Array.isArray(m.sel) ? m.sel.slice(0, 16).map(Number) : [];
+    var left = Math.max(0, G.deadline - Date.now()) / 1000;
+    G.ans[m.pid] = { sel: sel, ok: checkAnswer(G.q, sel), left: Math.floor(left * 10) / 10, pts: 0 };
+    if (H.players.every(function (p) { return G.ans[p.pid]; })) G.deadline = Math.min(G.deadline, Date.now() + 1200);   /* everyone answered: reveal soon */
+    changed();
+  }
+}
+var HACT = {
+  newRoom: function () { H.code = String(1000 + Math.floor(Math.random() * 9000)); Net.open(H.code, "host", onHostMsg); changed(); },
+  resetRoom: function () { if (H.phase !== "lobby") return; if (!H.cr) { H.cr = true; renderHost(); return; } H.cr = false; H.players = []; H.nextIdx = 0; G = null; Net.close(); HACT.newRoom(); },
+  start: function () { if (!H.players.length) return; readCfg(); hostNewGame(); changed(); },
+  next: function () { if (H.phase === "rev") { nextQuestion(); changed(); } },
+  skip: function () { if (H.phase === "mem" || H.phase === "ask") { advance(); changed(); } },
+  askEnd: function () { H.ce = true; renderHost(); },
+  cancelEnd: function () { H.ce = false; renderHost(); },
+  doEnd: function () { H.ce = false; H.phase = "end"; if (G) G.deadline = 0; changed(); },
+  again: function () { hostNewGame(); changed(); },
+  toLobby: function () { G = null; H.phase = "lobby"; changed(); },
+  copy: function () {
+    var txt = "ภาพจำยังชัดเจน · " + H.cfg.room + " · ผลสุดท้าย\n" + ranking().map(function (p) { return rankOf(p.pid) + ". " + p.name + " — " + f1(G.scores[p.pid] || 0); }).join("\n");
+    var done = function () { H.copied = 1; renderHost(); setTimeout(function () { H.copied = 0; renderHost(); }, 2000); };
+    function fb() { try { var ta = document.createElement("textarea"); ta.value = txt; ta.style.cssText = "position:fixed;left:-9999px"; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); done(); } catch (e) {} }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, fb); else fb();
+  }
+};
+function readCfg() {
+  [].forEach.call(document.querySelectorAll("#stage [data-cfg]"), function (el) { var k = el.dataset.cfg; H.cfg[k] = k === "room" ? (el.value.trim().slice(0, 30) || DEF_CFG.room) : Number(el.value); });
+  ["mem", "ans", "nq"].forEach(function (k) { H.cfg[k] = cfgNum(k, k === "mem" ? 3 : k === "ans" ? 5 : 1, k === "nq" ? 30 : k === "mem" ? 60 : 120); });
+}
+/* ----- host screens ----- */
+function hdr(title, right) {
+  return '<div class="hdr"><div style="min-width:0"><div class="s1">รหัสห้อง <b class="hd" style="font-size:38px;color:#FFD84D;letter-spacing:.08em">' + H.code + "</b> · " + esc(H.cfg.room) + '</div><div class="s2">' + title + "</div></div>" + right + "</div>";
+}
+function ring() { return '<div class="ring" id="tm">' + secsLeft() + "</div>"; }
+function secsLeft() { return G && G.deadline ? String(Math.max(0, Math.ceil((G.deadline - Date.now()) / 1000))) : "–"; }
+function qTitle() { return "ข้อ " + (G.qi + 1) + " / " + G.n + ' <span style="color:#FFD84D">×' + G.mults[G.qi] + "</span>"; }
+function hgrid(show, exSel) {
+  var exOrd = {}; (exSel || []).forEach(function (c, i) { exOrd[c] = i; });
+  return '<div class="hgrid">' + G.q.grid.map(function (x, i) {
+    var e = exOrd[i] !== undefined;
+    return '<div class="hcell' + (show ? " " + cellCls(x) : "") + (e ? " ex" : "") + '">' + (show ? x.n : "") + (e && G.q.type === "inc5" ? '<span class="ord">' + letter(exOrd[i]) + "</span>" : "") + "</div>";
+  }).join("") + "</div>";
+}
+function hLobby() {
+  var chips = H.players.map(function (p) { return '<span class="chip"><i style="background:' + pcol(p.idx) + '"></i>' + esc(p.name) + ((p.v || 0) < MM_V ? ' <span style="color:#FF8A80;font-size:26px">⚠ ต้องรีเฟรช</span>' : "") + "</span>"; }).join("");
+  var c = H.cfg;
+  return '<div style="display:flex;gap:80px;flex:1;min-height:0"><div style="width:720px;display:flex;flex-direction:column;gap:26px">' +
+    '<div><div class="hd" style="font-weight:700;font-size:96px;line-height:1.15">ภาพจำยังชัดเจน</div><div style="font-size:36px;color:#B4BEDA">Mathmory · จำตาราง แล้วเลือกช่องตามกฎ</div></div>' +
+    '<div><div style="font-size:32px;color:#B4BEDA">รหัสห้อง</div><div class="hd" style="font-weight:700;font-size:160px;line-height:1.1;letter-spacing:.12em;color:#FFD84D">' + H.code + "</div></div>" +
+    '<div style="font-size:32px;line-height:1.55;color:#EEF1FA">เปิดเว็บชมรมบนมือถือ → เกม → ภาพจำยังชัดเจน → เข้าห้อง แล้วใส่รหัสห้อง</div>' +
+    '<div style="display:flex;align-items:center;gap:24px"><button class="gb" data-a="resetRoom">' + (H.cr ? "กดอีกครั้งเพื่อล้างห้อง" : "สร้างห้องใหม่") + '</button><a href="/games/" style="font-size:30px;font-weight:700;text-decoration:none">← กลับเว็บชมรม</a></div></div>' +
+    '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:22px"><div style="display:flex;justify-content:space-between;align-items:baseline"><div class="hd" style="font-weight:700;font-size:60px">ผู้เล่นที่เข้าห้องแล้ว</div><div class="hd" style="font-weight:700;font-size:60px;color:#9C8CFF">' + H.players.length + " คน</div></div>" +
+    '<div style="display:flex;flex-wrap:wrap;gap:16px;align-content:flex-start;flex:1;min-height:0;overflow:hidden">' + (chips || '<div style="font-size:34px;color:#B4BEDA">ยังไม่มีใครเข้าห้อง</div>') + "</div>" +
+    '<div style="display:flex;flex-direction:column;gap:12px;padding:22px 26px;border-radius:24px;background:#171E38;border:3px solid #2B3560">' +
+    '<div class="field"><span>ชื่อห้อง</span><input class="wide" data-cfg="room" maxlength="30" value="' + esc(c.room) + '"></div>' +
+    '<div style="display:flex;gap:26px"><div class="field" style="flex:1"><span>เวลาจำ (วินาที)</span><input type="number" data-cfg="mem" min="3" max="60" value="' + c.mem + '"></div><div class="field" style="flex:1"><span>เวลาตอบ (วินาที)</span><input type="number" data-cfg="ans" min="5" max="120" value="' + c.ans + '"></div><div class="field" style="flex:1"><span>จำนวนข้อ</span><input type="number" data-cfg="nq" min="1" max="30" value="' + c.nq + '"></div></div></div>' +
+    '<div style="display:flex;justify-content:flex-end"><button class="pb" data-a="start"' + (H.players.length ? "" : " disabled") + ">เริ่มเกม</button></div></div></div>";
+}
+function hMem() {
+  return hdr(qTitle(), ring()) + '<div class="main" style="justify-content:center">' + hgrid(true) +
+    '<div style="width:640px;display:flex;flex-direction:column;gap:24px"><div class="hd" style="font-weight:700;font-size:88px;line-height:1.2;color:#FFD84D">จำให้ได้!</div><div style="font-size:40px;line-height:1.5">จำทั้ง <b>ตัวเลข</b> <b>สี</b> และ <b>ตำแหน่ง</b><br>หมดเวลาแล้วทุกช่องจะกลายเป็นสีดำ<br>แล้วกฎจะปรากฏ</div></div></div>' +
+    '<div class="ftr"><div style="font-size:30px;color:#B4BEDA">ตารางแสดงบนจอนี้เท่านั้น</div><button class="gb" data-a="skip">ข้ามเวลา</button></div>';
+}
+function hAsk() {
+  var n = Object.keys(G.ans).length;
+  return hdr(qTitle(), ring()) + '<div class="main" style="justify-content:center">' + hgrid(false) +
+    '<div style="width:760px;display:flex;flex-direction:column;gap:28px"><div class="rulebig pop">' + esc(G.q.text) + '</div><div style="font-size:38px;line-height:1.5">กดเลือกช่องบนมือถือ ส่งคำตอบได้ครั้งเดียว<br><span style="color:#B4BEDA">ตอบแล้ว ' + n + " / " + H.players.length + " คน</span></div></div></div>" +
+    '<div class="ftr"><div></div><button class="gb" data-a="skip">จบเวลาตอบ</button></div>';
+}
+function hRev() {
+  var L = G.last, list = Object.keys(G.ans).filter(function (p) { return G.ans[p].ok && findP(p); }).sort(function (a, b) { return G.ans[b].pts - G.ans[a].pts; });
+  var rows = list.slice(0, 8).map(function (p, i) { var a = G.ans[p]; return '<div class="lr"><span class="rk">' + (i + 1) + '</span><span class="nm"><i style="display:inline-block;width:18px;height:18px;border-radius:50%;margin-right:12px;background:' + hcol(p) + '"></i>' + esc(hname(p)) + '</span><span class="sub">เหลือ ' + f1(a.left) + ' วิ</span><span class="pt">+' + f1(a.pts) + "</span></div>"; }).join("");
+  var last = G.qi + 1 >= G.n;
+  return hdr(qTitle() + " · เฉลย", '<div class="chip">ตอบถูก ' + L.right + " / " + H.players.length + " คน</div>") +
+    '<div class="main" style="justify-content:center;align-items:flex-start;gap:56px">' + '<div style="display:flex;flex-direction:column;gap:18px;align-items:center">' + hgrid(true, G.q.ex) + '<div style="font-size:28px;color:#B4BEDA">กรอบเหลือง = ตัวอย่างคำตอบที่ถูก</div></div>' +
+    '<div style="flex:1;min-width:0;max-width:820px;display:flex;flex-direction:column;gap:14px"><div class="rulebig" style="font-size:44px;padding:22px 30px">' + esc(G.q.text) + '</div>' +
+    '<div style="font-size:30px;color:#B4BEDA">คะแนน = (วินาทีที่เหลือ + โบนัส ' + f1(L.bonus) + ") × " + L.m + "</div>" + (rows || '<div style="font-size:40px;color:#FF8A80;font-weight:700">ข้อนี้ไม่มีใครตอบถูก</div>') + (list.length > 8 ? '<div style="font-size:28px;color:#B4BEDA">และอีก ' + (list.length - 8) + " คน</div>" : "") + "</div></div>" +
+    '<div class="ftr"><div style="font-size:30px;color:#B4BEDA">อันดับ 1 ตอนนี้: ' + esc(ranking()[0] ? ranking()[0].name : "-") + " " + f1(ranking()[0] ? G.scores[ranking()[0].pid] || 0 : 0) + '</div><button class="pb" data-a="next">' + (last ? "ดูผลรวม" : "ข้อถัดไป") + "</button></div>";
+}
+function hEnd() {
+  var w = winners(), list = ranking();
+  var rows = list.slice(0, 10).map(function (p) { var win = w.indexOf(p.pid) >= 0; return '<div class="lr" style="' + (win ? "border:4px solid #FFD84D" : "") + '"><span class="rk">' + rankOf(p.pid) + '</span><span class="nm"><i style="display:inline-block;width:18px;height:18px;border-radius:50%;margin-right:12px;background:' + pcol(p.idx) + '"></i>' + esc(p.name) + '</span><span class="pt">' + f1(G.scores[p.pid] || 0) + "</span></div>"; }).join("");
+  return '<div class="main" style="flex-direction:column;align-items:stretch;gap:20px;justify-content:flex-start;padding-top:10px"><div style="text-align:center"><div class="hd" style="font-weight:700;font-size:56px;color:#FFD84D">' + (w.length > 1 ? "ผู้ชนะร่วม" : "ผู้ชนะ") + '</div><div class="hd pop" style="font-weight:700;font-size:96px;line-height:1.2">' + w.map(function (p) { return esc(hname(p)); }).join(" และ ") + "</div></div>" +
+    '<div style="display:flex;flex-direction:column;gap:10px;max-width:1200px;width:100%;margin:0 auto;' + (list.length > 8 ? "zoom:.8" : "") + '">' + rows + (list.length > 10 ? '<div style="font-size:28px;color:#B4BEDA">และอีก ' + (list.length - 10) + " คน (ปุ่มคัดลอกได้ทุกคน)</div>" : "") + "</div></div>" +
+    '<div class="ftr"><button class="gb" data-a="copy">' + (H.copied ? "คัดลอกแล้ว ✓" : "คัดลอกอันดับ") + '</button><div style="display:flex;gap:16px"><button class="gb" data-a="toLobby">กลับล็อบบี้</button><button class="pb" data-a="again">เล่นใหม่ด้วยผู้เล่นเดิม</button></div></div>';
+}
+function renderHost() {
+  var el = document.getElementById("stage"); if (!el) return;
+  var keep = {}; [].forEach.call(el.querySelectorAll("[data-cfg]"), function (x) { keep[x.dataset.cfg] = x.value; });   /* do not lose settings being typed when someone joins */
+  var focus = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.cfg : null;
+  var h = H.phase === "lobby" ? hLobby() : H.phase === "mem" ? hMem() : H.phase === "ask" ? hAsk() : H.phase === "rev" ? hRev() : hEnd();
+  var inGame = G && H.phase !== "lobby" && H.phase !== "end";
+  el.innerHTML = h + (inGame ? '<button class="gb" data-a="askEnd" style="position:absolute;left:50%;top:14px;transform:translateX(-50%);min-height:44px;font-size:22px;padding:0 18px">จบเกม</button>' : "") +
+    (H.ce ? '<div class="endov"><div class="endbox"><div class="hd" style="font-weight:700;font-size:56px">จบเกมตอนนี้ใช่ไหม</div><div style="font-size:32px;color:#B4BEDA">ไปหน้าผู้ชนะทันที โดยใช้คะแนนที่ได้แล้ว</div><div style="display:flex;gap:20px;justify-content:center"><button class="gb" data-a="cancelEnd">เล่นต่อ</button><button class="pb" data-a="doEnd" style="background:#FF8A80">จบเกม</button></div></div></div>' : "");
+  [].forEach.call(el.querySelectorAll("[data-cfg]"), function (x) { if (keep[x.dataset.cfg] !== undefined) x.value = keep[x.dataset.cfg]; if (x.dataset.cfg === focus) x.focus(); });
+}
+function fitStage() { var el = document.getElementById("stage"); if (!el) return; var s = Math.min(innerWidth / 1920, innerHeight / 1080); el.style.transform = "translate(" + (innerWidth - 1920 * s) / 2 + "px," + (innerHeight - 1080 * s) / 2 + "px) scale(" + s + ")"; }
+function hostBoot() {
+  MODE = "host"; document.body.className = "host"; ss("mm-role", "host");
+  document.getElementById("app").innerHTML = '<div id="stage"></div>';
+  fitStage(); window.addEventListener("resize", fitStage);
+  if (restoreHost()) { Net.open(H.code, "host", onHostMsg); changed(); } else HACT.newRoom();
+  document.getElementById("stage").addEventListener("click", function (e) { var b = e.target.closest("[data-a]"); if (!b || b.disabled) return; if (HACT[b.dataset.a]) HACT[b.dataset.a](b); });
+  document.getElementById("stage").addEventListener("change", function (e) { if (e.target.dataset.cfg) { readCfg(); saveHost(); } });
+  setInterval(function () {
+    if (!G || !G.deadline || H.ce) return;
+    if (Date.now() >= G.deadline) { advance(); changed(); return; }
+    var t = document.getElementById("tm"); if (t) t.textContent = secsLeft();
+  }, 100);
+  setInterval(function () { if (Net.ch) broadcast(); }, 3000);
+}
+
+/* ============================================================ PHONE: shared answer pad (big-screen players and solo) ============================================================ */
+var A = { key: "", sel: [] };   /* the cells tapped so far, in order */
+function padReset(key) { if (A.key !== key) { A.key = key; A.sel = []; } }
+function padTap(i, k) {
+  var at = A.sel.indexOf(i);
+  if (at >= 0) A.sel.splice(at, 1);           /* tap again = take it back */
+  else if (k === null || A.sel.length < k) A.sel.push(i);
+}
+/* board for answering: black cells with A, B, C ... in tap order; or, on a reveal, the real colours with the player's own picks and an example answer */
+function phoneGrid(opts) {
+  var ord = {}; (opts.sel || []).forEach(function (c, i) { ord[c] = i; });
+  var exs = {}; (opts.ex || []).forEach(function (c) { exs[c] = 1; });
+  var h = '<div class="grid">';
+  for (var i = 0; i < 16; i++) {
+    var x = opts.grid ? opts.grid[i] : null, o = ord[i];
+    h += '<button type="button" class="cell' + (x ? " " + cellCls(x) : "") + (o !== undefined && !x ? " sel" : "") + (exs[i] ? " ex" : "") + '"' + (opts.tap ? ' data-a="tap" data-i="' + i + '"' : " disabled") + ' aria-label="ช่องที่ ' + (i + 1) + (o !== undefined ? " ลำดับ " + letter(o) : "") + '" style="opacity:1">' +
+      (x ? x.n : "") + (o !== undefined ? (x ? '<span class="mine">' + letter(o) + "</span>" : '<span class="ord">' + letter(o) + "</span>") : "") + "</button>";
+  }
+  return h + "</div>";
+}
+function padHtml(text, k, disabled) {
+  var n = A.sel.length, canSend = !disabled && (k === null ? n > 0 : n === k);
+  return '<div class="rule">' + esc(text) + "<small>" + (k === null ? "เลือกให้ครบทุกช่อง แล้วกดส่ง · เลือกแล้ว " + n + " ช่อง" : "เลือกแล้ว " + n + " / " + k + " ช่อง") + "</small></div>" +
+    phoneGrid({ sel: A.sel, tap: !disabled }) +
+    '<div class="row"><button class="gh" data-a="reset"' + (n && !disabled ? "" : " disabled") + '>Reset</button><button class="go" data-a="send"' + (canSend ? "" : " disabled") + ">ส่งคำตอบ</button></div>";
+}
+
+/* ============================================================ PLAYER (phone, big-screen mode) ============================================================ */
+var P = { pid: ss("mm-pid") || rid(), name: ss("mm-name") || "", code: "", joined: false, joining: false, st: null, recvAt: 0, error: "", sent: {} };
+ss("mm-pid", P.pid);
+function me() { return P.st && P.st.me ? P.st.me[P.pid] : null; }
+function pLeft() { if (!P.st || P.st.remaining === null || P.st.remaining === undefined) return null; return Math.max(0, P.st.remaining - (Date.now() - P.recvAt)); }
+function tmHtml() { var l = pLeft(); return '<div class="tm" id="tm">' + (l === null ? "–" : Math.ceil(l / 1000)) + "</div>"; }
+function topBar(a, b, right) { return '<div class="top"><div><div class="a">' + a + '</div><div class="b">' + b + "</div></div>" + (right || "") + "</div>"; }
+function viewJoin() {
+  return '<div id="pw"><a href="/games/" style="font-weight:700;text-decoration:none">← กลับเว็บชมรม</a><div><h1>ภาพจำยังชัดเจน</h1><div class="muted">Mathmory · เข้าห้องที่เปิดบนจอใหญ่</div></div>' +
+    '<div class="box"><label for="code">รหัสห้อง (ดูจากจอใหญ่)</label><input id="code" inputmode="numeric" maxlength="4" autocomplete="off" value="' + esc(P.code) + '">' +
+    '<label for="nick">ชื่อเล่นของคุณ</label><input id="nick" maxlength="20" autocomplete="off" value="' + esc(P.name) + '">' +
+    (P.error ? '<div class="err" role="alert" style="margin-top:10px">' + esc(P.error) + "</div>" : "") +
+    '<button class="go" data-a="join" style="margin-top:14px"' + (P.joining ? " disabled" : "") + ">" + (P.joining ? "กำลังเข้าห้อง…" : "เข้าร่วม") + "</button></div></div>";
+}
+function viewPlayer() {
+  var st = P.st, m = me(), h = "";
+  if ((st.v || 0) > MM_V) return '<div id="pw"><div class="box"><h2>มีเวอร์ชันใหม่ของเกม</h2><div class="muted">หน้านี้เป็นเวอร์ชันเก่า กดรีเฟรชเพื่อเล่นต่อ (ชื่อและคะแนนยังอยู่)</div><button class="go" data-a="reload" style="margin-top:12px">รีเฟรชหน้า</button></div></div>';
+  if (!m) return '<div id="pw"><div class="box"><h2>ไม่พบชื่อของคุณในห้องนี้</h2><button class="go" data-a="leave" style="margin-top:10px">กลับไปหน้าเข้าห้อง</button></div></div>';
+  var row = (st.rows || []).filter(function (r) { return r.pid === P.pid; })[0];
+  var qa = st.qi !== undefined ? "ข้อ " + (st.qi + 1) + " / " + st.n + " · ×" + st.m : "";
+  if (st.phase === "lobby") {
+    h = topBar("รหัสห้อง " + esc(P.code), "เข้าห้องแล้ว") + '<div class="box"><h2>' + esc(P.name) + '</h2><div class="muted">รอ Host กดเริ่มเกม ชื่อของคุณขึ้นบนจอใหญ่แล้ว</div></div>' +
+      '<div class="box"><div class="muted" style="font-size:.9rem">ผู้เล่นในห้อง (' + st.players.length + ')</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">' + st.players.map(function (p) { return '<span style="padding:4px 12px;border-radius:99px;color:#0E1326;background:' + pcol(p.idx) + '">' + esc(p.name) + "</span>"; }).join("") + "</div></div>";
+  } else if (st.phase === "mem") {
+    h = topBar(esc(P.name) + " · " + qa, "จำตารางบนจอใหญ่", tmHtml()) + '<div class="box" style="text-align:center;padding:28px 16px"><div class="hd" style="font-size:2rem;font-weight:700;color:#FFD84D">ดูจอใหญ่!</div><div class="muted">จำตัวเลข สี และตำแหน่งให้ได้<br>หมดเวลาแล้วกฎจะขึ้นที่นี่</div></div>' + phoneGrid({});
+  } else if (st.phase === "ask") {
+    padReset("q" + st.qi);
+    if (m.sent) h = topBar(esc(P.name) + " · " + qa, "ส่งคำตอบแล้ว", tmHtml()) + '<div class="rule">' + esc(st.text) + "</div>" + phoneGrid({ sel: m.sel }) + '<div class="box"><div class="muted">ส่งแล้ว (เหลือ ' + f1(m.left) + ' วินาที) รอเฉลยบนจอใหญ่</div></div>';
+    else h = topBar(esc(P.name) + " · " + qa, "เลือกช่องตามกฎ", tmHtml()) + padHtml(st.text, st.k, !!P.sent["q" + st.qi]);
+  } else if (st.phase === "rev") {
+    var res = !m.sent ? '<div class="box"><h2 class="no">ไม่ได้ส่งคำตอบ</h2><div class="muted">ข้อนี้ได้ 0 คะแนน</div></div>' : m.ok ? '<div class="box"><h2 class="ok">✓ ถูกต้อง +' + f1(m.pts) + '</h2><div class="muted">(เหลือ ' + f1(m.left) + " วิ + โบนัส " + f1(st.last.bonus) + ") × " + st.last.m + "</div></div>" : '<div class="box"><h2 class="no">✗ ไม่ถูกต้อง</h2><div class="muted">ข้อนี้ได้ 0 คะแนน</div></div>';
+    h = topBar(esc(P.name) + " · " + qa, "เฉลย", '<span class="tag">รอ Host<br>ไปข้อถัดไป</span>') + '<div class="rule" style="font-size:1.05rem">' + esc(st.text) + "</div>" + res +
+      phoneGrid({ grid: st.grid, sel: m.sel || [], ex: st.ex }) + '<div class="muted" style="font-size:.85rem;text-align:center">ตัวอักษรเหลือง = ช่องที่คุณกด · กรอบม่วง = ตัวอย่างคำตอบที่ถูก</div>' +
+      '<div class="box" style="display:flex;justify-content:space-between"><b>คะแนนรวม ' + f1(row ? row.score : 0) + "</b><span class=\"muted\">อันดับ " + (row ? row.rk : "-") + " จาก " + st.rows.length + "</span></div>";
+  } else if (st.phase === "end") {
+    var ws = st.rows.filter(function (r) { return (st.winners || []).indexOf(r.pid) >= 0; });
+    h = topBar(esc(P.name), "จบเกมแล้ว") + '<div class="box" style="text-align:center"><div class="muted">' + (ws.length > 1 ? "ผู้ชนะร่วม" : "ผู้ชนะ") + '</div><div class="hd" style="font-size:1.8rem;font-weight:700">' + ws.map(function (r) { return esc(r.name); }).join(" และ ") + "</div><div>" + f1(ws[0] ? ws[0].score : 0) + " คะแนน</div></div>" +
+      '<div class="box"><h2>อันดับทั้งหมด</h2>' + st.rows.map(function (r) { return '<div class="tr' + (r.pid === P.pid ? " me" : "") + '"><span class="muted" style="width:26px">' + r.rk + '</span><b style="flex:1">' + esc(r.name) + (r.pid === P.pid ? " (คุณ)" : "") + "</b><b>" + f1(r.score) + "</b></div>"; }).join("") + "</div>";
+  }
+  if ((st.v || 0) < MM_V) h = '<div class="err">หน้า Host เป็นเวอร์ชันเก่า บางอย่างอาจแสดงผิด ให้ Host รีเฟรชหน้า</div>' + h;
+  return '<div id="pw">' + h + "</div>";
+}
+function renderPlayer() { if (!P.joined || !P.st) return; document.getElementById("app").innerHTML = viewPlayer(); }
+function onPlayerMsg(m) {
+  if (!m) return;
+  if (m.type === "reject" && m.to === P.pid) { P.error = m.reason; P.joining = false; P.joined = false; Net.close(); ss("mm-joined", "0"); document.getElementById("app").innerHTML = viewJoin(); return; }
+  if (m.type === "adopt" && m.to === P.pid) { P.pid = m.pid; ss("mm-pid", P.pid); Net.send({ type: "join", pid: P.pid, name: P.name, v: MM_V }); return; }
+  if (m.type !== "state") return;
+  if (!m.me || !m.me[P.pid]) { if (m.phase === "lobby" || !P.joined) return; }
+  P.st = m; P.recvAt = Date.now();
+  if (m.me && m.me[P.pid] && !P.joined) { P.joined = true; P.joining = false; P.error = ""; ss("mm-name", P.name); ss("mm-code", P.code); ss("mm-joined", "1"); }
+  renderPlayer();
+}
+function pjoin() {
+  var code = (document.getElementById("code").value || "").replace(/\D/g, ""), name = document.getElementById("nick").value.trim().slice(0, 20);
+  P.code = code; P.name = name;
+  if (!/^\d{4}$/.test(code)) { P.error = "รหัสห้องมี 4 หลัก"; document.getElementById("app").innerHTML = viewJoin(); return; }
+  if (!name) { P.error = "กรอกชื่อเล่นก่อน"; document.getElementById("app").innerHTML = viewJoin(); return; }
+  P.error = ""; P.joining = true; document.getElementById("app").innerHTML = viewJoin();
+  Net.open(code, P.pid, onPlayerMsg); Net.send({ type: "join", pid: P.pid, name: name, v: MM_V });
+  setTimeout(function () { if (!P.joined && P.joining) { P.joining = false; P.error = "ไม่พบห้องนี้ ตรวจรหัสห้อง และให้แน่ใจว่าเปิดหน้าจอใหญ่ไว้แล้ว"; Net.close(); ss("mm-joined", "0"); document.getElementById("app").innerHTML = viewJoin(); } }, 8000);
+}
+var PACT = {
+  join: pjoin,
+  reload: function () { location.reload(); },
+  leave: function () { P.joined = false; P.st = null; Net.close(); ss("mm-joined", "0"); document.getElementById("app").innerHTML = viewJoin(); },
+  tap: function (b) { var st = P.st; if (!st || st.phase !== "ask" || (me() && me().sent) || P.sent["q" + st.qi]) return; padTap(Number(b.dataset.i), st.k); renderPlayer(); },
+  reset: function () { A.sel = []; renderPlayer(); },
+  send: function () {
+    var st = P.st; if (!st || st.phase !== "ask" || P.sent["q" + st.qi]) return;
+    if (st.k === null ? !A.sel.length : A.sel.length !== st.k) return;
+    P.sent["q" + st.qi] = 1; Net.send({ type: "ans", pid: P.pid, qi: st.qi, sel: A.sel.slice() }); renderPlayer();
+    setTimeout(function () { if (P.st && P.st.phase === "ask" && me() && !me().sent) { P.sent["q" + st.qi] = 0; Net.send({ type: "ans", pid: P.pid, qi: st.qi, sel: A.sel.slice() }); } }, 2500);   /* resend once if the Host did not get it */
+  }
+};
+function playerBoot() {
+  MODE = "player"; document.body.className = ""; ss("mm-role", "player");
+  var app = document.getElementById("app");
+  app.addEventListener("click", function (e) { var b = e.target.closest("[data-a]"); if (!b || b.disabled) return; if (PACT[b.dataset.a]) PACT[b.dataset.a](b); });
+  setInterval(function () { var t = document.getElementById("tm"); if (t && P.st) { var l = pLeft(); t.textContent = l === null ? "–" : Math.ceil(l / 1000); } }, 200);
+  var jm = /^#join=(\d{4})$/.exec(location.hash || "");
+  if (jm) P.code = jm[1]; else if (ss("mm-joined") === "1") P.code = ss("mm-code") || "";
+  app.innerHTML = viewJoin();
+  if (P.code && P.name && ss("mm-joined") === "1") pjoin();
+}
+
+/* ============================================================ SOLO (one phone, no network, no bonus, not counted for the club) ============================================================ */
+var S = null, SCFG = { mem: 10, ans: 15, nq: 10 };
+function soloStart() {
+  var n = Math.min(30, Math.max(1, Number(SCFG.nq) | 0 || 10)), mults = multipliers(n);
+  S = { qi: -1, n: n, mults: mults, plan: planRules(mults), score: 0, hist: [], phase: "mem", deadline: 0 };
+  soloNext();
+}
+function soloNext() {
+  S.qi++;
+  if (S.qi >= S.n) { S.phase = "end"; S.deadline = 0; return soloRender(); }
+  S.q = makeQuestion(S.plan[S.qi]) || makeQuestion("same4"); S.res = null; A.key = ""; padReset("s" + S.qi);
+  S.phase = "mem"; S.deadline = Date.now() + Math.min(60, Math.max(3, Number(SCFG.mem) || 10)) * 1000; soloRender();
+}
+function soloTick() {
+  if (!S || !S.deadline) return;
+  if (Date.now() >= S.deadline) {
+    if (S.phase === "mem") { S.phase = "ask"; S.deadline = Date.now() + Math.min(120, Math.max(5, Number(SCFG.ans) || 15)) * 1000; soloRender(); }
+    else if (S.phase === "ask") soloAnswer(true);
+    return;
+  }
+  var t = document.getElementById("tm"); if (t) t.textContent = Math.ceil((S.deadline - Date.now()) / 1000);
+}
+function soloAnswer(timeout) {
+  var left = timeout ? 0 : Math.floor(Math.max(0, S.deadline - Date.now()) / 100) / 10, ok = !timeout && checkAnswer(S.q, A.sel), m = S.mults[S.qi], pts = ok ? t10(left * m) : 0;
+  S.res = { sel: timeout ? A.sel.slice() : A.sel.slice(), ok: ok, left: left, pts: pts, sent: !timeout }; S.score = t10(S.score + pts); S.hist.push(pts);
+  S.phase = "rev"; S.deadline = 0; soloRender();
+}
+function soloView() {
+  if (!S) {
+    return '<div id="pw"><a href="/games/" style="font-weight:700;text-decoration:none">← กลับเว็บชมรม</a><div><h1>ภาพจำยังชัดเจน</h1><div class="muted">เล่นคนเดียว · ไม่นับคะแนนชมรม</div></div>' +
+      '<div class="box"><h2>วิธีเล่น</h2><div class="muted">ตาราง 4×4 จะแสดงตัวเลขและสีให้จำ แล้วกลายเป็นสีดำ จากนั้นกฎจะขึ้น ให้กดช่องตามกฎแล้วส่ง (ส่งได้ครั้งเดียว) ตอบถูกได้คะแนนเท่ากับวินาทีที่เหลือ คูณตัวคูณของข้อ</div></div>' +
+      '<div class="box"><div class="num3"><div><label for="smem">เวลาจำ (วิ)</label><input id="smem" type="number" inputmode="numeric" min="3" max="60" value="' + SCFG.mem + '"></div><div><label for="sans">เวลาตอบ (วิ)</label><input id="sans" type="number" inputmode="numeric" min="5" max="120" value="' + SCFG.ans + '"></div><div><label for="snq">จำนวนข้อ</label><input id="snq" type="number" inputmode="numeric" min="1" max="30" value="' + SCFG.nq + '"></div></div>' +
+      '<button class="go" data-a="sstart" style="margin-top:14px">เริ่มเล่น</button></div></div>';
+  }
+  var qa = "ข้อ " + (S.qi + 1) + " / " + S.n + " · ×" + S.mults[Math.min(S.qi, S.n - 1)], tm = '<div class="tm" id="tm">' + (S.deadline ? Math.ceil((S.deadline - Date.now()) / 1000) : "–") + "</div>", h;
+  if (S.phase === "mem") h = topBar("เล่นคนเดียว · " + qa, "จำให้ได้!", tm) + phoneGrid({ grid: S.q.grid }) + '<div class="muted" style="text-align:center">จำตัวเลข สี และตำแหน่ง</div>';
+  else if (S.phase === "ask") h = topBar("เล่นคนเดียว · " + qa, "เลือกช่องตามกฎ", tm) + padHtml(S.q.text, S.q.k, false);
+  else if (S.phase === "rev") {
+    var r = S.res;
+    h = topBar("เล่นคนเดียว · " + qa, "เฉลย") + '<div class="rule" style="font-size:1.05rem">' + esc(S.q.text) + "</div>" +
+      (!r.sent ? '<div class="box"><h2 class="no">หมดเวลา</h2><div class="muted">ข้อนี้ได้ 0 คะแนน</div></div>' : r.ok ? '<div class="box"><h2 class="ok">✓ ถูกต้อง +' + f1(r.pts) + '</h2><div class="muted">เหลือ ' + f1(r.left) + " วิ × " + S.mults[S.qi] + "</div></div>" : '<div class="box"><h2 class="no">✗ ไม่ถูกต้อง</h2><div class="muted">ข้อนี้ได้ 0 คะแนน</div></div>') +
+      phoneGrid({ grid: S.q.grid, sel: r.sent ? r.sel : [], ex: S.q.ex }) + '<div class="muted" style="font-size:.85rem;text-align:center">ตัวอักษรเหลือง = ช่องที่คุณกด · กรอบม่วง = ตัวอย่างคำตอบที่ถูก</div>' +
+      '<div class="box" style="display:flex;justify-content:space-between;align-items:center"><b>คะแนนรวม ' + f1(S.score) + '</b></div><button class="go" data-a="snext">' + (S.qi + 1 >= S.n ? "ดูผลรวม" : "ข้อถัดไป") + "</button>";
+  } else {
+    h = topBar("เล่นคนเดียว", "จบเกมแล้ว") + '<div class="box" style="text-align:center"><div class="muted">คะแนนรวม</div><div class="hd" style="font-size:2.6rem;font-weight:700;color:#FFD84D">' + f1(S.score) + "</div><div class=\"muted\">ตอบถูก " + S.hist.filter(function (x) { return x > 0; }).length + " / " + S.n + " ข้อ</div></div>" +
+      '<button class="go" data-a="sagain">เล่นอีกครั้ง</button><button class="gh" data-a="sback">ตั้งค่าใหม่</button><a href="/games/" style="text-align:center;font-weight:700;text-decoration:none;padding:8px">← กลับเว็บชมรม</a>';
+  }
+  return '<div id="pw">' + h + "</div>";
+}
+function soloRender() { document.getElementById("app").innerHTML = soloView(); }
+var SACT = {
+  sstart: function () { SCFG.mem = Number(document.getElementById("smem").value) || 10; SCFG.ans = Number(document.getElementById("sans").value) || 15; SCFG.nq = Number(document.getElementById("snq").value) || 10; soloStart(); },
+  tap: function (b) { if (!S || S.phase !== "ask") return; padTap(Number(b.dataset.i), S.q.k); soloRender(); },
+  reset: function () { A.sel = []; soloRender(); },
+  send: function () { if (!S || S.phase !== "ask") return; if (S.q.k === null ? !A.sel.length : A.sel.length !== S.q.k) return; soloAnswer(false); },
+  snext: function () { soloNext(); },
+  sagain: function () { soloStart(); },
+  sback: function () { S = null; soloRender(); }
+};
+function soloBoot() {
+  MODE = "solo"; document.body.className = ""; ss("mm-role", "solo");
+  var app = document.getElementById("app");
+  app.addEventListener("click", function (e) { var b = e.target.closest("[data-a]"); if (!b || b.disabled) return; if (SACT[b.dataset.a]) SACT[b.dataset.a](b); });
+  setInterval(soloTick, 100);
+  soloRender();
+}
+
+/* ============================================================ start ============================================================ */
+function roleScreen() {
+  var app = document.getElementById("app");
+  app.innerHTML = '<div class="role"><a href="/games/" style="align-self:flex-start;font-weight:700;text-decoration:none;padding:8px 0">← กลับเว็บชมรม</a><h1>ภาพจำยังชัดเจน</h1><p>Mathmory · จำตาราง 4×4 แล้วเลือกช่องตามกฎ</p>' +
+    '<button class="rbtn pri" data-r="player">เข้าห้อง<small>ใส่รหัสห้องจากจอใหญ่ แล้วเล่นบนมือถือ</small></button>' +
+    '<button class="rbtn" data-r="host">เปิดจอใหญ่ (Host)<small>ใช้จอนี้แสดงตารางบนโปรเจกเตอร์ ผู้เล่นตอบบนมือถือ</small></button>' +
+    '<button class="rbtn" data-r="solo">เล่นคนเดียว<small>เล่นบนมือถือเครื่องนี้ ไม่ต้องมีรหัสห้อง ไม่นับคะแนนชมรม</small></button></div>';
+  app.onclick = function (e) { var b = e.target.closest("[data-r]"); if (!b) return; app.onclick = null; ({ host: hostBoot, player: playerBoot, solo: soloBoot })[b.dataset.r](); };
+}
+(function () {
+  var h = location.hash, r = ss("mm-role");
+  if (h === "#host") hostBoot(); else if (h === "#player" || /^#join=\d{4}$/.test(h)) playerBoot(); else if (h === "#solo") soloBoot();
+  else if (r === "host") hostBoot(); else if (r === "player") playerBoot(); else roleScreen();
+})();
+</script>
+</body>
+</html>

@@ -697,6 +697,10 @@ var Net = {
   }
 };
 var MODE = null;   /* "host" | "player" */
+/* page version: RAISE THIS NUMBER EVERY TIME THIS FILE CHANGES (YYYYMMDD + 2 digits).
+   The Host/head sends it in every state and players send it when they join: a phone with an older page is told to refresh,
+   a phone with a newer page than the Host/head warns that the Host/head should refresh, and the lobby marks players on an old page. */
+var CALCU_V = 2026111903;
 
 /* ============================================================ HOST ============================================================ */
 var DEF_CFG = { room: "ห้องชมรม", target: 50, start: 0, ranges: [[1, 5], [1, 10], [1, 12], [1, 15]], showScores: true, maxMult: 3, penalty: "value",
@@ -715,6 +719,7 @@ function kingMode() { return H.cfg.endMode === "king" || H.cfg.endMode === "king
 var H = { code: "", cfg: JSON.parse(JSON.stringify(DEF_CFG)), players: [], nextIdx: 0, phase: "lobby", G: null, poolCache: {}, showCfg: false };
 var G = null;
 
+function oldPage(p) { return MODE === "head" && p.pid === P.pid ? false : (p.v || 0) < CALCU_V; }
 function findP(pid) { for (var i = 0; i < H.players.length; i++) if (H.players[i].pid === pid) return H.players[i]; return null; }
 function hname(pid) { var p = findP(pid); return p ? p.name : "?"; }
 function hcol(pid) { var p = findP(pid); return "hsl(" + (((p ? p.idx : 0) * 47) % 360) + " 65% 64%)"; }
@@ -907,7 +912,7 @@ function myInfo(pid) {
 }
 function publicState() {
   var players = H.players.map(function (p) { return { pid: p.pid, name: p.name, idx: p.idx, score: G ? G.scores[p.pid] : 0 }; });
-  var st = { type: "state", phase: H.phase, room: H.cfg.room, target: H.cfg.target, players: players,
+  var st = { type: "state", v: CALCU_V, phase: H.phase, room: H.cfg.room, target: H.cfg.target, players: players,
     now: Date.now(), maxMult: H.cfg.maxMult, chLimit: chLimit(), showScores: H.cfg.showScores };
   if (G) {
     var owners = {}; Object.keys(G.res).forEach(function (p) { owners[G.res[p]] = p; });
@@ -1007,9 +1012,9 @@ function onHostMsg(m) {
       }
       var nm = String(m.name || "").trim().slice(0, 20) || "ผู้เล่น", base = nm, k = 2;
       while (H.players.some(function (p) { return p.name === nm; })) nm = base + " " + (k++);
-      H.players.push({ pid: m.pid, name: nm, idx: H.nextIdx++ });
+      H.players.push({ pid: m.pid, name: nm, idx: H.nextIdx++, v: m.v || 0 });
       if (G) G.scores[m.pid] = Number(H.cfg.start) || 0;
-    }
+    } else ex.v = m.v || 0;
     changed(); return;
   }
   if (!findP(m.pid) || !G) return;
@@ -1115,13 +1120,15 @@ function hpyr(mode) {
 }
 function hLobby() {
   var csz = H.players.length > 30 ? " xs" : H.players.length > 14 ? " sm" : "";
-  var chips = H.players.map(function (p) { return '<div class="chip' + csz + '"><i style="background:' + hcol(p.pid) + '"></i>' + esc(p.name) + "</div>"; }).join("");
+  var chips = H.players.map(function (p) { return '<div class="chip' + csz + '"><i style="background:' + hcol(p.pid) + '"></i>' + esc(p.name) + (oldPage(p) ? ' <span style="color:#FF8A80">⚠ ต้องรีเฟรช</span>' : "") + "</div>"; }).join("");
+  var nOld = H.players.filter(oldPage).length;
   return '<div style="display:flex;gap:80px;flex:1;min-height:0"><div style="width:760px;display:flex;flex-direction:column;gap:28px">' +
     '<div><div class="hd" style="font-weight:700;font-size:120px;line-height:1.15">Calcuเหรอ?</div><div style="font-size:44px;line-height:1.3;color:#B4BEDA">' + esc(H.cfg.room) + " · เป้าหมาย " + H.cfg.target + ' คะแนน</div><div style="font-size:34px;line-height:1.3;color:#9C8CFF">วิธีจบเกม: ' + END_NAMES[H.cfg.endMode || "crown"] + '</div></div>' +
     '<div><div style="font-size:34px;line-height:1.3;color:#B4BEDA">รหัสห้อง</div><div class="hd" style="font-weight:700;font-size:170px;line-height:1.1;letter-spacing:.12em;color:#FFD65A">' + H.code + '</div></div>' +
     '<div style="font-size:36px;line-height:1.55"><div>1  เปิดเว็บไซต์ของชมรมบนมือถือ</div><div>2  เลือก “ผู้เล่น” แล้วใส่รหัสห้อง</div><div>3  ตั้งชื่อเล่น (เล่นเป็นคู่/กลุ่มใช้เครื่องเดียวกันได้)</div></div>' +
     '<div style="display:flex;align-items:center;gap:24px"><button class="gb" data-a="resetRoom" style="white-space:nowrap">' + (H.cr ? "กดอีกครั้งเพื่อล้างห้องและสร้างรหัสใหม่" : "สร้างห้องใหม่") + '</button><a href="/games/" style="font-size:30px;font-weight:700;color:#9C8CFF;text-decoration:none;white-space:nowrap">← กลับเว็บชมรม</a></div></div>' +
     '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:28px"><div style="display:flex;align-items:baseline;justify-content:space-between"><div class="hd" style="font-weight:700;font-size:64px;line-height:1.3">ผู้เล่นที่เข้าห้องแล้ว</div><div class="hd" style="font-weight:700;font-size:64px;line-height:1.3;color:#9C8CFF">' + H.players.length + ' คน</div></div>' +
+    (nOld ? '<div style="font-size:30px;line-height:1.4;color:#FF8A80">' + nOld + " คนใช้หน้าเกมเวอร์ชันเก่า ให้รีเฟรชหน้าบนมือถือก่อนเริ่มเกม</div>" : "") +
     '<div style="display:flex;flex-wrap:wrap;gap:18px;align-content:flex-start;flex:1">' + (chips || '<div style="font-size:36px;color:#B4BEDA">ยังไม่มีใครเข้าห้อง</div>') + "</div>" +
     '<div style="display:flex;justify-content:space-between;align-items:center"><button class="gb" data-a="cfg">ตั้งค่าห้อง</button><div style="display:flex;align-items:center;gap:24px">' + (H.players.length < 2 ? '<span style="font-size:30px;color:#B4BEDA">ต้องมีผู้เล่นอย่างน้อย 2 ชื่อ</span>' : "") +
     '<button class="pb" data-a="start"' + (startOk() ? "" : " disabled") + ">เริ่มเกม</button></div></div></div></div>";
@@ -1608,6 +1615,7 @@ function viewGameP() {
     var rows = st.rows, top = rows[0].score, ws = st.winners ? rows.filter(function (r) { return st.winners.indexOf(r.pid) >= 0; }) : rows.filter(function (r) { return r.score === top; });
     h = '<div class="ph"><div><div class="a">' + esc(P.name) + '</div><div class="b">จบเกมแล้ว</div></div>' + dkWrap("") + '</div><div class="box" style="text-align:center"><div class="muted">ผู้ชนะ</div><div class="hd" style="font-size:32px;font-weight:700;line-height:1.3">' + ws.map(function (r) { return esc(r.name); }).join(" และ ") + '</div><div>' + (st.sd && st.sd.over ? sdLine(st.sd, pnm) : (ws[0] ? ws[0].score : top) + " คะแนน" + (st.kingWin ? " · ครองบัลลังก์ครบ 2 รอบ" : "")) + '</div>' + (st.tieDecided ? '<div class="muted" style="font-size:14px">คะแนนเท่ากัน ตัดสินด้วยคะแนนรวมก่อนรอบสุดท้าย</div>' : "") + '</div>' + summaryP(m, true) + (st.hostless ? rankAllP() : "");
   }
+  if (P.verHostOld && MODE !== "head") h = '<div class="st" style="color:#B3261E">' + (st.hostless ? "หน้าของหัวห้อง" : "หน้า Host ") + "เป็นเวอร์ชันเก่า บางอย่างอาจแสดงผิด ให้" + (st.hostless ? "หัวห้อง" : " Host ") + "รีเฟรชหน้า</div>" + h;
   return '<div id="pw">' + h + "</div>";
 }
 /* the step-by-step equation pad (preview, last step, numbers, operators, undo/reset); shared by phase 3 and the Sudden Death */
@@ -1672,15 +1680,17 @@ function summaryP(m, endMode, hl) {
 function renderPlayer() {
   if (MODE === "head") { headRender(); return; }
   if (!P.joined || !P.st) return;
+  if (P.verOld) { document.getElementById("app").innerHTML = '<div id="pw"><div class="box"><h2>มีเวอร์ชันใหม่ของเกม</h2><div class="muted">หน้านี้เป็นเวอร์ชันเก่า กดรีเฟรชเพื่อเล่นต่อ (ชื่อและคะแนนยังอยู่)</div><button class="go" data-a="reload" style="width:100%;margin-top:12px">รีเฟรชหน้า</button></div></div>'; return; }
   keepScroll(function () { document.getElementById("app").innerHTML = viewGameP(); });
 }
 function onPlayerMsg(m) {
   if (!m) return;
   if (m.type === "reject" && m.to === P.pid) { P.error = m.reason; P.joining = false; P.joined = false; Net.close(); ss("calcu-joined", "0"); PL.clear(); renderPlayerForce(); return; }
-  if (m.type === "adopt" && m.to === P.pid) { P.pid = m.pid; ss("calcu-pid", P.pid); Net.send({ type: "join", pid: P.pid, name: P.name }); return; }
+  if (m.type === "adopt" && m.to === P.pid) { P.pid = m.pid; ss("calcu-pid", P.pid); Net.send({ type: "join", pid: P.pid, name: P.name, v: CALCU_V }); return; }
   if (m.type !== "state") return;
   if (!m.me || !m.me[P.pid]) { if (!P.joined) return; }
   P.st = m; P.recvAt = Date.now();
+  P.verOld = (m.v || 0) > CALCU_V; P.verHostOld = (m.v || 0) < CALCU_V;   /* this page is older than the Host's / the Host's page is older */
   if (P.sent && P.sentAt && Date.now() - P.sentAt > 2500 && !(m.me[P.pid] && m.me[P.pid].solved)) P.sent = false;
   if (m.me && m.me[P.pid] && !P.joined) { P.joined = true; P.joining = false; P.error = ""; ss("calcu-name", P.name); ss("calcu-code", P.code); ss("calcu-joined", "1"); PL.write(); }
   renderPlayer();
@@ -1692,7 +1702,7 @@ function pjoin() {
   if (!name) { P.error = "กรอกชื่อเล่นก่อน"; renderPlayerForce(); return; }
   P.error = ""; P.joining = true; renderPlayerForce();
   Net.open(code, P.pid, onPlayerMsg);
-  Net.send({ type: "join", pid: P.pid, name: name });
+  Net.send({ type: "join", pid: P.pid, name: name, v: CALCU_V });
   setTimeout(function () { if (!P.joined && P.joining) { P.joining = false; P.error = "ไม่พบห้องนี้ ตรวจรหัสห้องและให้แน่ใจว่าเปิดหน้า Host ไว้แล้ว"; JSTEP = 1; Net.close(); ss("calcu-joined", "0"); PL.clear(); renderPlayerForce(); } }, 8000);
 }
 function renderPlayerForce() { var app2 = document.getElementById("app"); app2.innerHTML = viewJoin(); }
@@ -1789,6 +1799,7 @@ var PACT = {
     Array.prototype.forEach.call(document.querySelectorAll(".dkb"), function (b) { b.textContent = DK.on ? "☀" : "☾"; b.setAttribute("aria-label", DK.on ? "สลับเป็นโหมดสว่าง" : "สลับเป็นโหมดมืด"); });
   },
   join: pjoin,
+  reload: function () { location.reload(); },
   key: function (b) { var v = joinCode(); setJoinCode(v.length < 4 ? v + b.dataset.k : b.dataset.k); },
   del: function () { setJoinCode(joinCode().slice(0, -1)); },
   clr: function () { setJoinCode(""); },
@@ -1874,10 +1885,10 @@ function headRender() {
 }
 function headWake() { return HEAD.ok ? '<div class="st ok">✓ กันหน้าจอดับอยู่ ห้ามสลับแอปหรือปิดหน้านี้</div>' : '<div class="st">เครื่องนี้กันจอดับไม่ได้ ตั้งเวลาปิดจอให้นานที่สุด และห้ามสลับแอปหรือปิดหน้านี้ ไม่งั้นเกมของทั้งห้องจะค้าง</div>'; }
 function headLobby() {
-  var c = H.cfg, chips = H.players.map(function (p) { return '<span style="padding:4px 12px;border-radius:99px;color:#fff;background:' + pcol(p.idx) + '">' + esc(p.name) + (p.pid === P.pid ? " (คุณ)" : "") + "</span>"; }).join("");
+  var c = H.cfg, chips = H.players.map(function (p) { return '<span style="padding:4px 12px;border-radius:99px;color:#fff;background:' + pcol(p.idx) + '">' + esc(p.name) + (p.pid === P.pid ? " (คุณ)" : oldPage(p) ? " ⚠ ต้องรีเฟรช" : "") + "</span>"; }).join(""), nOld = H.players.filter(function (p) { return p.pid !== P.pid && oldPage(p); }).length;
   return '<div id="pw"><div class="ph"><div><div class="a">หัวห้อง · เล่นกับเพื่อน · ไม่นับคะแนนชมรม</div><div class="b">Calcuเหรอ?</div></div>' + dkWrap("") + '</div>' +
     '<div class="box"><div class="muted">รหัสห้อง</div><div class="hcode">' + H.code + '</div><button class="go" data-a="share" style="width:100%">' + (HEAD.shared ? "คัดลอกแล้ว ✓" : "คัดลอกลิงก์ชวนเพื่อน") + '</button><div class="muted" style="margin-top:8px">เพื่อนเปิดลิงก์นี้ หรือเข้าเว็บชมรมแล้วกด “เข้าห้อง” ใส่รหัสห้อง</div></div>' +
-    '<div class="box"><h2>ผู้เล่น ' + H.players.length + ' คน</h2><div style="display:flex;flex-wrap:wrap;gap:6px">' + chips + "</div></div>" +
+    '<div class="box"><h2>ผู้เล่น ' + H.players.length + ' คน</h2><div style="display:flex;flex-wrap:wrap;gap:6px">' + chips + "</div>" + (nOld ? '<div class="st" style="margin-top:8px;color:#B3261E">' + nOld + " คนใช้หน้าเกมเวอร์ชันเก่า ให้รีเฟรชหน้าก่อนเริ่มเกม</div>" : "") + "</div>" +
     '<div class="box"><div class="muted">เป้าหมาย ' + c.target + " คะแนน · เวลา " + c.t1 + "/" + c.t2 + "/" + c.t3 + ' วินาที<br>วิธีจบเกม: ' + END_NAMES[c.endMode || "crown"] + '</div><button class="gh" data-a="cfg" style="width:100%;margin-top:8px">ตั้งค่าห้อง</button></div>' +
     headWake() + '<button class="go" data-a="start"' + (startOk() ? "" : " disabled") + ' style="width:100%;margin-top:auto">เริ่มเกม' + (H.players.length < 2 ? " (ต้องมีผู้เล่นอย่างน้อย 2 คน)" : "") + "</button>" +
     '<button class="gh" data-a="closeRoom" style="flex:none;width:100%' + (HEAD.closing ? ";background:#FF8A80;color:#14213D;border-color:#FF8A80;font-weight:700" : "") + '">' + (HEAD.closing ? "แตะอีกครั้งเพื่อปิดห้องและกลับเว็บชมรม" : "ปิดห้อง") + "</button></div>";

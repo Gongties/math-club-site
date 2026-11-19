@@ -172,6 +172,7 @@ body.ph #netb.ok { background: #2E9E6B; } body.ph #netb.local { background: #D9A
 #pw .errm { padding: 8px 12px; border-radius: 10px; background: #FBE3E1; color: #B3261E; }
 /* ---- join screen: ticket + keypad ---- */
 #pw.jn { background: #0E1326; color: #EEF1FA; gap: 14px; padding: 28px 16px 20px; }
+#pw.jn .jback { align-self: flex-start; color: #9C8CFF; font-weight: 700; font-size: 15px; text-decoration: none; padding: 4px 0; }
 #pw.jn .jh { text-align: center; }
 #pw.jn .jh .t { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 34px; line-height: 1.25; }
 #pw.jn .jh .s { color: #B4BEDA; font-size: 15px; }
@@ -911,7 +912,7 @@ function hLobby() {
     '<div><div class="hd" style="font-weight:700;font-size:120px;line-height:1.15">Calcuเหรอ?</div><div style="font-size:44px;line-height:1.3;color:#B4BEDA">' + esc(H.cfg.room) + " · เป้าหมาย " + H.cfg.target + ' คะแนน</div></div>' +
     '<div><div style="font-size:34px;line-height:1.3;color:#B4BEDA">รหัสห้อง</div><div class="hd" style="font-weight:700;font-size:170px;line-height:1.1;letter-spacing:.12em;color:#FFD65A">' + H.code + '</div></div>' +
     '<div style="font-size:36px;line-height:1.55"><div>1  เปิดเว็บไซต์ของชมรมบนมือถือ</div><div>2  เลือก “ผู้เล่น” แล้วใส่รหัสห้อง</div><div>3  ตั้งชื่อเล่น (เล่นเป็นคู่/กลุ่มใช้เครื่องเดียวกันได้)</div></div>' +
-    '<div><button class="gb" data-a="resetRoom" style="white-space:nowrap">' + (H.cr ? "กดอีกครั้งเพื่อล้างห้องและสร้างรหัสใหม่" : "สร้างห้องใหม่") + '</button></div></div>' +
+    '<div style="display:flex;align-items:center;gap:24px"><button class="gb" data-a="resetRoom" style="white-space:nowrap">' + (H.cr ? "กดอีกครั้งเพื่อล้างห้องและสร้างรหัสใหม่" : "สร้างห้องใหม่") + '</button><a href="/games/" style="font-size:30px;font-weight:700;color:#9C8CFF;text-decoration:none;white-space:nowrap">← กลับเว็บชมรม</a></div></div>' +
     '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:28px"><div style="display:flex;align-items:baseline;justify-content:space-between"><div class="hd" style="font-weight:700;font-size:64px;line-height:1.3">ผู้เล่นที่เข้าห้องแล้ว</div><div class="hd" style="font-weight:700;font-size:64px;line-height:1.3;color:#9C8CFF">' + H.players.length + ' คน</div></div>' +
     '<div style="display:flex;flex-wrap:wrap;gap:18px;align-content:flex-start;flex:1">' + (chips || '<div style="font-size:36px;color:#B4BEDA">ยังไม่มีใครเข้าห้อง</div>') + "</div>" +
     '<div style="display:flex;justify-content:space-between;align-items:center"><button class="gb" data-a="cfg">ตั้งค่าห้อง</button><div style="display:flex;align-items:center;gap:24px">' + (H.players.length < 2 ? '<span style="font-size:30px;color:#B4BEDA">ต้องมีผู้เล่นอย่างน้อย 2 ชื่อ</span>' : "") +
@@ -1267,7 +1268,7 @@ function viewJoin() {
   var cd = String(P.code || "").replace(/\D/g, "").slice(0, 4), tiles = "", step2 = JSTEP === 2 && cd.length === 4;
   for (var i = 0; i < 4; i++) tiles += '<span class="ct' + (cd[i] ? " f" : (i === cd.length ? " n" : "")) + '">' + (cd[i] || "") + "</span>";
   var err = P.error ? '<div class="errm" role="alert">' + esc(P.error) + "</div>" : "";
-  var head = '<div class="jh"><div class="t">Calcuเหรอ?</div><div class="s">ชมรมคณิตศาสตร์ · เล่นร่วมกันบนจอใหญ่</div></div>';
+  var head = '<a class="jback" href="/games/">← กลับเว็บชมรม</a><div class="jh"><div class="t">Calcuเหรอ?</div><div class="s">ชมรมคณิตศาสตร์ · เล่นร่วมกันบนจอใหญ่</div></div>';
   var codeBox = '<input id="code" type="hidden" value="' + esc(cd) + '"><div class="jcd" id="cdisp" role="group" aria-labelledby="codelab">' + tiles + "</div>";
   if (step2) {
     return '<div id="pw" class="jn">' + head + '<div class="tk"><div class="jtop"><div class="fl" id="codelab">รหัสห้อง</div><button type="button" class="jedit" data-a="editcode">← แก้รหัส</button></div>' + codeBox +

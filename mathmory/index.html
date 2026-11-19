@@ -112,7 +112,7 @@ body.host { overflow: hidden; background: #0A0E1D; }
    Mathmory (ภาพจำยังชัดเจน): a 3x3 board of digits 0-9 in pink / green / white is shown for a few seconds, then every cell turns black,
    a rule appears and the players tap the cells that satisfy it (one answer each). Correct = seconds left (to 0.1) + bonus 10 / (number correct)
    (big-screen mode only), times the question's multiplier. */
-var MM_V = 2026112003;   /* page version: RAISE THIS NUMBER EVERY TIME THIS FILE CHANGES (YYYYMMDD + 2 digits) */
+var MM_V = 2026112004;   /* page version: RAISE THIS NUMBER EVERY TIME THIS FILE CHANGES (YYYYMMDD + 2 digits) */
 /* board size: 3x3, 4x4 or 5x5, chosen before the game (setSize). One page runs one game, so plain globals are enough. */
 var N = 3, CELLS = 9;
 function setSize(n) { n = Number(n); N = n === 4 || n === 5 ? n : 3; CELLS = N * N; }
@@ -198,12 +198,48 @@ var RULES = {
     ok: function (g, s, p) { var want = g.filter(function (x) { return x.n === p.n; }).length; return s.length === want && s.every(function (i) { return g[i].n === p.n; }); },
     ex: function (g, p) { var l = []; g.forEach(function (x, i) { if (x.n === p.n) l.push(i); }); return l; } }
 };
-/* check one answer against a question; sel = cell numbers in tap order */
+/* ---------- "เดาใจ" (crowd) rules: there is no fixed answer, the result depends on what everyone picked.
+   Used only with CROWD_MIN players or more, never in solo. Everyone picks 1 cell.
+   judge(grid, picks) with picks = { pid: cell } returns { win: [pids], info } (scored like the other rules: seconds left + 10 / winners)
+   or { pts: { pid: points }, info } (the cake rule: its own points). "Least" / "most" must be a single colour: equal counts = nobody wins. ---------- */
+var CROWD_MIN = 5;
+function colorCounts(g, pk) { var c = [0, 0, 0]; Object.keys(pk).forEach(function (p) { c[g[pk[p]].c]++; }); return c; }
+function colorJudge(g, pk, most) {
+  var c = colorCounts(g, pk), v = most ? Math.max.apply(null, c) : Math.min.apply(null, c), hits = [0, 1, 2].filter(function (k) { return c[k] === v; });
+  var line = COLORS.map(function (x, k) { return x.name + " " + c[k]; }).join(" · ");
+  if (hits.length !== 1) return { win: [], info: line + " → เท่ากัน ไม่มีสีที่" + (most ? "มาก" : "น้อย") + "ที่สุดจริง" };
+  return { win: Object.keys(pk).filter(function (p) { return g[pk[p]].c === hits[0]; }), info: line + " → " + (most ? "มาก" : "น้อย") + "ที่สุด: สี" + COLORS[hits[0]].name + (v === 0 ? " (ไม่มีใครเลือก)" : "") };
+}
+var CROWD = {
+  leastColor: { text: "เลือก 1 ช่อง ที่เป็นสีที่คนเลือกน้อยที่สุด", colors: true, judge: function (g, pk) { return colorJudge(g, pk, false); } },
+  mostColor: { text: "เลือก 1 ช่อง ที่เป็นสีที่คนเลือกมากที่สุด", colors: true, judge: function (g, pk) { return colorJudge(g, pk, true); } },
+  uniqueCell: { text: "เลือก 1 ช่อง ที่คิดว่าไม่มีใครเลือกซ้ำกับคุณ",
+    judge: function (g, pk) { var c = {}; Object.keys(pk).forEach(function (p) { c[pk[p]] = (c[pk[p]] || 0) + 1; }); var w = Object.keys(pk).filter(function (p) { return c[pk[p]] === 1; }); return { win: w, info: "ช่องที่มีคนเลือกคนเดียว " + w.length + " ช่อง" }; } },
+  highUnique: { text: "เลือก 1 ช่อง ที่เป็นเลขมากที่สุด ที่ไม่มีใครเลือกเลขซ้ำกับคุณ",
+    judge: function (g, pk) {
+      var c = {}; Object.keys(pk).forEach(function (p) { var n = g[pk[p]].n; c[n] = (c[n] || 0) + 1; });
+      var u = Object.keys(c).filter(function (n) { return c[n] === 1; }).map(Number), best = u.length ? Math.max.apply(null, u) : null;
+      return { win: best === null ? [] : Object.keys(pk).filter(function (p) { return g[pk[p]].n === best; }), info: best === null ? "ทุกเลขมีคนเลือกซ้ำ" : "เลขมากที่สุดที่ไม่ซ้ำใคร: " + best };
+    } },
+  cake: { text: "เลือก 1 ช่อง ได้คะแนน 10 เท่าของเลขที่เลือก หารด้วยจำนวนคนที่เลือกเลขเดียวกัน", cake: true,
+    judge: function (g, pk) {
+      var c = {}, pts = {}; Object.keys(pk).forEach(function (p) { var n = g[pk[p]].n; c[n] = (c[n] || 0) + 1; });
+      Object.keys(pk).forEach(function (p) { var n = g[pk[p]].n; pts[p] = t10(10 * n / c[n]); });
+      return { pts: pts, info: Object.keys(c).sort(function (a, b) { return b - a; }).map(function (n) { return "เลข " + n + ": " + c[n] + " คน"; }).join(" · ") };
+    } }
+};
+function makeCrowd(type) {
+  var C = CROWD[type], g;
+  for (var t = 0; t < 200; t++) { g = genGrid(); if (!C.colors || [0, 1, 2].every(function (c) { return g.some(function (x) { return x.c === c; }); })) break; }   /* colour rules: all 3 colours on the board */
+  return { type: type, crowd: true, size: N, grid: g, p: {}, text: C.text, k: 1, ex: [] };
+}
+function makeQ(entry) { return entry.indexOf("crowd:") === 0 ? makeCrowd(entry.slice(6)) : (makeQuestion(entry) || makeQuestion("same4")); }
+/* check one answer against a question; sel = cell numbers in tap order (crowd rules: only that it is 1 real cell) */
 function checkAnswer(q, sel) {
-  var R = RULES[q.type];
+  var R = q.crowd ? { k: 1 } : RULES[q.type];
   if (!Array.isArray(sel) || !sel.length || sel.length > CELLS || !uniq(sel) || !sel.every(function (i) { return i === (i | 0) && i >= 0 && i < CELLS; })) return false;
   if (K(R) !== null && sel.length !== K(R)) return false;
-  return !!R.ok(q.grid, sel, q.p);
+  return q.crowd ? true : !!R.ok(q.grid, sel, q.p);
 }
 /* a question of this rule: draw boards until the rule has an answer on it */
 function makeQuestion(type) {
@@ -222,10 +258,14 @@ function multipliers(n) {
   return out;
 }
 /* the rule of every question: easy rules for ×1, medium for ×2, hard for ×3 and ×4; inside a tier no rule repeats until all were used */
-function planRules(mults) {
-  var bags = {}, out = [];
+function planRules(mults, crowdN) {
+  var bags = {}, out = [], crowdAt = {}, cb = [];
   function draw(t) { if (!bags[t] || !bags[t].length) bags[t] = shuffle(Object.keys(RULES).filter(function (k) { return RULES[k].tier === t; })); return bags[t].pop(); }
-  mults.forEach(function (m) { out.push(draw(m >= 3 ? 3 : m)); });
+  shuffle(mults.map(function (m, i) { return i; })).slice(0, crowdN || 0).forEach(function (i) { crowdAt[i] = 1; });   /* crowd rules go to random questions */
+  mults.forEach(function (m, i) {
+    if (crowdAt[i]) { if (!cb.length) cb = shuffle(Object.keys(CROWD)); out.push("crowd:" + cb.pop()); }
+    else out.push(draw(m >= 3 ? 3 : m));
+  });
   return out;
 }
 function t10(x) { return Math.round(x * 10) / 10; }                     /* to 0.1 */
@@ -293,12 +333,12 @@ var Net = {
     var b = document.getElementById("netb"); if (b) { b.className = ""; b.textContent = ""; }
   }
 };
-var MODE = null;   /* "host" | "player" | "solo" */
+var MODE = null;   /* "host" | "player" | "solo" | "head" (a player phone that also runs the room, no big screen) */
 
 /* ============================================================ HOST (big screen) ============================================================
    phases: lobby -> mem (board shown, big screen only) -> ask (rule shown, board black, phones answer) -> rev (board + answers) -> ... -> end
    The board is never sent to the phones before the reveal, and the Host checks every answer. */
-var DEF_CFG = { room: "ห้องชมรม", mem: 10, ans: 15, nq: 10, size: 3 };
+var DEF_CFG = { room: "ห้องชมรม", mem: 10, ans: 15, nq: 10, size: 3, crowd: 20 };
 var H = { code: "", cfg: JSON.parse(JSON.stringify(DEF_CFG)), players: [], nextIdx: 0, phase: "lobby" };
 var G = null;
 function findP(pid) { for (var i = 0; i < H.players.length; i++) if (H.players[i].pid === pid) return H.players[i]; return null; }
@@ -307,15 +347,15 @@ function hcol(pid) { var p = findP(pid); return pcol(p ? p.idx : 0); }
 function cfgNum(k, lo, hi) { var v = Math.round(Number(H.cfg[k])); return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : DEF_CFG[k]; }
 function hostNewGame() {
   setSize(H.cfg.size);
-  var n = cfgNum("nq", 1, 30), mults = multipliers(n), sc = {};
+  var n = cfgNum("nq", 1, 30), mults = multipliers(n), sc = {}, crowdN = H.players.length >= CROWD_MIN ? Math.round(n * cfgNum("crowd", 0, 100) / 100) : 0;
   H.players.forEach(function (p) { sc[p.pid] = 0; });
-  G = { size: N, qi: -1, n: n, mults: mults, plan: planRules(mults), scores: sc, q: null, ans: {}, deadline: 0, last: null };
+  G = { size: N, qi: -1, n: n, mults: mults, plan: planRules(mults, crowdN), scores: sc, q: null, ans: {}, deadline: 0, last: null };
   nextQuestion();
 }
 function nextQuestion() {
   G.qi++;
   if (G.qi >= G.n) { H.phase = "end"; G.deadline = 0; return; }
-  G.q = makeQuestion(G.plan[G.qi]) || makeQuestion("same4");
+  G.q = makeQ(G.plan[G.qi]);
   G.ans = {}; G.last = null; H.phase = "mem"; G.deadline = Date.now() + cfgNum("mem", 3, 60) * 1000;
 }
 function advance() {
@@ -324,9 +364,17 @@ function advance() {
 }
 /* end of a question: bonus = 10 / (number of right answers) to 0.1, points = (seconds left + bonus) × multiplier */
 function finishQuestion() {
-  var right = Object.keys(G.ans).filter(function (p) { return G.ans[p].ok; }), bonus = right.length ? t10(10 / right.length) : 0, m = G.mults[G.qi];
-  Object.keys(G.ans).forEach(function (p) { var a = G.ans[p]; a.pts = a.ok ? t10((a.left + bonus) * m) : 0; if (G.scores[p] === undefined) G.scores[p] = 0; G.scores[p] = t10(G.scores[p] + a.pts); });
-  G.last = { bonus: bonus, right: right.length, m: m };
+  var m = G.mults[G.qi], info = "", cake = false;
+  if (G.q.crowd) {   /* crowd rule: decide now from everyone's picks */
+    var pk = {}; Object.keys(G.ans).forEach(function (p) { if (G.ans[p].ok) pk[p] = G.ans[p].sel[0]; });
+    var res = CROWD[G.q.type].judge(G.q.grid, pk); info = res.info;
+    if (res.pts) { cake = true; Object.keys(G.ans).forEach(function (p) { G.ans[p].base = res.pts[p] || 0; G.ans[p].ok = (res.pts[p] || 0) > 0; }); }
+    else Object.keys(G.ans).forEach(function (p) { G.ans[p].ok = res.win.indexOf(p) >= 0; });
+    var cells = {}; Object.keys(G.ans).forEach(function (p) { if (G.ans[p].ok) cells[G.ans[p].sel[0]] = 1; }); G.q.ex = Object.keys(cells).map(Number);   /* the scoring players' cells */
+  }
+  var right = Object.keys(G.ans).filter(function (p) { return G.ans[p].ok; }), bonus = right.length && !cake ? t10(10 / right.length) : 0;
+  Object.keys(G.ans).forEach(function (p) { var a = G.ans[p]; a.pts = !a.ok ? 0 : cake ? t10(a.base * m) : t10((a.left + bonus) * m); if (G.scores[p] === undefined) G.scores[p] = 0; G.scores[p] = t10(G.scores[p] + a.pts); });
+  G.last = { bonus: bonus, right: right.length, m: m, crowd: !!G.q.crowd, cake: cake, info: info };
   H.phase = "rev"; G.deadline = 0;
 }
 function ranking() { return H.players.slice().sort(function (a, b) { return (G.scores[b.pid] || 0) - (G.scores[a.pid] || 0); }); }
@@ -337,12 +385,13 @@ function publicState() {
   if (G) {
     st.size = G.size; st.qi = G.qi; st.n = G.n; st.m = G.mults[Math.min(G.qi, G.n - 1)]; st.remaining = G.deadline ? Math.max(0, G.deadline - Date.now()) : null;
     st.rows = ranking().map(function (p) { return { pid: p.pid, name: p.name, idx: p.idx, score: G.scores[p.pid] || 0, rk: rankOf(p.pid) }; });
-    if (H.phase === "ask" || H.phase === "rev") { st.text = G.q.text; st.k = G.q.k; }
+    if (H.phase === "ask" || H.phase === "rev") { st.text = G.q.text; st.k = G.q.k; st.crowd = !!G.q.crowd; }
     st.answered = Object.keys(G.ans).length;
     st.me = {}; H.players.forEach(function (p) { var a = G.ans[p.pid]; st.me[p.pid] = { sent: !!a, sel: a ? a.sel : null, ok: H.phase === "rev" && a ? a.ok : null, pts: H.phase === "rev" && a ? a.pts : null, left: a ? a.left : null }; });
     if (H.phase === "rev") { st.grid = G.q.grid; st.ex = G.q.ex; st.last = G.last; }
     if (H.phase === "end") st.winners = winners();
   }
+  if (MODE === "head") { st.hostless = true; if (G && H.phase === "mem") st.grid = G.q.grid; }   /* no big screen: the phones show the board while remembering */
   return st;
 }
 var BC = { last: 0, t: null };
@@ -351,11 +400,12 @@ function broadcast() {
   if (now - BC.last >= gap) { BC.last = now; Net.send(publicState()); }
   else if (!BC.t) BC.t = setTimeout(function () { BC.t = null; BC.last = Date.now(); Net.send(publicState()); }, gap - (now - BC.last));
 }
-function saveHost() { try { if (H.code) localStorage.setItem("mathmory-host", JSON.stringify({ t: Date.now(), code: H.code, cfg: H.cfg, players: H.players, nextIdx: H.nextIdx, phase: H.phase, G: G })); } catch (e) {} }
+function saveHost() { try { if (H.code) localStorage.setItem("mathmory-host", JSON.stringify({ mode: MODE, hp: MODE === "head" ? P.pid : "", t: Date.now(), code: H.code, cfg: H.cfg, players: H.players, nextIdx: H.nextIdx, phase: H.phase, G: G })); } catch (e) {} }
 function restoreHost() {
   try {
     var d = JSON.parse(localStorage.getItem("mathmory-host") || "null");
-    if (!d || Date.now() - d.t > 12 * 3600 * 1000 || !/^\d{4}$/.test(d.code)) return false;
+    if (!d || Date.now() - d.t > 12 * 3600 * 1000 || !/^\d{4}$/.test(d.code) || (d.mode || "host") !== MODE) return false;
+    if (MODE === "head") { if (!d.hp) return false; P.pid = d.hp; ss("mm-pid", P.pid); }
     H.code = d.code; H.cfg = Object.assign({}, DEF_CFG, d.cfg); H.players = d.players || []; H.nextIdx = d.nextIdx || 0; H.phase = d.phase || "lobby"; G = d.G || null;
     if (G) setSize(G.size || 4);
     if (G && G.deadline) G.deadline = Math.max(G.deadline, Date.now() + 5000);   /* a reloaded Host gives everyone at least 5 s more */
@@ -364,6 +414,14 @@ function restoreHost() {
   } catch (e) { return false; }
 }
 function changed() { broadcast(); renderHost(); saveHost(); }
+function startTimers() {
+  setInterval(function () {
+    if (!G || !G.deadline || H.ce) return;
+    if (Date.now() >= G.deadline) { advance(); changed(); return; }
+    var t = document.getElementById("tm"); if (t) t.textContent = secsLeft();
+  }, 100);
+  setInterval(function () { if (Net.ch) broadcast(); }, 3000);
+}
 function onHostMsg(m) {
   if (!m || !m.type) return;
   if (m.type === "hello") { broadcast(); return; }
@@ -384,7 +442,7 @@ function onHostMsg(m) {
   if (m.type === "ans" && G && H.phase === "ask" && findP(m.pid) && !G.ans[m.pid] && m.qi === G.qi) {
     var sel = Array.isArray(m.sel) ? m.sel.slice(0, CELLS).map(Number) : [];
     var left = Math.max(0, G.deadline - Date.now()) / 1000;
-    G.ans[m.pid] = { sel: sel, ok: checkAnswer(G.q, sel), left: Math.floor(left * 10) / 10, pts: 0 };
+    G.ans[m.pid] = { sel: sel, ok: checkAnswer(G.q, sel), left: Math.floor(left * 10) / 10, pts: 0 };   /* crowd rules: ok here only means "a valid pick"; finishQuestion decides */
     if (H.players.every(function (p) { return G.ans[p.pid]; })) G.deadline = Math.min(G.deadline, Date.now() + 1200);   /* everyone answered: reveal soon */
     changed();
   }
@@ -408,9 +466,10 @@ var HACT = {
   }
 };
 function readCfg() {
-  [].forEach.call(document.querySelectorAll("#stage [data-cfg]"), function (el) { var k = el.dataset.cfg; H.cfg[k] = k === "room" ? (el.value.trim().slice(0, 30) || DEF_CFG.room) : Number(el.value); });
+  [].forEach.call(document.querySelectorAll("[data-cfg]"), function (el) { var k = el.dataset.cfg; H.cfg[k] = k === "room" ? (el.value.trim().slice(0, 30) || DEF_CFG.room) : Number(el.value); });
   H.cfg.size = [3, 4, 5].indexOf(Number(H.cfg.size)) >= 0 ? Number(H.cfg.size) : 3;
   ["mem", "ans", "nq"].forEach(function (k) { H.cfg[k] = cfgNum(k, k === "mem" ? 3 : k === "ans" ? 5 : 1, k === "nq" ? 30 : k === "mem" ? 60 : 120); });
+  H.cfg.crowd = cfgNum("crowd", 0, 100);
 }
 /* ----- host screens ----- */
 function hdr(title, right) {
@@ -439,7 +498,8 @@ function hLobby() {
     '<div style="display:flex;flex-direction:column;gap:12px;padding:22px 26px;border-radius:24px;background:#171E38;border:3px solid #2B3560">' +
     '<div class="field"><span>ชื่อห้อง</span><input class="wide" data-cfg="room" maxlength="30" value="' + esc(c.room) + '"></div>' +
     '<div class="field"><span>ขนาดตาราง</span><select data-cfg="size" style="font:inherit;font-size:32px;min-height:60px;padding:4px 14px;color:#EEF1FA;background:#05070F;border:2px solid #2B3560;border-radius:14px">' + [3, 4, 5].map(function (n) { return '<option value="' + n + '"' + (Number(c.size) === n ? " selected" : "") + ">" + n + "×" + n + "</option>"; }).join("") + "</select></div>" +
-    '<div style="display:flex;gap:26px"><div class="field" style="flex:1"><span>เวลาจำ (วินาที)</span><input type="number" data-cfg="mem" min="3" max="60" value="' + c.mem + '"></div><div class="field" style="flex:1"><span>เวลาตอบ (วินาที)</span><input type="number" data-cfg="ans" min="5" max="120" value="' + c.ans + '"></div><div class="field" style="flex:1"><span>จำนวนข้อ</span><input type="number" data-cfg="nq" min="1" max="30" value="' + c.nq + '"></div></div></div>' +
+    '<div style="display:flex;gap:26px"><div class="field" style="flex:1"><span>เวลาจำ (วินาที)</span><input type="number" data-cfg="mem" min="3" max="60" value="' + c.mem + '"></div><div class="field" style="flex:1"><span>เวลาตอบ (วินาที)</span><input type="number" data-cfg="ans" min="5" max="120" value="' + c.ans + '"></div><div class="field" style="flex:1"><span>จำนวนข้อ</span><input type="number" data-cfg="nq" min="1" max="30" value="' + c.nq + '"></div></div>' +
+    '<div class="field"><span>กฎเดาใจ (% ของจำนวนข้อ · ใช้เมื่อมีผู้เล่น ' + CROWD_MIN + ' คนขึ้นไป)</span><input type="number" data-cfg="crowd" min="0" max="100" value="' + c.crowd + '"></div></div>' +
     '<div style="display:flex;justify-content:flex-end"><button class="pb" data-a="start"' + (H.players.length ? "" : " disabled") + ">เริ่มเกม</button></div></div></div>";
 }
 function hMem() {
@@ -450,17 +510,17 @@ function hMem() {
 function hAsk() {
   var n = Object.keys(G.ans).length;
   return hdr(qTitle(), ring()) + '<div class="main" style="justify-content:center">' + hgrid(false) +
-    '<div class="side"><div class="rulebig pop">' + esc(G.q.text) + '</div><div style="font-size:38px;line-height:1.5">กดเลือกช่องบนมือถือ ส่งคำตอบได้ครั้งเดียว<br><span style="color:#B4BEDA">ตอบแล้ว ' + n + " / " + H.players.length + " คน</span></div></div></div>" +
+    '<div class="side">' + (G.q.crowd ? '<div class="chip" style="align-self:flex-start;color:#FFD84D">🧠 กฎเดาใจ · ไม่มีคำตอบตายตัว</div>' : "") + '<div class="rulebig pop">' + esc(G.q.text) + '</div><div style="font-size:38px;line-height:1.5">กดเลือกช่องบนมือถือ ส่งคำตอบได้ครั้งเดียว<br><span style="color:#B4BEDA">ตอบแล้ว ' + n + " / " + H.players.length + " คน</span></div></div></div>" +
     '<div class="ftr"><div></div><button class="gb" data-a="skip">จบเวลาตอบ</button></div>';
 }
 function hRev() {
   var L = G.last, list = Object.keys(G.ans).filter(function (p) { return G.ans[p].ok && findP(p); }).sort(function (a, b) { return G.ans[b].pts - G.ans[a].pts; });
   var rows = list.slice(0, 6).map(function (p, i) { var a = G.ans[p]; return '<div class="lr"><span class="rk">' + (i + 1) + '</span><span class="nm"><i style="display:inline-block;width:18px;height:18px;border-radius:50%;margin-right:12px;background:' + hcol(p) + '"></i>' + esc(hname(p)) + '</span><span class="sub">เหลือ ' + f1(a.left) + ' วิ</span><span class="pt">+' + f1(a.pts) + "</span></div>"; }).join("");
   var last = G.qi + 1 >= G.n;
-  return hdr(qTitle() + " · เฉลย", '<div class="chip">ตอบถูก ' + L.right + " / " + H.players.length + " คน</div>") +
+  return hdr(qTitle() + " · เฉลย", '<div class="chip">' + (L.crowd ? "ได้คะแนน " : "ตอบถูก ") + L.right + " / " + H.players.length + " คน</div>") +
     '<div class="main" style="justify-content:center">' + hgrid(true, G.q.ex) +
-    '<div class="side" style="gap:14px"><div class="rulebig" style="font-size:44px;padding:22px 30px">' + esc(G.q.text) + '</div><div style="font-size:28px;color:#B4BEDA">กรอบเหลือง = ตัวอย่างคำตอบที่ถูก</div>' +
-    '<div style="font-size:30px;color:#B4BEDA">คะแนน = (วินาทีที่เหลือ + โบนัส ' + f1(L.bonus) + ") × " + L.m + "</div>" + (rows || '<div style="font-size:40px;color:#FF8A80;font-weight:700">ข้อนี้ไม่มีใครตอบถูก</div>') + (list.length > 6 ? '<div style="font-size:28px;color:#B4BEDA">และอีก ' + (list.length - 6) + " คน</div>" : "") + "</div></div>" +
+    '<div class="side" style="gap:14px"><div class="rulebig" style="font-size:44px;padding:22px 30px">' + esc(G.q.text) + '</div><div style="font-size:28px;color:#B4BEDA">' + (L.crowd ? "กรอบเหลือง = ช่องของคนที่ได้คะแนน" : "กรอบเหลือง = ตัวอย่างคำตอบที่ถูก") + "</div>" + (L.info ? '<div style="font-size:32px;font-weight:700">' + esc(L.info) + "</div>" : "") +
+    '<div style="font-size:30px;color:#B4BEDA">' + (L.cake ? "คะแนน = 10 × เลข ÷ จำนวนคนที่เลือกเลขเดียวกัน × " + L.m : "คะแนน = (วินาทีที่เหลือ + โบนัส " + f1(L.bonus) + ") × " + L.m) + "</div>" + (rows || '<div style="font-size:40px;color:#FF8A80;font-weight:700">ข้อนี้ไม่มีใครได้คะแนน</div>') + (list.length > 6 ? '<div style="font-size:28px;color:#B4BEDA">และอีก ' + (list.length - 6) + " คน</div>" : "") + "</div></div>" +
     '<div class="ftr"><div style="font-size:30px;color:#B4BEDA">อันดับ 1 ตอนนี้: ' + esc(ranking()[0] ? ranking()[0].name : "-") + " " + f1(ranking()[0] ? G.scores[ranking()[0].pid] || 0 : 0) + '</div><button class="pb" data-a="next">' + (last ? "ดูผลรวม" : "ข้อถัดไป") + "</button></div>";
 }
 function hEnd() {
@@ -471,6 +531,7 @@ function hEnd() {
     '<div class="ftr"><button class="gb" data-a="copy">' + (H.copied ? "คัดลอกแล้ว ✓" : "คัดลอกอันดับ") + '</button><div style="display:flex;gap:16px"><button class="gb" data-a="toLobby">กลับล็อบบี้</button><button class="pb" data-a="again">เล่นใหม่ด้วยผู้เล่นเดิม</button></div></div>';
 }
 function renderHost() {
+  if (MODE === "head") { headRender(); return; }
   var el = document.getElementById("stage"); if (!el) return;
   var keep = {}; [].forEach.call(el.querySelectorAll("[data-cfg]"), function (x) { keep[x.dataset.cfg] = x.value; });   /* do not lose settings being typed when someone joins */
   var focus = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.cfg : null;
@@ -488,12 +549,7 @@ function hostBoot() {
   if (restoreHost()) { Net.open(H.code, "host", onHostMsg); changed(); } else HACT.newRoom();
   document.getElementById("stage").addEventListener("click", function (e) { var b = e.target.closest("[data-a]"); if (!b || b.disabled) return; if (HACT[b.dataset.a]) HACT[b.dataset.a](b); });
   document.getElementById("stage").addEventListener("change", function (e) { if (e.target.dataset.cfg) { readCfg(); saveHost(); } });
-  setInterval(function () {
-    if (!G || !G.deadline || H.ce) return;
-    if (Date.now() >= G.deadline) { advance(); changed(); return; }
-    var t = document.getElementById("tm"); if (t) t.textContent = secsLeft();
-  }, 100);
-  setInterval(function () { if (Net.ch) broadcast(); }, 3000);
+  startTimers();
 }
 
 /* ============================================================ PHONE: shared answer pad (big-screen players and solo) ============================================================ */
@@ -516,9 +572,10 @@ function phoneGrid(opts) {
   }
   return h + "</div>";
 }
+function crowdNow() { return (MODE === "solo") ? false : !!(P.st && P.st.crowd); }
 function padHtml(text, k, disabled) {
   var n = A.sel.length, canSend = !disabled && (k === null ? n > 0 : n === k);
-  return '<div class="rule slot">' + esc(text) + "<small>" + (k === null ? "เลือกให้ครบทุกช่อง แล้วกดส่ง · เลือกแล้ว " + n + " ช่อง" : "เลือกแล้ว " + n + " / " + k + " ช่อง") + "</small></div>" +
+  return '<div class="rule slot">' + (crowdNow() ? "🧠 " : "") + esc(text) + "<small>" + (k === null ? "เลือกให้ครบทุกช่อง แล้วกดส่ง · เลือกแล้ว " + n + " ช่อง" : "เลือกแล้ว " + n + " / " + k + " ช่อง") + "</small></div>" +
     phoneGrid({ sel: A.sel, tap: !disabled }) +
     '<div class="row"><button class="gh" data-a="reset"' + (n && !disabled ? "" : " disabled") + '>Reset</button><button class="go" data-a="send"' + (canSend ? "" : " disabled") + ">ส่งคำตอบ</button></div>";
 }
@@ -531,8 +588,8 @@ function pLeft() { if (!P.st || P.st.remaining === null || P.st.remaining === un
 function tmHtml() { var l = pLeft(); return '<div class="tm" id="tm">' + (l === null ? "–" : Math.ceil(l / 1000)) + "</div>"; }
 function topBar(a, b, right) { return '<div class="top"><div><div class="a">' + a + '</div><div class="b">' + b + "</div></div>" + (right || "") + "</div>"; }
 function viewJoin() {
-  return '<div id="pw"><a href="/games/" style="font-weight:700;text-decoration:none">← กลับเว็บชมรม</a><div><h1>ภาพจำยังชัดเจน</h1><div class="muted">Mathmory · เข้าห้องที่เปิดบนจอใหญ่</div></div>' +
-    '<div class="box"><label for="code">รหัสห้อง (ดูจากจอใหญ่)</label><input id="code" inputmode="numeric" maxlength="4" autocomplete="off" value="' + esc(P.code) + '">' +
+  return '<div id="pw"><a href="/games/" style="font-weight:700;text-decoration:none">← กลับเว็บชมรม</a><div><h1>ภาพจำยังชัดเจน</h1><div class="muted">Mathmory · เข้าห้องของจอใหญ่ หรือห้องเล่นกับเพื่อน</div></div>' +
+    '<div class="box"><label for="code">รหัสห้อง (จากจอใหญ่ หรือจากหัวห้อง)</label><input id="code" inputmode="numeric" maxlength="4" autocomplete="off" value="' + esc(P.code) + '">' +
     '<label for="nick">ชื่อเล่นของคุณ</label><input id="nick" maxlength="20" autocomplete="off" value="' + esc(P.name) + '">' +
     (P.error ? '<div class="err" role="alert" style="margin-top:10px">' + esc(P.error) + "</div>" : "") +
     '<button class="go" data-a="join" style="margin-top:14px"' + (P.joining ? " disabled" : "") + ">" + (P.joining ? "กำลังเข้าห้อง…" : "เข้าร่วม") + "</button></div></div>";
@@ -545,28 +602,31 @@ function viewPlayer() {
   var row = (st.rows || []).filter(function (r) { return r.pid === P.pid; })[0];
   var qa = st.qi !== undefined ? "ข้อ " + (st.qi + 1) + " / " + st.n + " · ×" + st.m : "";
   if (st.phase === "lobby") {
-    h = topBar("รหัสห้อง " + esc(P.code), "เข้าห้องแล้ว") + '<div class="box"><h2>' + esc(P.name) + '</h2><div class="muted">รอ Host กดเริ่มเกม ชื่อของคุณขึ้นบนจอใหญ่แล้ว</div></div>' +
+    h = topBar("รหัสห้อง " + esc(P.code), "เข้าห้องแล้ว") + '<div class="box"><h2>' + esc(P.name) + '</h2><div class="muted">' + (st.hostless ? "รอหัวห้องกดเริ่มเกม" : "รอ Host กดเริ่มเกม ชื่อของคุณขึ้นบนจอใหญ่แล้ว") + '</div></div>' +
       '<div class="box"><div class="muted" style="font-size:.9rem">ผู้เล่นในห้อง (' + st.players.length + ')</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">' + st.players.map(function (p) { return '<span style="padding:4px 12px;border-radius:99px;color:#0E1326;background:' + pcol(p.idx) + '">' + esc(p.name) + "</span>"; }).join("") + "</div></div>";
   } else if (st.phase === "mem") {
-    h = topBar(esc(P.name) + " · " + qa, "จำตารางบนจอใหญ่", tmHtml()) + '<div class="slot memo"><div class="hd" style="font-size:1.7rem;font-weight:700;color:#FFD84D">ดูจอใหญ่!</div><div class="muted">จำตัวเลข สี และตำแหน่ง · หมดเวลาแล้วกฎจะขึ้นที่นี่</div></div>' + phoneGrid({});
+    if (st.grid) h = topBar(esc(P.name) + " · " + qa, "จำให้ได้!", tmHtml()) + '<div class="slot memo"><div class="hd" style="font-size:1.7rem;font-weight:700;color:#FFD84D">จำให้ได้!</div><div class="muted">จำตัวเลข สี และตำแหน่ง · หมดเวลาแล้วกฎจะขึ้นที่นี่</div></div>' + phoneGrid({ grid: st.grid });
+    else h = topBar(esc(P.name) + " · " + qa, "จำตารางบนจอใหญ่", tmHtml()) + '<div class="slot memo"><div class="hd" style="font-size:1.7rem;font-weight:700;color:#FFD84D">ดูจอใหญ่!</div><div class="muted">จำตัวเลข สี และตำแหน่ง · หมดเวลาแล้วกฎจะขึ้นที่นี่</div></div>' + phoneGrid({});
   } else if (st.phase === "ask") {
     padReset("q" + st.qi);
-    if (m.sent) h = topBar(esc(P.name) + " · " + qa, "ส่งคำตอบแล้ว", tmHtml()) + '<div class="rule slot">' + esc(st.text) + "</div>" + phoneGrid({ sel: m.sel }) + '<div class="box"><div class="muted">ส่งแล้ว (เหลือ ' + f1(m.left) + ' วินาที) รอเฉลยบนจอใหญ่</div></div>';
+    if (m.sent) h = topBar(esc(P.name) + " · " + qa, "ส่งคำตอบแล้ว", tmHtml()) + '<div class="rule slot">' + esc(st.text) + "</div>" + phoneGrid({ sel: m.sel }) + '<div class="box"><div class="muted">ส่งแล้ว (เหลือ ' + f1(m.left) + " วินาที) รอเฉลย" + (st.hostless ? "" : "บนจอใหญ่") + "</div></div>";
     else h = topBar(esc(P.name) + " · " + qa, "เลือกช่องตามกฎ", tmHtml()) + padHtml(st.text, st.k, !!P.sent["q" + st.qi]);
   } else if (st.phase === "rev") {
-    var res = !m.sent ? '<div class="box"><h2 class="no">ไม่ได้ส่งคำตอบ</h2><div class="muted">ข้อนี้ได้ 0 คะแนน</div></div>' : m.ok ? '<div class="box"><h2 class="ok">✓ ถูกต้อง +' + f1(m.pts) + '</h2><div class="muted">(เหลือ ' + f1(m.left) + " วิ + โบนัส " + f1(st.last.bonus) + ") × " + st.last.m + "</div></div>" : '<div class="box"><h2 class="no">✗ ไม่ถูกต้อง</h2><div class="muted">ข้อนี้ได้ 0 คะแนน</div></div>';
-    h = topBar(esc(P.name) + " · " + qa, "เฉลย", '<span class="tag">รอ Host<br>ไปข้อถัดไป</span>') + '<div class="rule" style="font-size:1.05rem">' + esc(st.text) + "</div>" + res +
-      phoneGrid({ grid: st.grid, sel: m.sel || [], ex: st.ex }) + '<div class="muted" style="font-size:.85rem;text-align:center">ตัวอักษรเหลือง = ช่องที่คุณกด · กรอบม่วง = ตัวอย่างคำตอบที่ถูก</div>' +
+    var L = st.last || {}, how = L.cake ? "10 × เลข ÷ จำนวนคนที่เลือกเลขเดียวกัน × " + L.m : "(เหลือ " + f1(m.left) + " วิ + โบนัส " + f1(L.bonus) + ") × " + L.m;
+    var res = !m.sent ? '<div class="box"><h2 class="no">ไม่ได้ส่งคำตอบ</h2><div class="muted">ข้อนี้ได้ 0 คะแนน</div></div>' : m.ok ? '<div class="box"><h2 class="ok">✓ ' + (L.crowd ? "ได้คะแนน" : "ถูกต้อง") + " +" + f1(m.pts) + '</h2><div class="muted">' + how + "</div></div>" : '<div class="box"><h2 class="no">✗ ' + (L.crowd ? "ไม่ได้คะแนน" : "ไม่ถูกต้อง") + '</h2><div class="muted">ข้อนี้ได้ 0 คะแนน</div></div>';
+    h = topBar(esc(P.name) + " · " + qa, "เฉลย", MODE === "head" ? "" : '<span class="tag">' + (st.hostless ? "รอหัวห้อง" : "รอ Host") + "<br>ไปข้อถัดไป</span>") + '<div class="rule" style="font-size:1.05rem">' + (L.crowd ? "🧠 " : "") + esc(st.text) + "</div>" + (L.info ? '<div class="box" style="font-weight:700">' + esc(L.info) + "</div>" : "") + res +
+      phoneGrid({ grid: st.grid, sel: m.sel || [], ex: st.ex }) + '<div class="muted" style="font-size:.85rem;text-align:center">ตัวอักษรเหลือง = ช่องที่คุณกด · กรอบม่วง = ' + (L.crowd ? "ช่องของคนที่ได้คะแนน" : "ตัวอย่างคำตอบที่ถูก") + "</div>" +
       '<div class="box" style="display:flex;justify-content:space-between"><b>คะแนนรวม ' + f1(row ? row.score : 0) + "</b><span class=\"muted\">อันดับ " + (row ? row.rk : "-") + " จาก " + st.rows.length + "</span></div>";
   } else if (st.phase === "end") {
     var ws = st.rows.filter(function (r) { return (st.winners || []).indexOf(r.pid) >= 0; });
     h = topBar(esc(P.name), "จบเกมแล้ว") + '<div class="box" style="text-align:center"><div class="muted">' + (ws.length > 1 ? "ผู้ชนะร่วม" : "ผู้ชนะ") + '</div><div class="hd" style="font-size:1.8rem;font-weight:700">' + ws.map(function (r) { return esc(r.name); }).join(" และ ") + "</div><div>" + f1(ws[0] ? ws[0].score : 0) + " คะแนน</div></div>" +
       '<div class="box"><h2>อันดับทั้งหมด</h2>' + st.rows.map(function (r) { return '<div class="tr' + (r.pid === P.pid ? " me" : "") + '"><span class="muted" style="width:26px">' + r.rk + '</span><b style="flex:1">' + esc(r.name) + (r.pid === P.pid ? " (คุณ)" : "") + "</b><b>" + f1(r.score) + "</b></div>"; }).join("") + "</div>";
   }
-  if ((st.v || 0) < MM_V) h = '<div class="err">หน้า Host เป็นเวอร์ชันเก่า บางอย่างอาจแสดงผิด ให้ Host รีเฟรชหน้า</div>' + h;
+  if ((st.v || 0) < MM_V && MODE !== "head") h = '<div class="err">' + (st.hostless ? "หน้าของหัวห้อง" : "หน้า Host ") + "เป็นเวอร์ชันเก่า บางอย่างอาจแสดงผิด ให้" + (st.hostless ? "หัวห้อง" : " Host ") + "รีเฟรชหน้า</div>" + h;
   return '<div id="pw">' + h + "</div>";
 }
-function renderPlayer() { if (!P.joined || !P.st) return; document.getElementById("app").innerHTML = viewPlayer(); }
+function renderPlayer() { if (MODE === "head") { headRender(); return; } if (!P.joined || !P.st) return; document.getElementById("app").innerHTML = viewPlayer(); }
+function sendMsg(m) { if (MODE === "head") onHostMsg(JSON.parse(JSON.stringify(m))); else Net.send(m); }
 function onPlayerMsg(m) {
   if (!m) return;
   if (m.type === "reject" && m.to === P.pid) { P.error = m.reason; P.joining = false; P.joined = false; Net.close(); ss("mm-joined", "0"); document.getElementById("app").innerHTML = viewJoin(); return; }
@@ -584,7 +644,7 @@ function pjoin() {
   if (!name) { P.error = "กรอกชื่อเล่นก่อน"; document.getElementById("app").innerHTML = viewJoin(); return; }
   P.error = ""; P.joining = true; document.getElementById("app").innerHTML = viewJoin();
   Net.open(code, P.pid, onPlayerMsg); Net.send({ type: "join", pid: P.pid, name: name, v: MM_V });
-  setTimeout(function () { if (!P.joined && P.joining) { P.joining = false; P.error = "ไม่พบห้องนี้ ตรวจรหัสห้อง และให้แน่ใจว่าเปิดหน้าจอใหญ่ไว้แล้ว"; Net.close(); ss("mm-joined", "0"); document.getElementById("app").innerHTML = viewJoin(); } }, 8000);
+  setTimeout(function () { if (!P.joined && P.joining) { P.joining = false; P.error = "ไม่พบห้องนี้ ตรวจรหัสห้อง และให้แน่ใจว่าจอใหญ่หรือหัวห้องเปิดหน้าเกมไว้"; Net.close(); ss("mm-joined", "0"); document.getElementById("app").innerHTML = viewJoin(); } }, 8000);
 }
 var PACT = {
   join: pjoin,
@@ -595,7 +655,7 @@ var PACT = {
   send: function () {
     var st = P.st; if (!st || st.phase !== "ask" || P.sent["q" + st.qi]) return;
     if (st.k === null ? !A.sel.length : A.sel.length !== st.k) return;
-    P.sent["q" + st.qi] = 1; Net.send({ type: "ans", pid: P.pid, qi: st.qi, sel: A.sel.slice() }); renderPlayer();
+    P.sent["q" + st.qi] = 1; sendMsg({ type: "ans", pid: P.pid, qi: st.qi, sel: A.sel.slice() }); renderPlayer();
     setTimeout(function () { if (P.st && P.st.phase === "ask" && me() && !me().sent) { P.sent["q" + st.qi] = 0; Net.send({ type: "ans", pid: P.pid, qi: st.qi, sel: A.sel.slice() }); } }, 2500);   /* resend once if the Host did not get it */
   }
 };
@@ -610,6 +670,80 @@ function playerBoot() {
   if (P.code && P.name && ss("mm-joined") === "1") pjoin();
 }
 
+/* ============================================================ HEAD (friends room without a big screen) ============================================================
+   The head phone runs the same engine as the Host page and plays too. The board is shown on every phone while remembering
+   (no big screen), so a screenshot is possible here. The head moves on to the next question. Not counted for the club. */
+var HD = { err: "", shared: 0, closing: false, lock: null };
+function headWake() { try { if (navigator.wakeLock) navigator.wakeLock.request("screen").then(function (l) { HD.lock = l; }, function () {}); } catch (e) {} }
+function headRender() {
+  var app = document.getElementById("app"); if (!app || MODE !== "head") return;
+  if (!H.code) { app.innerHTML = headName(); return; }
+  P.st = publicState(); P.recvAt = Date.now(); P.joined = true; P.code = H.code;
+  if (H.phase === "lobby") { app.innerHTML = headLobby(); return; }
+  app.innerHTML = viewPlayer().replace(/<\/div>$/, headBar() + "</div>");
+}
+function headName() {
+  return '<div id="pw"><a href="/games/" style="font-weight:700;text-decoration:none">← กลับเว็บชมรม</a><div><h1>เล่นกับเพื่อน</h1><div class="muted">ภาพจำยังชัดเจน · ไม่ต้องมีจอใหญ่ · ไม่นับคะแนนชมรม</div></div>' +
+    '<div class="box"><div class="muted">เครื่องนี้เป็นหัวห้อง ต้องเปิดหน้านี้ค้างไว้ตลอดเกม และคุณเล่นด้วยได้</div><label for="hname">ชื่อเล่นของคุณ</label><input id="hname" maxlength="20" autocomplete="off" value="' + esc(P.name) + '">' +
+    (HD.err ? '<div class="err" style="margin-top:8px">' + esc(HD.err) + "</div>" : "") + '<button class="go" data-a="make" style="margin-top:12px">สร้างห้อง</button></div></div>';
+}
+function headLobby() {
+  var c = H.cfg, others = H.players.filter(function (p) { return p.pid !== P.pid && (p.v || 0) < MM_V; }).length;
+  var chips = H.players.map(function (p) { return '<span style="padding:4px 12px;border-radius:99px;color:#0E1326;background:' + pcol(p.idx) + '">' + esc(p.name) + (p.pid === P.pid ? " (คุณ)" : (p.v || 0) < MM_V ? " ⚠ ต้องรีเฟรช" : "") + "</span>"; }).join("");
+  return '<div id="pw"><div class="top"><div><div class="a">หัวห้อง · เล่นกับเพื่อน · ไม่นับคะแนนชมรม</div><div class="b">ภาพจำยังชัดเจน</div></div></div>' +
+    '<div class="box"><div class="muted">รหัสห้อง</div><div class="hd" style="font-size:3rem;font-weight:700;letter-spacing:.12em;color:#FFD84D;line-height:1.2">' + H.code + '</div><button class="go" data-a="share">' + (HD.shared ? "คัดลอกแล้ว ✓" : "คัดลอกลิงก์ชวนเพื่อน") + '</button><div class="muted" style="margin-top:6px;font-size:.9rem">เพื่อนเปิดลิงก์นี้ หรือเข้าเว็บชมรม → เกม → ภาพจำยังชัดเจน → เข้าห้อง</div></div>' +
+    '<div class="box"><h2>ผู้เล่น ' + H.players.length + ' คน</h2><div style="display:flex;flex-wrap:wrap;gap:6px">' + chips + "</div>" + (others ? '<div class="err" style="margin-top:8px">' + others + " คนใช้หน้าเกมเวอร์ชันเก่า ให้รีเฟรชหน้าก่อนเริ่มเกม</div>" : "") + "</div>" +
+    '<div class="box"><label>ขนาดตาราง</label><div class="num3">' + [3, 4, 5].map(function (n) { return '<button type="button" class="' + (Number(c.size) === n ? "go" : "gh") + '" data-a="hsize" data-n="' + n + '" style="min-height:48px">' + n + "×" + n + "</button>"; }).join("") + "</div>" +
+    '<div class="num3"><div><label for="hmem">เวลาจำ (วิ)</label><input id="hmem" data-cfg="mem" type="number" inputmode="numeric" min="3" max="60" value="' + c.mem + '"></div><div><label for="hans">เวลาตอบ (วิ)</label><input id="hans" data-cfg="ans" type="number" inputmode="numeric" min="5" max="120" value="' + c.ans + '"></div><div><label for="hnq">จำนวนข้อ</label><input id="hnq" data-cfg="nq" type="number" inputmode="numeric" min="1" max="30" value="' + c.nq + '"></div></div>' +
+    '<label for="hcrowd">กฎเดาใจ (% ของจำนวนข้อ · ใช้เมื่อมีผู้เล่น ' + CROWD_MIN + ' คนขึ้นไป)</label><input id="hcrowd" data-cfg="crowd" type="number" inputmode="numeric" min="0" max="100" value="' + c.crowd + '"></div>' +
+    '<button class="go" data-a="start"' + (H.players.length >= 2 ? "" : " disabled") + ">เริ่มเกม" + (H.players.length < 2 ? " (ต้องมีผู้เล่นอย่างน้อย 2 คน)" : "") + "</button>" +
+    '<button class="gh" data-a="closeRoom" style="' + (HD.closing ? "background:#FF8A80;color:#14213D;border-color:#FF8A80" : "") + '">' + (HD.closing ? "แตะอีกครั้งเพื่อปิดห้องและกลับเว็บชมรม" : "ปิดห้อง") + "</button></div>";
+}
+function headBar() {
+  var b = "";
+  if (H.ce) return '<div class="box" style="text-align:center"><b>จบเกมตอนนี้และไปหน้าผู้ชนะ?</b><div class="row" style="margin-top:8px"><button class="gh" data-a="cancelEnd">ยกเลิก</button><button class="go" data-a="doEnd" style="background:#FF8A80">จบเกม</button></div></div>';
+  if (H.phase === "mem" || H.phase === "ask") b = '<button class="gh" data-a="askEnd">จบเกม</button>';
+  else if (H.phase === "rev") b = '<button class="go" data-a="next">' + (G.qi + 1 >= G.n ? "ดูผลรวม" : "ข้อถัดไป") + '</button><button class="gh" data-a="askEnd">จบเกม</button>';
+  else if (H.phase === "end") b = '<button class="go" data-a="again">เล่นอีกครั้ง</button><button class="gh" data-a="toLobby">กลับล็อบบี้</button><button class="gh" data-a="copy">' + (H.copied ? "คัดลอกแล้ว ✓" : "คัดลอกอันดับ") + "</button>";
+  return b ? '<div style="display:flex;flex-direction:column;gap:8px;margin-top:auto;padding-top:6px">' + b + "</div>" : "";
+}
+var HEADACT = {
+  make: function () {
+    var n = document.getElementById("hname"), name = n ? n.value.trim().slice(0, 20) : "";
+    if (!name) { HD.err = "กรอกชื่อเล่นก่อน"; headRender(); return; }
+    HD.err = ""; P.name = name; ss("mm-name", name);
+    H.cfg.room = "ห้องเพื่อน"; H.players = [{ pid: P.pid, name: name, idx: H.nextIdx++, v: MM_V }];
+    HACT.newRoom(); headWake();
+  },
+  hsize: function (b) { readCfg(); H.cfg.size = Number(b.dataset.n); headRender(); saveHost(); },
+  start: function () { if (H.players.length < 2) return; readCfg(); hostNewGame(); changed(); },
+  share: function () {
+    var url = location.origin + "/mathmory/#join=" + H.code, done = function () { HD.shared = 1; headRender(); setTimeout(function () { HD.shared = 0; headRender(); }, 2000); };
+    function fb() { try { var ta = document.createElement("textarea"); ta.value = url; ta.style.cssText = "position:fixed;left:-9999px"; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); done(); } catch (e) {} }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, fb); else fb();
+  },
+  closeRoom: function () {
+    if (H.phase !== "lobby") return;
+    if (!HD.closing) { HD.closing = true; headRender(); setTimeout(function () { HD.closing = false; headRender(); }, 3000); return; }
+    H.players.forEach(function (p) { if (p.pid !== P.pid) Net.send({ type: "reject", to: p.pid, reason: "หัวห้องปิดห้องแล้ว" }); });
+    try { localStorage.removeItem("mathmory-host"); } catch (e) {}
+    ss("mm-role", ""); H.code = "";
+    document.getElementById("app").innerHTML = '<div id="pw"><div class="box"><h2>ปิดห้องแล้ว</h2><div class="muted">กำลังกลับเว็บชมรม…</div></div></div>';
+    setTimeout(function () { Net.close(); location.href = "/games/"; }, 900);
+  }
+};
+function headBoot() {
+  MODE = "head"; document.body.className = ""; ss("mm-role", "head");
+  var app = document.getElementById("app");
+  app.addEventListener("click", function (e) { var b = e.target.closest("[data-a]"); if (!b || b.disabled) return; var a = b.dataset.a; if (HEADACT[a]) HEADACT[a](b); else if (PACT[a]) PACT[a](b); else if (HACT[a]) HACT[a](b); });
+  app.addEventListener("change", function (e) { if (e.target.dataset && e.target.dataset.cfg) { readCfg(); saveHost(); } });
+  document.addEventListener("visibilitychange", function () { if (!document.hidden && H.code) { headWake(); broadcast(); } });
+  setInterval(function () { var t = document.getElementById("tm"); if (t && P.st) { var l = pLeft(); t.textContent = l === null ? "–" : Math.ceil(l / 1000); } }, 200);
+  startTimers();
+  if (restoreHost()) { var me0 = findP(P.pid); if (me0) P.name = me0.name; Net.open(H.code, "host", onHostMsg); headWake(); changed(); }
+  else headRender();
+}
+
 /* ============================================================ SOLO (one phone, no network, no bonus, not counted for the club) ============================================================ */
 var S = null, SCFG = { mem: 10, ans: 15, nq: 10, size: 3 };
 function soloStart() {
@@ -621,7 +755,7 @@ function soloStart() {
 function soloNext() {
   S.qi++;
   if (S.qi >= S.n) { S.phase = "end"; S.deadline = 0; return soloRender(); }
-  S.q = makeQuestion(S.plan[S.qi]) || makeQuestion("same4"); S.res = null; A.key = ""; padReset("s" + S.qi);
+  S.q = makeQ(S.plan[S.qi]); S.res = null; A.key = ""; padReset("s" + S.qi);
   S.phase = "mem"; S.deadline = Date.now() + Math.min(60, Math.max(3, Number(SCFG.mem) || 10)) * 1000; soloRender();
 }
 function soloTick() {
@@ -686,13 +820,14 @@ function roleScreen() {
   app.innerHTML = '<div class="role"><a href="/games/" style="align-self:flex-start;font-weight:700;text-decoration:none;padding:8px 0">← กลับเว็บชมรม</a><h1>ภาพจำยังชัดเจน</h1><p>Mathmory · จำตาราง 3×3 / 4×4 / 5×5 แล้วเลือกช่องตามกฎ</p>' +
     '<button class="rbtn pri" data-r="player">เข้าห้อง<small>ใส่รหัสห้องจากจอใหญ่ แล้วเล่นบนมือถือ</small></button>' +
     '<button class="rbtn" data-r="host">เปิดจอใหญ่ (Host)<small>ใช้จอนี้แสดงตารางบนโปรเจกเตอร์ ผู้เล่นตอบบนมือถือ</small></button>' +
+    '<button class="rbtn" data-r="head">เล่นกับเพื่อน (ไม่มีจอใหญ่)<small>มือถือเครื่องนี้เป็นหัวห้องและเล่นด้วย ตารางขึ้นบนมือถือทุกเครื่อง ไม่นับคะแนนชมรม</small></button>' +
     '<button class="rbtn" data-r="solo">เล่นคนเดียว<small>เล่นบนมือถือเครื่องนี้ ไม่ต้องมีรหัสห้อง ไม่นับคะแนนชมรม</small></button></div>';
-  app.onclick = function (e) { var b = e.target.closest("[data-r]"); if (!b) return; app.onclick = null; ({ host: hostBoot, player: playerBoot, solo: soloBoot })[b.dataset.r](); };
+  app.onclick = function (e) { var b = e.target.closest("[data-r]"); if (!b) return; app.onclick = null; ({ host: hostBoot, player: playerBoot, solo: soloBoot, head: headBoot })[b.dataset.r](); };
 }
 (function () {
   var h = location.hash, r = ss("mm-role");
-  if (h === "#host") hostBoot(); else if (h === "#player" || /^#join=\d{4}$/.test(h)) playerBoot(); else if (h === "#solo") soloBoot();
-  else if (r === "host") hostBoot(); else if (r === "player") playerBoot(); else roleScreen();
+  if (h === "#host") hostBoot(); else if (h === "#player" || /^#join=\d{4}$/.test(h)) playerBoot(); else if (h === "#solo") soloBoot(); else if (h === "#head") headBoot();
+  else if (r === "host") hostBoot(); else if (r === "player") playerBoot(); else if (r === "head") headBoot(); else roleScreen();
 })();
 </script>
 </body>

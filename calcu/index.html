@@ -640,7 +640,13 @@ function rid() { return Math.random().toString(36).slice(2, 10); }
    BroadcastChannel (tabs of the same browser only) so the page still works as a single-computer test.
    Net.mode is "supabase" or "local"; the small badge #netb shows which one is active. */
 var SB = { url: "https://pmiwrnbpoumkpmbbylvw.supabase.co", key: "sb_publishable_XhPC1F8vvNzOt7KoaEaQKw_C_0pJksR" };
+/* Two Realtime channels per room so that a player's message is not delivered to every other phone (Supabase counts every delivery):
+   "calcu-<code>"    down: the Host/head sends the game state; every player subscribes and listens.
+   "calcu-<code>-up" up:   only the Host/head subscribes; players send to it WITHOUT subscribing, which supabase-js sends
+                           over HTTP (REST broadcast), so a join, a pick, a challenge or an equation reaches the Host only.
+   Players only ever need "state", "reject" and "adopt", which all come from the Host. Same design as /mathmory/. */
 var Net = {
+  up: null,
   ch: null, me: null, mode: "", ready: false, q: [], client: null, timer: null, code: "", onmsg: null,
   setStatus: function (st) {
     var b = document.getElementById("netb"); if (!b) return;
@@ -655,15 +661,19 @@ var Net = {
       try {
         this.mode = "supabase"; this.setStatus("wait");
         this.client = window.supabase.createClient(SB.url, SB.key, { realtime: { params: { eventsPerSecond: 40 } } });
-        var ch = this.client.channel("calcu-" + code, { config: { broadcast: { self: false, ack: false } } });
-        this.ch = ch;
-        ch.on("broadcast", { event: "m" }, function (p) { try { onmsg(p.payload); } catch (err) { if (window.console) console.error(err); } });
+        var isHost = me === "host", cfg = { config: { broadcast: { self: false, ack: false } } };
+        var ch = this.client.channel("calcu-" + code, cfg), up = this.client.channel("calcu-" + code + "-up", cfg);
+        this.ch = ch; this.up = up;
+        function recv(p) { try { onmsg(p.payload); } catch (err) { if (window.console) console.error(err); } }
+        if (isHost) up.on("broadcast", { event: "m" }, recv); else ch.on("broadcast", { event: "m" }, recv);
         this.timer = setTimeout(function () { if (self.ch === ch && !self.ready) self.fallback(); }, 5000);
-        ch.subscribe(function (s) {
+        var need = isHost ? 2 : 1, got = 0;   /* the Host waits for both channels, a player only for "down" */
+        function status(s) {
           if (self.ch !== ch) return;
-          if (s === "SUBSCRIBED") { clearTimeout(self.timer); self.ready = true; self.setStatus("ok"); self.flush(); }
+          if (s === "SUBSCRIBED") { if (++got === need) { clearTimeout(self.timer); self.ready = true; self.setStatus("ok"); self.flush(); } }
           else if (s === "CHANNEL_ERROR" || s === "TIMED_OUT" || s === "CLOSED") { if (!self.ready) self.fallback(); else self.setStatus("bad"); }
-        });
+        }
+        ch.subscribe(status); if (isHost) up.subscribe(status);
         return;
       } catch (err) { if (window.console) console.error(err); this.teardown(); }
     }
@@ -672,8 +682,9 @@ var Net = {
   teardown: function () {
     clearTimeout(this.timer);
     try { if (this.client && this.ch) this.client.removeChannel(this.ch); } catch (e) {}
+    try { if (this.client && this.up) this.client.removeChannel(this.up); } catch (e) {}
     try { if (this.client && this.client.realtime && this.client.realtime.disconnect) this.client.realtime.disconnect(); } catch (e) {}
-    this.client = null; this.ch = null; this.ready = false;
+    this.client = null; this.ch = null; this.up = null; this.ready = false;
   },
   fallback: function () { this.teardown(); this.local(); },
   local: function () {
@@ -684,7 +695,10 @@ var Net = {
   },
   flush: function () { var q = this.q; this.q = []; for (var i = 0; i < q.length; i++) this.post(q[i]); },
   post: function (m) {
-    if (this.mode === "supabase") { try { this.ch.send({ type: "broadcast", event: "m", payload: m }); } catch (e) { if (window.console) console.error(e); } }
+    if (this.mode === "supabase") {
+      var c = this.me === "host" ? this.ch : this.up;   /* Host -> down (WebSocket); player -> up (not subscribed = HTTP) */
+      try { var r = c.send({ type: "broadcast", event: "m", payload: m }); if (r && r.catch) r.catch(function () {}); } catch (e) { if (window.console) console.error(e); }
+    }
     else this.ch.postMessage(m);
   },
   send: function (m) {
@@ -700,7 +714,7 @@ var Net = {
   close: function () {
     if (this.mode === "supabase") this.teardown();
     else if (this.ch) { try { this.ch.close(); } catch (e) {} }
-    this.ch = null; this.ready = false; this.q = []; clearTimeout(this.timer);
+    this.ch = null; this.up = null; this.ready = false; this.q = []; clearTimeout(this.timer);
     var b = document.getElementById("netb"); if (b) { b.className = ""; b.textContent = ""; }
   }
 };
@@ -708,7 +722,7 @@ var MODE = null;   /* "host" | "player" */
 /* page version: RAISE THIS NUMBER EVERY TIME THIS FILE CHANGES (YYYYMMDD + 2 digits).
    The Host/head sends it in every state and players send it when they join: a phone with an older page is told to refresh,
    a phone with a newer page than the Host/head warns that the Host/head should refresh, and the lobby marks players on an old page. */
-var CALCU_V = 2026112001;
+var CALCU_V = 2026112002;
 
 /* ============================================================ HOST ============================================================ */
 var DEF_CFG = { room: "ห้องชมรม", target: 50, start: 0, ranges: [[1, 5], [1, 10], [1, 12], [1, 15]], showScores: true, maxMult: 3, penalty: "value",

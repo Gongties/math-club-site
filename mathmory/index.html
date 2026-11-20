@@ -112,7 +112,7 @@ body.host { overflow: hidden; background: #0A0E1D; }
    Mathmory (ภาพจำยังชัดเจน): a 3x3 board of digits 0-9 in pink / green / white is shown for a few seconds, then every cell turns black,
    a rule appears and the players tap the cells that satisfy it (one answer each). Correct = seconds left (to 0.1) + bonus 10 / (number correct)
    (big-screen mode only), times the question's multiplier. */
-var MM_V = 2026112004;   /* page version: RAISE THIS NUMBER EVERY TIME THIS FILE CHANGES (YYYYMMDD + 2 digits) */
+var MM_V = 2026112005;   /* page version: RAISE THIS NUMBER EVERY TIME THIS FILE CHANGES (YYYYMMDD + 2 digits) */
 /* board size: 3x3, 4x4 or 5x5, chosen before the game (setSize). One page runs one game, so plain globals are enough. */
 var N = 3, CELLS = 9;
 function setSize(n) { n = Number(n); N = n === 4 || n === 5 ? n : 3; CELLS = N * N; }
@@ -280,10 +280,14 @@ function rid() { return Math.random().toString(36).slice(2, 10); }
 function pcol(idx) { return "hsl(" + ((idx * 47) % 360) + " 65% 64%)"; }
 function cellCls(x) { return COLORS[x.c].id; }
 
-/* ---------- transport (same as Calcu): Supabase Realtime broadcast channel "mathmory-<code>", BroadcastChannel fallback ---------- */
+/* ---------- transport: Supabase Realtime broadcast, BroadcastChannel fallback (same tabs only) ----------
+   Two channels per room so that a player's message is not delivered to every other phone (Supabase counts every delivery):
+   "mathmory-<code>"    down: the Host/head sends the game state; every player subscribes and listens.
+   "mathmory-<code>-up" up:   only the Host/head subscribes; players send to it WITHOUT subscribing, which supabase-js
+                              sends over HTTP (REST broadcast), so a join or an answer reaches the Host only. */
 var SB = { url: "https://pmiwrnbpoumkpmbbylvw.supabase.co", key: "sb_publishable_XhPC1F8vvNzOt7KoaEaQKw_C_0pJksR" };
 var Net = {
-  ch: null, me: null, mode: "", ready: false, q: [], client: null, timer: null, code: "", onmsg: null,
+  ch: null, up: null, me: null, mode: "", ready: false, q: [], client: null, timer: null, code: "", onmsg: null,
   setStatus: function (st) { var b = document.getElementById("netb"); if (!b) return; b.className = st; b.textContent = st === "ok" ? "เชื่อมต่อแล้ว" : st === "local" ? "โหมดทดสอบ: ใช้ได้เฉพาะแท็บในเบราว์เซอร์เดียวกัน" : st === "bad" ? "ขาดการเชื่อมต่อ กำลังลองใหม่" : "กำลังเชื่อมต่อ…"; },
   open: function (code, me, onmsg) {
     this.close(); this.me = me; this.code = code; this.onmsg = onmsg; this.q = []; this.ready = false;
@@ -292,15 +296,19 @@ var Net = {
       try {
         this.mode = "supabase"; this.setStatus("wait");
         this.client = window.supabase.createClient(SB.url, SB.key, { realtime: { params: { eventsPerSecond: 40 } } });
-        var ch = this.client.channel("mathmory-" + code, { config: { broadcast: { self: false, ack: false } } });
-        this.ch = ch;
-        ch.on("broadcast", { event: "m" }, function (p) { try { onmsg(p.payload); } catch (err) { if (window.console) console.error(err); } });
+        var isHost = me === "host", cfg = { config: { broadcast: { self: false, ack: false } } };
+        var ch = this.client.channel("mathmory-" + code, cfg), up = this.client.channel("mathmory-" + code + "-up", cfg);
+        this.ch = ch; this.up = up;
+        function recv(p) { try { onmsg(p.payload); } catch (err) { if (window.console) console.error(err); } }
+        if (isHost) up.on("broadcast", { event: "m" }, recv); else ch.on("broadcast", { event: "m" }, recv);
         this.timer = setTimeout(function () { if (self.ch === ch && !self.ready) self.fallback(); }, 5000);
-        ch.subscribe(function (s) {
+        var need = isHost ? 2 : 1, got = 0;   /* the Host waits for both channels, a player only for "down" */
+        function status(s) {
           if (self.ch !== ch) return;
-          if (s === "SUBSCRIBED") { clearTimeout(self.timer); self.ready = true; self.setStatus("ok"); self.flush(); }
+          if (s === "SUBSCRIBED") { if (++got === need) { clearTimeout(self.timer); self.ready = true; self.setStatus("ok"); self.flush(); } }
           else if (s === "CHANNEL_ERROR" || s === "TIMED_OUT" || s === "CLOSED") { if (!self.ready) self.fallback(); else self.setStatus("bad"); }
-        });
+        }
+        ch.subscribe(status); if (isHost) up.subscribe(status);
         return;
       } catch (err) { if (window.console) console.error(err); this.teardown(); }
     }
@@ -309,8 +317,9 @@ var Net = {
   teardown: function () {
     clearTimeout(this.timer);
     try { if (this.client && this.ch) this.client.removeChannel(this.ch); } catch (e) {}
+    try { if (this.client && this.up) this.client.removeChannel(this.up); } catch (e) {}
     try { if (this.client && this.client.realtime && this.client.realtime.disconnect) this.client.realtime.disconnect(); } catch (e) {}
-    this.client = null; this.ch = null; this.ready = false;
+    this.client = null; this.ch = null; this.up = null; this.ready = false;
   },
   fallback: function () { this.teardown(); this.local(); },
   local: function () {
@@ -320,7 +329,11 @@ var Net = {
     this.ready = true; this.setStatus("local"); this.flush();
   },
   flush: function () { var q = this.q; this.q = []; for (var i = 0; i < q.length; i++) this.post(q[i]); },
-  post: function (m) { if (this.mode === "supabase") { try { this.ch.send({ type: "broadcast", event: "m", payload: m }); } catch (e) {} } else this.ch.postMessage(m); },
+  post: function (m) {
+    if (this.mode !== "supabase") { this.ch.postMessage(m); return; }
+    var c = this.me === "host" ? this.ch : this.up;   /* Host -> down (WebSocket); player -> up (not subscribed = HTTP) */
+    try { var r = c.send({ type: "broadcast", event: "m", payload: m }); if (r && r.catch) r.catch(function () {}); } catch (e) {}
+  },
   send: function (m) {
     if (!this.ch) return;
     m.from = this.me; m = JSON.parse(JSON.stringify(m));
@@ -329,7 +342,7 @@ var Net = {
   },
   close: function () {
     if (this.mode === "supabase") this.teardown(); else if (this.ch) { try { this.ch.close(); } catch (e) {} }
-    this.ch = null; this.ready = false; this.q = []; clearTimeout(this.timer);
+    this.ch = null; this.up = null; this.ready = false; this.q = []; clearTimeout(this.timer);
     var b = document.getElementById("netb"); if (b) { b.className = ""; b.textContent = ""; }
   }
 };

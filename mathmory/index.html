@@ -112,7 +112,7 @@ body.host { overflow: hidden; background: #0A0E1D; }
    Mathmory (ภาพจำยังชัดเจน): a 3x3 board of digits 0-9 in pink / green / white is shown for a few seconds, then every cell turns black,
    a rule appears and the players tap the cells that satisfy it (one answer each). Correct = seconds left (to 0.1) + bonus 10 / (number correct)
    (big-screen mode only), times the question's multiplier. */
-var MM_V = 2026112005;   /* page version: RAISE THIS NUMBER EVERY TIME THIS FILE CHANGES (YYYYMMDD + 2 digits) */
+var MM_V = 2026112006;   /* page version: RAISE THIS NUMBER EVERY TIME THIS FILE CHANGES (YYYYMMDD + 2 digits) */
 /* board size: 3x3, 4x4 or 5x5, chosen before the game (setSize). One page runs one game, so plain globals are enough. */
 var N = 3, CELLS = 9;
 function setSize(n) { n = Number(n); N = n === 4 || n === 5 ? n : 3; CELLS = N * N; }
@@ -404,6 +404,7 @@ function publicState() {
     if (H.phase === "rev") { st.grid = G.q.grid; st.ex = G.q.ex; st.last = G.last; }
     if (H.phase === "end") st.winners = winners();
   }
+  if (!G) { st.me = {}; H.players.forEach(function (p) { st.me[p.pid] = { sent: false }; }); }   /* lobby: each phone must find itself here to know it has joined */
   if (MODE === "head") { st.hostless = true; if (G && H.phase === "mem") st.grid = G.q.grid; }   /* no big screen: the phones show the board while remembering */
   return st;
 }

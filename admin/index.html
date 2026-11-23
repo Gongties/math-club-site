@@ -21,7 +21,7 @@
         <div class="row" style="align-items:center"><input class="inp" id="addId" inputmode="numeric" maxlength="5" placeholder="เลขประจำตัว 5 หลัก" style="flex:1 1 180px"><input class="inp" id="addNk" maxlength="20" placeholder="ชื่อเล่น (ไม่บังคับ)" style="flex:1 1 180px"><button class="btn b-acc" type="submit" id="addBtn" style="flex:none">เพิ่มเช็กชื่อ</button></div>
         <div class="fb f-ok" id="addMsg" hidden></div>
       </form>
-      <div id="rankNote" class="muted" style="font-size:16px;line-height:1.5" hidden>สัปดาห์ที่เป็นเกม: ใส่ลำดับในเกมของแต่ละคน (1 = ชนะ) คนที่เว้นว่างจะได้ 1 คะแนน แล้วกดบันทึกอันดับ</div>
+      <div id="rankNote" class="muted" style="font-size:16px;line-height:1.5" hidden>สัปดาห์ที่เป็นเกม: ใส่ลำดับในเกมของแต่ละคน (1 = ชนะ) หรือใส่ผลรวมอันดับของหลายรอบก็ได้ (น้อย = ดีกว่า) แล้วกดบันทึกอันดับ ระบบจะเรียงเป็นอันดับให้เอง ตัวเลขเท่ากันได้อันดับร่วมและคะแนนเท่ากัน คนถัดไปข้ามอันดับ (เช่น 1, 2, 2, 4) คนที่เว้นว่างจะได้ 1 คะแนน</div>
       <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:17px" id="tb"><thead><tr style="text-align:left;color:var(--muted);font-size:14px"><th style="padding:6px">ชื่อ-นามสกุล</th><th style="padding:6px">ชั้น/ห้อง/เลขที่</th><th style="padding:6px">ชื่อเล่น</th><th style="padding:6px" class="rk">ลำดับในเกม</th><th style="padding:6px">ลบ</th></tr></thead><tbody id="tbody"></tbody></table></div>
       <div class="row"><button class="btn b-gold" id="bRank" type="button" hidden>บันทึกอันดับเกม</button></div>
       <div class="fb f-ok" id="rkMsg" hidden></div>
@@ -97,9 +97,9 @@
     var inputs=document.querySelectorAll("#tbody input[data-id]"), arr=[];
     for(var i=0;i<inputs.length;i++){ var v=parseInt(inputs[i].value,10); if(v>=1) arr.push({id:parseInt(inputs[i].getAttribute("data-id"),10),r:v}); }
     arr.sort(function(a,b){return a.r-b.r});
-    sigmaRpc("admin_set_ranks",{p_pass:PW,p_week:ST.week,p_ids:arr.map(function(x){return x.id})}).then(function(ok){
-      flash("rkMsg", ok?"บันทึกอันดับเกมแล้ว ("+arr.length+" คน)":"บันทึกไม่สำเร็จ", !ok); if(ok) return loadList(ST.week,ST.kind);
-    }).catch(function(){ flash("rkMsg","เชื่อมต่อไม่ได้",true); });
+    sigmaRpc("admin_set_ranks2",{p_pass:PW,p_week:ST.week,p_ids:arr.map(function(x){return x.id}),p_vals:arr.map(function(x){return x.r})}).then(function(ok){
+      flash("rkMsg", ok?"บันทึกอันดับเกมแล้ว ("+arr.length+" คน) ช่องอันดับแสดงอันดับที่ระบบเรียงให้":"บันทึกไม่สำเร็จ", !ok); if(ok) return loadList(ST.week,ST.kind);
+    }).catch(function(){ flash("rkMsg","บันทึกไม่สำเร็จ (ยังไม่ได้รัน supabase-tied-ranks.sql ใน Supabase หรือเชื่อมต่อไม่ได้)",true); });
   });
   try{ var p=sessionStorage.getItem("sigma-admin"); if(p){ PW=p; refresh().catch(function(){}); } }catch(x){}
 })();

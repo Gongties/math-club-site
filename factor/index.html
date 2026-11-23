@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Calcu แยกตัวประกอบ</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700;800&family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { font-family: Sarabun, "Noto Sans Thai", system-ui, sans-serif; background: #F3F6FF; color: #14213D; -webkit-text-size-adjust: 100%; }
+[hidden] { display: none !important; }
+button { font: inherit; cursor: pointer; color: inherit; }
+button[disabled] { cursor: not-allowed; opacity: .45; }
+.hd { font-family: Prompt, "Noto Sans Thai", sans-serif; }
+a { color: #3A4670; }
+
+#netb { position: fixed; left: 8px; bottom: 6px; font-size: 11px; color: #3A4670; z-index: 40; pointer-events: none; }
+#netb.local { color: #9A6B00; } #netb.bad { color: #C0392B; }
+
+/* ---------- phone pages (light, neo-brutalist) ---------- */
+#pw { max-width: 520px; margin: 0 auto; min-height: 100%; padding: 14px 14px 22px; display: flex; flex-direction: column; gap: 12px; }
+#pw .box { background: #FFFFFF; border: 3px solid #14213D; border-radius: 14px; box-shadow: 4px 4px 0 #14213D; padding: 12px 14px; }
+#pw h1 { font-family: Prompt, "Noto Sans Thai", sans-serif; font-size: 1.8rem; line-height: 1.25; margin: 0; }
+#pw h2 { font-family: Prompt, "Noto Sans Thai", sans-serif; font-size: 1.2rem; line-height: 1.3; margin: 0 0 6px; }
+#pw .muted { color: #3A4670; line-height: 1.5; }
+#pw .top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#pw .top .a { font-size: .85rem; color: #3A4670; }
+#pw .top .b { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 800; font-size: 1.2rem; line-height: 1.25; }
+#pw .tm { min-width: 64px; padding: 4px 12px; border-radius: 99px; background: #FFD84D; border: 3px solid #14213D; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 800; font-size: 1.25rem; text-align: center; flex: none; }
+#pw .go { min-height: 54px; border-radius: 12px; border: 3px solid #14213D; background: #FFD84D; color: #14213D; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 800; font-size: 1.1rem; width: 100%; box-shadow: 4px 4px 0 #14213D; }
+#pw .gh { min-height: 50px; border-radius: 12px; border: 3px solid #14213D; background: #FFFFFF; color: #14213D; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 1.02rem; width: 100%; }
+#pw label { display: block; font-size: .95rem; font-weight: 700; margin: 8px 0 4px; }
+#pw input { font: inherit; font-size: 1.15rem; min-height: 52px; width: 100%; padding: 8px 12px; color: #14213D; background: #FFFFFF; border: 3px solid #14213D; border-radius: 12px; }
+#pw .err { padding: 8px 12px; border-radius: 10px; background: #FFD9D5; border: 2px solid #C0392B; color: #7A1E14; }
+#pw .tip { background: #14213D; color: #FFFFFF; border-radius: 12px; padding: 10px 14px; font-weight: 700; line-height: 1.45; }
+#pw .tr { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-bottom: 2px solid #E1E6F5; }
+#pw .tr:last-child { border-bottom: 0; }
+#pw .tr.me { background: #FFF3B8; border-radius: 8px; }
+#pw .ok { color: #1E7A43; } #pw .no { color: #B23A2E; }
+#pw .grp { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 800; font-size: .95rem; margin: 6px 0 -4px; }
+/* one equation cell on the phone */
+#pw .pc { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 58px; padding: 8px 10px; border: 3px solid #14213D; border-radius: 12px; background: #FFFFFF; text-align: left; }
+#pw .pc .pp { flex: none; width: 40px; height: 40px; border-radius: 10px; background: #C9BFFF; border: 2px solid #14213D; display: flex; align-items: center; justify-content: center; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 800; font-size: 1.05rem; }
+#pw .pc .eq { flex: 1; min-width: 0; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#pw .pc .ow { flex: none; max-width: 40%; font-size: .85rem; font-weight: 700; text-align: right; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; }
+#pw .pc.mine { background: #FFF3B8; }
+#pw .pc.taken { background: #EEF1FA; }
+#pw .pc.chme { background: #FFC2BC; }
+#pw .pc[disabled] { opacity: .5; }
+/* the answer keypad */
+#pw .fld { width: 100%; height: 56px; text-align: left; padding: 0 14px; border-radius: 12px; border: 3px solid #14213D; background: #FFFFFF; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 1.45rem; white-space: nowrap; overflow: hidden; }
+#pw .fld.on { background: #FFF3B8; }
+#pw .fld .ph { color: #8A93B0; font-weight: 500; font-size: 1.05rem; }
+#pw .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+#pw .kp { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 10px; background: #14213D; border-radius: 16px; }
+#pw .kp button { height: 52px; border-radius: 10px; border: 2px solid #14213D; background: #FFFFFF; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 1.35rem; box-shadow: 0 3px 0 #000; }
+#pw .kp .k1 { background: #C9BFFF; } #pw .kp .k2 { background: #FFE99A; } #pw .kp .k3 { background: #FFC2BC; font-size: 1.05rem; } #pw .kp .k4 { background: #BDF0D5; }
+#pw .dec { background: #FFFFFF; } #pw .dec.arm { background: #FF8A80; }
+
+.role { min-height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 14px; max-width: 520px; margin: 0 auto; padding: 24px 16px; }
+.role h1 { font-family: Prompt, "Noto Sans Thai", sans-serif; font-size: 2rem; margin: 0; line-height: 1.3; }
+.role p { margin: 0; color: #3A4670; line-height: 1.5; }
+.rbtn { min-height: 64px; border-radius: 14px; border: 3px solid #14213D; background: #FFFFFF; color: #14213D; font-weight: 700; font-size: 1.15rem; padding: 10px 16px; text-align: left; box-shadow: 4px 4px 0 #14213D; }
+.rbtn.pri { background: #FFD84D; }
+.rbtn small { display: block; font-weight: 400; font-size: .92rem; }
+
+/* ---------- host (1920x1080 stage, scaled to fit) ---------- */
+body.host { overflow: hidden; background: #0A0E1D; color: #EEF1FA; }
+#stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; padding: 36px 64px; display: flex; flex-direction: column; gap: 20px; overflow: hidden; color: #EEF1FA; background: #0E1326; }
+#stage .hdr { height: 104px; display: flex; align-items: center; justify-content: space-between; flex: none; gap: 24px; }
+#stage .s1 { font-size: 28px; color: #B4BEDA; white-space: nowrap; }
+#stage .s2 { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 46px; line-height: 1.2; }
+#stage .ring { min-width: 150px; height: 96px; padding: 0 24px; border-radius: 99px; background: #FFD84D; color: #14213D; display: flex; align-items: center; justify-content: center; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 800; font-size: 58px; flex: none; }
+#stage .main { flex: 1; min-height: 0; display: flex; gap: 48px; }
+#stage .ftr { height: 72px; display: flex; align-items: center; justify-content: space-between; flex: none; gap: 20px; }
+#stage .pb { min-height: 72px; padding: 0 44px; border-radius: 18px; border: 0; background: #FFD84D; color: #14213D; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 800; font-size: 34px; }
+#stage .gb { min-height: 60px; padding: 0 28px; border-radius: 16px; border: 3px solid #5A6785; background: transparent; color: #EEF1FA; font-size: 28px; font-weight: 700; }
+#stage .chip { display: inline-flex; align-items: center; gap: 12px; padding: 10px 22px; border-radius: 99px; background: #171E38; border: 3px solid #2B3560; font-size: 32px; font-weight: 700; }
+#stage .chip i { width: 18px; height: 18px; border-radius: 50%; display: inline-block; flex: none; }
+#stage .field { display: flex; align-items: center; justify-content: space-between; gap: 18px; font-size: 28px; }
+#stage .field input, #stage .field select { font: inherit; width: 140px; min-height: 56px; padding: 4px 14px; color: #EEF1FA; background: #05070F; border: 2px solid #2B3560; border-radius: 14px; font-size: 30px; }
+#stage .field input.wide { width: 360px; }
+#stage .field input[type=checkbox] { width: 40px; min-height: 40px; height: 40px; }
+/* pyramid */
+#stage .pyr { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 14px; }
+#stage .prow { display: flex; justify-content: center; gap: 18px; }
+#stage .pc { position: relative; width: 330px; height: 142px; border-radius: 18px; background: #171E38; border: 4px solid #2B3560; padding: 12px 16px 10px 60px; display: flex; flex-direction: column; justify-content: center; gap: 4px; overflow: hidden; }
+#stage .pc .pp { position: absolute; left: 10px; top: 10px; width: 42px; height: 42px; border-radius: 12px; background: #C9BFFF; color: #14213D; font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 800; font-size: 24px; display: flex; align-items: center; justify-content: center; }
+#stage .pc .eq { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 32px; line-height: 1.2; white-space: nowrap; }
+#stage .pc .eq.sm { font-size: 22px; color: #B4BEDA; font-weight: 600; }
+#stage .pc .ow { font-size: 22px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #B4BEDA; display: flex; align-items: center; gap: 8px; }
+#stage .pc .ow i { width: 14px; height: 14px; border-radius: 50%; display: inline-block; flex: none; }
+#stage .pc .key { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 26px; line-height: 1.2; white-space: nowrap; color: #FFD84D; }
+#stage .pc .rt { font-size: 21px; font-weight: 700; white-space: nowrap; color: #EEF1FA; }
+#stage .pc.own { border-color: #9C8CFF; }
+#stage .pc.chd { border-color: #FF8A80; box-shadow: 0 0 0 4px rgba(255,138,128,.35); }
+#stage .pc.rv { gap: 2px; padding-top: 8px; padding-bottom: 8px; } #stage .pc.rv .eq.sm { font-size: 20px; } #stage .pc.rv .key { font-size: 25px; } #stage .pc.rv .rt, #stage .pc.rv .ow { font-size: 19px; line-height: 1.25; }
+#stage .pc.good { border-color: #6EDC9A; } #stage .pc.bad { border-color: #FF8A80; } #stage .pc.dec .key { color: #FF8A80; }
+#stage .lr { display: flex; align-items: center; gap: 18px; padding: 8px 20px; border-radius: 16px; background: #171E38; font-size: 32px; }
+#stage .lr .rk { width: 50px; color: #B4BEDA; font-weight: 700; flex: none; }
+#stage .lr .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+#stage .lr .pt { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; color: #FFD84D; }
+#stage .lr .dl { font-size: 26px; font-weight: 700; width: 90px; text-align: right; }
+#stage .rc { border-radius: 18px; background: #171E38; border: 3px solid #2B3560; padding: 12px 18px; display: flex; flex-direction: column; gap: 4px; font-size: 24px; }
+#stage .rc .t { font-family: Prompt, "Noto Sans Thai", sans-serif; font-weight: 700; font-size: 28px; }
+.pos { color: #6EDC9A; } .neg { color: #FF8A80; }
+.endov { position: absolute; inset: 0; background: rgba(5, 8, 20, .82); display: flex; align-items: center; justify-content: center; z-index: 20; }
+.endbox { background: #171E38; border: 3px solid #2B3560; border-radius: 32px; padding: 48px 64px; text-align: center; display: flex; flex-direction: column; gap: 18px; }
+@media (prefers-reduced-motion: no-preference) { .pop { animation: pop .35s ease both; } @keyframes pop { from { transform: scale(.85); opacity: 0; } to { transform: none; opacity: 1; } } }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<div id="app"></div>
+<div id="netb"></div>
+<script>
+/* ============================================================ GAME LOGIC ============================================================
+   Calcu แยกตัวประกอบ: a pyramid of 15 quadratic equations (row 1 = 10 points ... row 5 = 2 points). Some are decoys that cannot be
+   factored over the integers. Players reserve one equation, challenge others, and a challenged player must type the factored form
+   AND both roots on a keypad (or claim "cannot be factored" on a decoy). Order of the factors and of the roots does not matter:
+   the typed product is multiplied out and compared with the equation. Not linked from the club site; not counted for the club. */
+var FX_V = 2026112301;   /* page version: RAISE THIS NUMBER EVERY TIME THIS FILE CHANGES (YYYYMMDD + 2 digits) */
+var ROW_PTS = [10, 8, 6, 4, 2];
+/* decoy patterns, same table as Calcu: [chance %, decoys in the bottom two rows (9 cells), decoys in the top three rows (6 cells)] */
+var DECOY_PATTERNS = [[20, 3, 1], [25, 3, 0], [10, 2, 2], [10, 2, 1], [15, 2, 0], [10, 1, 1], [10, 1, 0]];
+function rint(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function sgn() { return Math.random() < .5 ? 1 : -1; }
+function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { var t = a % b; a = b; b = t; } return a || 1; }
+/* fractions {n, d}, d > 0, lowest terms */
+function fr(n, d) { if (d === undefined) d = 1; if (d < 0) { n = -n; d = -d; } var g = gcd(n, d); return { n: n / g, d: d / g }; }
+function fadd(a, b) { return fr(a.n * b.d + b.n * a.d, a.d * b.d); }
+function fmul(a, b) { return fr(a.n * b.n, a.d * b.d); }
+function feq(a, b) { return a.n === b.n && a.d === b.d; }
+function frText(f) { return (f.n < 0 ? "−" : "") + Math.abs(f.n) + (f.d > 1 ? "/" + f.d : ""); }
+/* polynomials: [c0, c1, c2, ...] of fractions */
+function pmul(p, q) { var r = []; for (var i = 0; i < p.length + q.length - 1; i++) r.push(fr(0)); for (i = 0; i < p.length; i++) for (var j = 0; j < q.length; j++) r[i + j] = fadd(r[i + j], fmul(p[i], q[j])); return r; }
+/* ---------- reading what a student typed ---------- */
+function normIn(s) { return String(s == null ? "" : s).replace(/\s+/g, "").replace(/[−–—]/g, "-").replace(/[×*·]/g, "").replace(/X/g, "x"); }
+var NUM_RE = /^(\d{1,6})(?:\/(\d{1,6}))?/;
+/* "3x-1/2" -> [c0, c1]; null when it is not a linear expression in x */
+function parseLinear(s) {
+  if (!s) return null;
+  var i = 0, p = [fr(0), fr(0)], first = true;
+  while (i < s.length) {
+    var sg = 1;
+    if (s[i] === "+" || s[i] === "-") { sg = s[i] === "-" ? -1 : 1; i++; } else if (!first) return null;
+    var m = NUM_RE.exec(s.slice(i)), k = null;
+    if (m) { if (m[2] && Number(m[2]) === 0) return null; k = fr(Number(m[1]), m[2] ? Number(m[2]) : 1); i += m[0].length; }
+    var hasX = s[i] === "x"; if (hasX) i++;
+    if (!k && !hasX) return null;
+    if (!k) k = fr(1);
+    k = fr(sg * k.n, k.d);
+    if (hasX) p[1] = fadd(p[1], k); else p[0] = fadd(p[0], k);
+    first = false;
+  }
+  return p;
+}
+/* a product of factors written side by side: (x-6)(x+5), x(x+5), (2x-1)(x+3), 2(x+1)(x+2) ... -> { poly, lin = number of factors that contain x } */
+function parseFactored(raw) {
+  var s = normIn(raw); if (!s || s.length > 40) return null;
+  var i = 0, poly = [fr(1)], lin = 0;
+  if (s[0] === "-") { poly = [fr(-1)]; i = 1; }
+  if (i >= s.length) return null;
+  while (i < s.length) {
+    var f;
+    if (s[i] === "(") { var j = s.indexOf(")", i); if (j < 0) return null; f = parseLinear(s.slice(i + 1, j)); if (!f) return null; i = j + 1; }
+    else if (s[i] === "x") { f = [fr(0), fr(1)]; i++; }
+    else { var m = NUM_RE.exec(s.slice(i)); if (!m || (m[2] && Number(m[2]) === 0)) return null; f = [fr(Number(m[1]), m[2] ? Number(m[2]) : 1)]; i += m[0].length; }
+    if (f.length > 1 && f[1].n !== 0) lin++;
+    poly = pmul(poly, f);
+  }
+  return { poly: poly, lin: lin };
+}
+/* right factored form = exactly two factors with x, and multiplying them out gives the left side of the equation (any order) */
+function checkFactor(e, raw) {
+  var r = parseFactored(raw); if (!r || r.lin !== 2) return false;
+  var want = [e.c, e.b, e.a];
+  for (var i = 0; i < Math.max(3, r.poly.length); i++) { var got = r.poly[i] || fr(0), w = i < 3 ? fr(want[i]) : fr(0); if (!feq(got, w)) return false; }
+  return true;
+}
+function parseRoot(raw) { var s = normIn(raw), m = /^(-?)(\d{1,6})(?:\/(\d{1,6}))?$/.exec(s); if (!m || (m[3] && Number(m[3]) === 0)) return null; return fr((m[1] ? -1 : 1) * Number(m[2]), m[3] ? Number(m[3]) : 1); }
+/* both roots, in any order */
+function checkRoots(e, r1, r2) {
+  if (!e.roots) return false;
+  var a = parseRoot(r1), b = parseRoot(r2); if (!a || !b) return false;
+  var R = e.roots;
+  return (feq(a, R[0]) && feq(b, R[1])) || (feq(a, R[1]) && feq(b, R[0]));
+}
+/* ---------- making equations ---------- */
+function term(k, v, first) { if (k === 0) return ""; var m = Math.abs(k), body = (m === 1 && v ? "" : String(m)) + v; return first ? (k < 0 ? "−" : "") + body : (k < 0 ? " − " : " + ") + body; }
+function eqText(e) { return term(e.a, "x²", true) + term(e.b, "x", false) + term(e.c, "", false) + " = 0"; }
+function linText(p, q) { /* (px + q) */ var x = (p === 1 ? "" : p) + "x"; return q === 0 ? x : "(" + x + (q < 0 ? " − " : " + ") + Math.abs(q) + ")"; }
+function fromRoots(r1, r2) {
+  if (r2 === 0) { var t = r1; r1 = r2; r2 = t; }   /* x(x + 5): the bare x first */
+  return { a: 1, b: -(r1 + r2), c: r1 * r2, roots: [fr(r1), fr(r2)], key: linText(1, -r1) + linText(1, -r2) };
+}
+function fromLin(p, q, s) { /* (px + q)(x + s) */ return { a: p, b: p * s + q, c: q * s, roots: [fr(-q, p), fr(-s)], key: linText(p, q) + linText(1, s) }; }
+/* tier 1 = top of the pyramid (hardest) ... tier 5 = bottom row (easiest) */
+function genReal(tier, aNot1) {
+  for (var t = 0; t < 500; t++) {
+    var r1, r2, u = Math.random();
+    if (tier === 5) { r1 = -rint(1, 6); r2 = -rint(1, 6); }
+    else if (tier === 4) { if (u < .6) { r1 = rint(1, 7); r2 = -rint(1, 7); } else if (u < .8) { r1 = rint(2, 9); r2 = -r1; } else { r1 = 0; r2 = sgn() * rint(2, 9); } }
+    else if (tier === 3) { if (u < .6) { r1 = rint(2, 9); r2 = rint(2, 9); } else { r1 = rint(3, 10); r2 = -rint(3, 10); } }
+    else if (tier === 2) { if (u < .6) { r1 = rint(4, 12); r2 = -rint(4, 12); } else { r1 = rint(5, 12); r2 = rint(5, 12); } if (Math.abs(r1 * r2) < 20) continue; }
+    else {
+      if (aNot1) { var p = pick([2, 3]), q = sgn() * rint(1, 5), s = sgn() * rint(1, 6); if (gcd(p, q) !== 1) continue; return fromLin(p, q, s); }
+      if (u < .7) { r1 = rint(6, 15); r2 = -rint(5, 15); } else { r1 = rint(8, 15); r2 = rint(6, 15); }
+      if (Math.abs(r1 * r2) < 40) continue;
+    }
+    if (r1 === r2) continue;
+    return fromRoots(r1, r2);
+  }
+  return fromRoots(-2, -3);
+}
+function isSq(n) { if (n < 0) return false; var r = Math.round(Math.sqrt(n)); return r * r === n; }
+/* a decoy: looks like the real ones of its row, but b² − 4ac is not a perfect square, so it cannot be factored over the integers */
+function genDecoy(tier, aNot1) {
+  for (var t = 0; t < 500; t++) {
+    var a = 1, b, c;
+    if (tier === 5) { b = rint(3, 11); c = rint(2, 30); }
+    else if (tier === 4) { if (Math.random() < .7) { b = rint(-6, 6); c = -rint(2, 40); } else { b = 0; c = -rint(2, 60); } }
+    else if (tier === 3) { b = -rint(4, 17); c = rint(4, 72); }
+    else if (tier === 2) { b = rint(-11, 11); c = -rint(20, 144); }
+    else if (aNot1) { a = pick([2, 3]); b = rint(-13, 13); c = sgn() * rint(1, 30); if (b === 0) continue; }
+    else { b = rint(-15, 15); c = -rint(40, 225); }
+    if (c === 0 || isSq(b * b - 4 * a * c)) continue;
+    return { a: a, b: b, c: c, roots: null, decoy: true, key: "" };
+  }
+  return { a: 1, b: 3, c: 5, roots: null, decoy: true, key: "" };
+}
+function pickPattern() { var r = Math.random() * 100, acc = 0; for (var i = 0; i < DECOY_PATTERNS.length; i++) { acc += DECOY_PATTERNS[i][0]; if (r < acc) return DECOY_PATTERNS[i]; } return DECOY_PATTERNS[0]; }
+function genBoard(aNot1) {
+  var cells = [], pat = pickPattern(), dec = {}, seen = {};
+  for (var row = 0; row < 5; row++) for (var k = 0; k <= row; k++) cells.push({ id: cells.length, row: row, pts: ROW_PTS[row] });
+  shuffle(cells.filter(function (c) { return c.row >= 3; })).slice(0, pat[1]).forEach(function (c) { dec[c.id] = 1; });
+  shuffle(cells.filter(function (c) { return c.row < 3; })).slice(0, pat[2]).forEach(function (c) { dec[c.id] = 1; });
+  cells.forEach(function (c) {
+    var e, tier = c.row + 1, an = !!aNot1 && c.row === 0;
+    for (var t = 0; t < 300; t++) { e = dec[c.id] ? genDecoy(tier, an) : genReal(tier, an); var key = e.a + "," + e.b + "," + e.c; if (!seen[key]) { seen[key] = 1; break; } }
+    c.eq = e;
+  });
+  return cells;
+}
+function rootsText(e) { return e.roots ? "x = " + frText(e.roots[0]) + " หรือ x = " + frText(e.roots[1]) : ""; }
+/*LOGIC-END*/
+
+/* ============================================================ shared helpers ============================================================ */
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+function ss(k, v) { try { if (v === undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k, v); } catch (e) { return null; } }
+function rid() { return Math.random().toString(36).slice(2, 10); }
+function pcol(idx) { return "hsl(" + ((idx * 47) % 360) + " 65% 64%)"; }
+function sgnTxt(d) { return d > 0 ? "+" + d : d < 0 ? "−" + Math.abs(d) : "0"; }
+
+/* ---------- transport: Supabase Realtime broadcast, BroadcastChannel fallback (same tabs only) ----------
+   Same design as /mathmory/: "factor-<code>" down (Host -> phones), "factor-<code>-up" up (players -> Host only, over HTTP). */
+var SB = { url: "https://pmiwrnbpoumkpmbbylvw.supabase.co", key: "sb_publishable_XhPC1F8vvNzOt7KoaEaQKw_C_0pJksR" };
+var Net = {
+  ch: null, up: null, me: null, mode: "", ready: false, q: [], client: null, timer: null, code: "", onmsg: null,
+  setStatus: function (st) { var b = document.getElementById("netb"); if (!b) return; b.className = st; b.textContent = st === "ok" ? "เชื่อมต่อแล้ว" : st === "local" ? "โหมดทดสอบ: ใช้ได้เฉพาะแท็บในเบราว์เซอร์เดียวกัน" : st === "bad" ? "ขาดการเชื่อมต่อ กำลังลองใหม่" : "กำลังเชื่อมต่อ…"; },
+  open: function (code, me, onmsg) {
+    this.close(); this.me = me; this.code = code; this.onmsg = onmsg; this.q = []; this.ready = false;
+    var self = this;
+    if (window.supabase && window.supabase.createClient) {
+      try {
+        this.mode = "supabase"; this.setStatus("wait");
+        this.client = window.supabase.createClient(SB.url, SB.key, { realtime: { params: { eventsPerSecond: 40 } } });
+        var isHost = me === "host", cfg = { config: { broadcast: { self: false, ack: false } } };
+        var ch = this.client.channel("factor-" + code, cfg), up = this.client.channel("factor-" + code + "-up", cfg);
+        this.ch = ch; this.up = up;
+        function recv(p) { try { onmsg(p.payload); } catch (err) { if (window.console) console.error(err); } }
+        if (isHost) up.on("broadcast", { event: "m" }, recv); else ch.on("broadcast", { event: "m" }, recv);
+        this.timer = setTimeout(function () { if (self.ch === ch && !self.ready) self.fallback(); }, 5000);
+        var need = isHost ? 2 : 1, got = 0;
+        function status(s) {
+          if (self.ch !== ch) return;
+          if (s === "SUBSCRIBED") { if (++got === need) { clearTimeout(self.timer); self.ready = true; self.setStatus("ok"); self.flush(); } }
+          else if (s === "CHANNEL_ERROR" || s === "TIMED_OUT" || s === "CLOSED") { if (!self.ready) self.fallback(); else self.setStatus("bad"); }
+        }
+        ch.subscribe(status); if (isHost) up.subscribe(status);
+        return;
+      } catch (err) { if (window.console) console.error(err); this.teardown(); }
+    }
+    this.local();
+  },
+  teardown: function () {
+    clearTimeout(this.timer);
+    try { if (this.client && this.ch) this.client.removeChannel(this.ch); } catch (e) {}
+    try { if (this.client && this.up) this.client.removeChannel(this.up); } catch (e) {}
+    try { if (this.client && this.client.realtime && this.client.realtime.disconnect) this.client.realtime.disconnect(); } catch (e) {}
+    this.client = null; this.ch = null; this.up = null; this.ready = false;
+  },
+  fallback: function () { this.teardown(); this.local(); },
+  local: function () {
+    var onmsg = this.onmsg; this.mode = "local";
+    this.ch = new BroadcastChannel("factor-" + this.code);
+    this.ch.onmessage = function (e) { try { onmsg(e.data); } catch (err) { if (window.console) console.error(err); } };
+    this.ready = true; this.setStatus("local"); this.flush();
+  },
+  flush: function () { var q = this.q; this.q = []; for (var i = 0; i < q.length; i++) this.post(q[i]); },
+  post: function (m) {
+    if (this.mode !== "supabase") { this.ch.postMessage(m); return; }
+    var c = this.me === "host" ? this.ch : this.up;
+    try { var r = c.send({ type: "broadcast", event: "m", payload: m }); if (r && r.catch) r.catch(function () {}); } catch (e) {}
+  },
+  send: function (m) {
+    if (!this.ch) return;
+    m.from = this.me; m = JSON.parse(JSON.stringify(m));
+    if (!this.ready) { if (m.type === "state") this.q = this.q.filter(function (x) { return x.type !== "state"; }); if (this.q.length < 60) this.q.push(m); return; }
+    this.post(m);
+  },
+  close: function () {
+    if (this.mode === "supabase") this.teardown(); else if (this.ch) { try { this.ch.close(); } catch (e) {} }
+    this.ch = null; this.up = null; this.ready = false; this.q = []; clearTimeout(this.timer);
+    var b = document.getElementById("netb"); if (b) { b.className = ""; b.textContent = ""; }
+  }
+};
+var MODE = null;   /* "host" | "player" */
+
+/* ============================================================ HOST (big screen) ============================================================
+   phases: lobby -> pick (reserve) -> chal (challenge) -> prove (challenged players type their answer) -> rev (answers + scores) -> ... -> end
+   Scoring, P = points of the cell, H = ceil(P / 2):
+     not challenged: the owner gets P.
+     challenged by n players and proved (right factored form + both roots, or "cannot be factored" on a decoy):
+       owner + P + H × (n − 1), each challenger − H.
+     challenged and not proved (wrong, no answer, or a wrong claim): owner − H, each challenger + H. */
+var DEF_CFG = { room: "ห้องเรียน", rounds: 4, t1: 20, t2: 15, t3: 60, maxCh: 1, aNot1: 0 };
+var H = { code: "", cfg: JSON.parse(JSON.stringify(DEF_CFG)), players: [], nextIdx: 0, phase: "lobby" };
+var G = null;
+function findP(pid) { for (var i = 0; i < H.players.length; i++) if (H.players[i].pid === pid) return H.players[i]; return null; }
+function hname(pid) { var p = findP(pid); return p ? p.name : "?"; }
+function hcol(pid) { var p = findP(pid); return pcol(p ? p.idx : 0); }
+function cfgNum(k, lo, hi) { var v = Math.round(Number(H.cfg[k])); return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : DEF_CFG[k]; }
+function hostNewGame() {
+  var sc = {}; H.players.forEach(function (p) { sc[p.pid] = 0; });
+  G = { round: 0, rounds: cfgNum("rounds", 1, 10), scores: sc, delta: {}, cells: [], own: {}, ch: {}, ans: {}, deadline: 0, step: 0 };
+  newRound();
+}
+function newRound() {
+  G.round++;
+  if (G.round > G.rounds) { H.phase = "end"; G.deadline = 0; return; }
+  G.cells = genBoard(!!H.cfg.aNot1); G.own = {}; G.ch = {}; G.ans = {}; G.delta = {}; G.step = 0;
+  H.phase = "pick"; G.deadline = Date.now() + cfgNum("t1", 5, 120) * 1000;
+}
+function ownerOf(cid) { return G.own[cid] || null; }
+function cellOf(pid) { for (var k in G.own) if (G.own[k] === pid) return Number(k); return -1; }
+function myChals(pid) { var n = 0; for (var k in G.ch) if (G.ch[k].indexOf(pid) >= 0) n++; return n; }
+function challengedOwners() { var l = []; for (var k in G.ch) if (G.ch[k].length && G.own[k]) l.push(G.own[k]); return l; }
+function advance() {
+  if (H.phase === "pick") {
+    if (!Object.keys(G.own).length) { finishRound(); return; }
+    H.phase = "chal"; G.deadline = Date.now() + cfgNum("t2", 5, 120) * 1000;
+  } else if (H.phase === "chal") {
+    if (!challengedOwners().length) { finishRound(); return; }
+    H.phase = "prove"; G.deadline = Date.now() + cfgNum("t3", 10, 300) * 1000;
+  } else if (H.phase === "prove") finishRound();
+}
+function addSc(pid, d) { if (G.scores[pid] === undefined) G.scores[pid] = 0; G.scores[pid] += d; G.delta[pid] = (G.delta[pid] || 0) + d; }
+function finishRound() {
+  G.delta = {};
+  G.cells.forEach(function (c) {
+    var o = G.own[c.id]; c.res = null; if (!o) return;
+    var chs = (G.ch[c.id] || []).filter(function (p) { return findP(p); }), P = c.pts, Hh = Math.ceil(P / 2);
+    if (!chs.length) { addSc(o, P); c.res = { kind: "free", dOwn: P }; return; }
+    var a = G.ans[o], ok = false, fOk = false, rOk = false;
+    if (a) {
+      if (a.decoy) ok = !!c.eq.decoy;
+      else { fOk = !c.eq.decoy && checkFactor(c.eq, a.f); rOk = !c.eq.decoy && checkRoots(c.eq, a.r1, a.r2); ok = fOk && rOk; }
+    }
+    var dOwn = ok ? P + Hh * (chs.length - 1) : -Hh, dCh = ok ? -Hh : Hh;
+    addSc(o, dOwn); chs.forEach(function (p) { addSc(p, dCh); });
+    c.res = { kind: "chal", ok: ok, sent: !!a, claim: !!(a && a.decoy), fOk: fOk, rOk: rOk, f: a && !a.decoy ? a.f : "", r1: a && !a.decoy ? a.r1 : "", r2: a && !a.decoy ? a.r2 : "", n: chs.length, chs: chs, dOwn: dOwn, dCh: dCh };
+  });
+  H.phase = "rev"; G.step = 0; G.deadline = 0;
+}
+function ranking() { return H.players.slice().sort(function (a, b) { return (G.scores[b.pid] || 0) - (G.scores[a.pid] || 0); }); }
+function rankOf(pid) { var s = G.scores[pid] || 0, r = 1; H.players.forEach(function (p) { if ((G.scores[p.pid] || 0) > s) r++; }); return r; }
+function winners() { if (!G || !H.players.length) return []; var top = Math.max.apply(null, H.players.map(function (p) { return G.scores[p.pid] || 0; })); return H.players.filter(function (p) { return (G.scores[p.pid] || 0) === top; }).map(function (p) { return p.pid; }); }
+function publicState() {
+  var st = { type: "state", v: FX_V, phase: H.phase, room: H.cfg.room, now: Date.now(), maxCh: cfgNum("maxCh", 1, 3), players: H.players.map(function (p) { return { pid: p.pid, name: p.name, idx: p.idx }; }) };
+  if (G) {
+    var rev = H.phase === "rev";
+    st.round = G.round; st.rounds = G.rounds; st.remaining = G.deadline ? Math.max(0, G.deadline - Date.now()) : null;
+    st.rows = ranking().map(function (p) { return { pid: p.pid, name: p.name, idx: p.idx, score: G.scores[p.pid] || 0, rk: rankOf(p.pid), d: G.delta[p.pid] || 0 }; });
+    if (H.phase !== "end") st.cells = G.cells.map(function (c) {
+      var x = { id: c.id, row: c.row, pts: c.pts, eq: eqText(c.eq), o: G.own[c.id] || null, ch: H.phase === "pick" ? [] : (G.ch[c.id] || []), sent: !!(G.own[c.id] && G.ans[G.own[c.id]]) };
+      if (rev) { x.decoy = !!c.eq.decoy; x.key = c.eq.key; x.roots = rootsText(c.eq); x.res = c.res; }   /* answers only after the round */
+      return x;
+    });
+    if (H.phase === "end") st.winners = winners();
+  }
+  return st;
+}
+var BC = { last: 0, t: null };
+function broadcast() {
+  var now = Date.now(), gap = Math.min(1000, Math.max(150, H.players.length * 25));
+  if (now - BC.last >= gap) { BC.last = now; Net.send(publicState()); }
+  else if (!BC.t) BC.t = setTimeout(function () { BC.t = null; BC.last = Date.now(); Net.send(publicState()); }, gap - (now - BC.last));
+}
+function saveHost() { try { if (H.code) localStorage.setItem("factor-host", JSON.stringify({ t: Date.now(), code: H.code, cfg: H.cfg, players: H.players, nextIdx: H.nextIdx, phase: H.phase, G: G })); } catch (e) {} }
+function restoreHost() {
+  try {
+    var d = JSON.parse(localStorage.getItem("factor-host") || "null");
+    if (!d || Date.now() - d.t > 12 * 3600 * 1000 || !/^\d{4}$/.test(d.code)) return false;
+    H.code = d.code; H.cfg = Object.assign({}, DEF_CFG, d.cfg); H.players = d.players || []; H.nextIdx = d.nextIdx || 0; H.phase = d.phase || "lobby"; G = d.G || null;
+    if (G && G.deadline) G.deadline = Math.max(G.deadline, Date.now() + 5000);   /* a reloaded Host gives everyone at least 5 s more */
+    if (!G && H.phase !== "lobby") H.phase = "lobby";
+    return true;
+  } catch (e) { return false; }
+}
+function changed() { broadcast(); renderHost(); saveHost(); }
+function startTimers() {
+  setInterval(function () {
+    if (!G || !G.deadline || H.ce) return;
+    if (Date.now() >= G.deadline) { advance(); changed(); return; }
+    var t = document.getElementById("tm"); if (t) t.textContent = secsLeft();
+  }, 100);
+  setInterval(function () { if (Net.ch) broadcast(); }, 3000);
+}
+function onHostMsg(m) {
+  if (!m || !m.type) return;
+  if (m.type === "join") {
+    var ex = findP(m.pid);
+    if (!ex) {
+      var nm = String(m.name || "").trim().slice(0, 20) || "ผู้เล่น";
+      if (H.phase !== "lobby") {   /* same nickname = the same player coming back on a new page */
+        var old = H.players.filter(function (p) { return p.name === nm; })[0];
+        if (old) { Net.send({ type: "adopt", to: m.pid, pid: old.pid }); return; }
+        Net.send({ type: "reject", to: m.pid, reason: "เกมเริ่มไปแล้ว ถ้าเคยเข้าห้องนี้ ให้พิมพ์ชื่อเล่นเดิมเพื่อกลับเข้าห้อง" }); return;
+      }
+      var base = nm, k = 2; while (H.players.some(function (p) { return p.name === nm; })) nm = base + " " + (k++);
+      H.players.push({ pid: m.pid, name: nm, idx: H.nextIdx++, v: m.v || 0 });
+    } else ex.v = m.v || 0;
+    changed(); return;
+  }
+  if (!G || !findP(m.pid) || m.round !== G.round) return;
+  var cid = Number(m.cell), cell = G.cells[cid];
+  if (m.type === "pick" && H.phase === "pick" && cell) {
+    var o = ownerOf(cid);
+    if (o === m.pid) delete G.own[cid];                                   /* tap your own cell again = give it back */
+    else if (!o) { var mine = cellOf(m.pid); if (mine >= 0) delete G.own[mine]; G.own[cid] = m.pid; }   /* one cell each */
+    changed(); return;
+  }
+  if (m.type === "chal" && H.phase === "chal" && cell) {
+    var ow = ownerOf(cid); if (!ow || ow === m.pid) return;
+    var l = G.ch[cid] || (G.ch[cid] = []), at = l.indexOf(m.pid);
+    if (at >= 0) l.splice(at, 1); else if (myChals(m.pid) < cfgNum("maxCh", 1, 3)) l.push(m.pid);
+    changed(); return;
+  }
+  if (m.type === "ans" && H.phase === "prove") {
+    var c2 = cellOf(m.pid); if (c2 < 0 || !(G.ch[c2] || []).length || G.ans[m.pid]) return;
+    G.ans[m.pid] = m.decoy ? { decoy: true } : { f: String(m.f || "").slice(0, 40), r1: String(m.r1 || "").slice(0, 12), r2: String(m.r2 || "").slice(0, 12) };
+    if (challengedOwners().every(function (p) { return G.ans[p]; })) G.deadline = Math.min(G.deadline, Date.now() + 1500);   /* everyone answered: reveal soon */
+    changed();
+  }
+}
+var HACT = {
+  newRoom: function () { H.code = String(1000 + Math.floor(Math.random() * 9000)); Net.open(H.code, "host", onHostMsg); changed(); },
+  resetRoom: function () { if (H.phase !== "lobby") return; if (!H.cr) { H.cr = true; renderHost(); return; } H.cr = false; H.players = []; H.nextIdx = 0; G = null; Net.close(); HACT.newRoom(); },
+  start: function () { if (!H.players.length) return; readCfg(); hostNewGame(); changed(); },
+  skip: function () { if (H.phase === "pick" || H.phase === "chal" || H.phase === "prove") { advance(); changed(); } },
+  step: function () { if (H.phase === "rev") { G.step = 1; changed(); } },
+  next: function () { if (H.phase === "rev") { newRound(); changed(); } },
+  askEnd: function () { H.ce = true; renderHost(); },
+  cancelEnd: function () { H.ce = false; renderHost(); },
+  doEnd: function () { H.ce = false; H.phase = "end"; if (G) G.deadline = 0; changed(); },
+  again: function () { hostNewGame(); changed(); },
+  toLobby: function () { G = null; H.phase = "lobby"; changed(); },
+  copy: function () {
+    var txt = "Calcu แยกตัวประกอบ · " + H.cfg.room + " · ผลสุดท้าย\n" + ranking().map(function (p) { return rankOf(p.pid) + ". " + p.name + " — " + (G.scores[p.pid] || 0); }).join("\n");
+    var done = function () { H.copied = 1; renderHost(); setTimeout(function () { H.copied = 0; renderHost(); }, 2000); };
+    function fb() { try { var ta = document.createElement("textarea"); ta.value = txt; ta.style.cssText = "position:fixed;left:-9999px"; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); done(); } catch (e) {} }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, fb); else fb();
+  }
+};
+function readCfg() {
+  [].forEach.call(document.querySelectorAll("[data-cfg]"), function (el) { var k = el.dataset.cfg; H.cfg[k] = k === "room" ? (el.value.trim().slice(0, 30) || DEF_CFG.room) : el.type === "checkbox" ? (el.checked ? 1 : 0) : Number(el.value); });
+  H.cfg.rounds = cfgNum("rounds", 1, 10); H.cfg.t1 = cfgNum("t1", 5, 120); H.cfg.t2 = cfgNum("t2", 5, 120); H.cfg.t3 = cfgNum("t3", 10, 300); H.cfg.maxCh = cfgNum("maxCh", 1, 3);
+}
+/* ----- host screens ----- */
+function hdr(title, right) {
+  return '<div class="hdr"><div style="min-width:0"><div class="s1">รหัสห้อง <b class="hd" style="font-size:36px;color:#FFD84D;letter-spacing:.08em">' + H.code + "</b> · " + esc(H.cfg.room) + '</div><div class="s2">' + title + "</div></div>" + right + "</div>";
+}
+function ring() { return '<div class="ring" id="tm">' + secsLeft() + "</div>"; }
+function secsLeft() { return G && G.deadline ? String(Math.max(0, Math.ceil((G.deadline - Date.now()) / 1000))) : "–"; }
+function rTitle(t) { return "รอบ " + G.round + " / " + G.rounds + ' · <span style="color:#FFD84D">' + t + "</span>"; }
+function ownLine(c) {
+  var o = G.own[c.id]; if (!o) return '<div class="ow">ว่าง</div>';
+  var n = (G.ch[c.id] || []).length, sent = H.phase === "prove" && n ? (G.ans[o] ? " · ✓ ส่งแล้ว" : " · กำลังพิมพ์…") : "";
+  return '<div class="ow"><i style="background:' + hcol(o) + '"></i><span style="overflow:hidden;text-overflow:ellipsis">' + esc(hname(o)) + "</span>" + (n ? '<span style="color:#FF8A80;flex:none">⚔ ' + n + "</span>" : "") + '<span style="flex:none;color:#EEF1FA">' + sent + "</span></div>";
+}
+function hPyr(rev) {
+  var h = '<div class="pyr">';
+  for (var row = 0; row < 5; row++) {
+    h += '<div class="prow">';
+    G.cells.filter(function (c) { return c.row === row; }).forEach(function (c) {
+      var o = G.own[c.id], n = (G.ch[c.id] || []).length, cls = "pc";
+      if (!rev) { if (o) cls += " own"; if (n) cls += " chd"; h += '<div class="' + cls + '"><span class="pp">' + c.pts + '</span><div class="eq">' + esc(eqText(c.eq)) + "</div>" + ownLine(c) + "</div>"; return; }
+      var r = c.res, out = ""; cls += " rv";
+      if (r && r.kind === "free") { cls += " good"; out = esc(hname(o)) + ' <span class="pos">+' + r.dOwn + "</span> · ไม่มีคนท้า"; }
+      else if (r) { cls += r.ok ? " good" : " bad"; out = esc(hname(o)) + " " + (r.ok ? '<span class="pos">✓ ' + sgnTxt(r.dOwn) + "</span>" : '<span class="neg">✗ ' + sgnTxt(r.dOwn) + "</span>") + " · ⚔ " + r.n; }
+      else out = "ไม่มีคนจอง";
+      if (c.eq.decoy) cls += " dec";
+      h += '<div class="' + cls + '"><span class="pp">' + c.pts + '</span><div class="eq sm">' + esc(eqText(c.eq)) + '</div><div class="key">' + (c.eq.decoy ? "แยกตัวประกอบไม่ได้" : esc(c.eq.key)) + '</div><div class="rt">' + (c.eq.decoy ? "ช่องหลอก" : esc(rootsText(c.eq))) + '</div><div class="ow" style="color:#EEF1FA">' + out + "</div></div>";
+    });
+    h += "</div>";
+  }
+  return h + "</div>";
+}
+function hLobby() {
+  var chips = H.players.map(function (p) { return '<span class="chip"><i style="background:' + pcol(p.idx) + '"></i>' + esc(p.name) + ((p.v || 0) < FX_V ? ' <span style="color:#FF8A80;font-size:24px">⚠ ต้องรีเฟรช</span>' : "") + "</span>"; }).join("");
+  var c = H.cfg, url = location.host + "/factor/";
+  return '<div style="display:flex;gap:72px;flex:1;min-height:0"><div style="width:760px;display:flex;flex-direction:column;gap:24px">' +
+    '<div><div class="hd" style="font-weight:800;font-size:84px;line-height:1.15">Calcu แยกตัวประกอบ</div><div style="font-size:34px;color:#B4BEDA">จองสมการ ท้าเพื่อน แล้วพิสูจน์ด้วยการแยกตัวประกอบ</div></div>' +
+    '<div><div style="font-size:30px;color:#B4BEDA">รหัสห้อง</div><div class="hd" style="font-weight:800;font-size:150px;line-height:1.1;letter-spacing:.12em;color:#FFD84D">' + H.code + "</div></div>" +
+    '<div style="font-size:32px;line-height:1.5">เปิดมือถือไปที่<br><b class="hd" style="font-size:44px;color:#FFD84D">' + esc(url) + "</b><br>แล้วกด “เข้าห้อง” ใส่รหัสห้องและชื่อเล่น</div>" +
+    '<div style="display:flex;align-items:center;gap:24px"><button class="gb" data-a="resetRoom">' + (H.cr ? "กดอีกครั้งเพื่อล้างห้อง" : "สร้างห้องใหม่") + "</button></div></div>" +
+    '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:20px"><div style="display:flex;justify-content:space-between;align-items:baseline"><div class="hd" style="font-weight:700;font-size:56px">ผู้เล่นที่เข้าห้องแล้ว</div><div class="hd" style="font-weight:700;font-size:56px;color:#C9BFFF">' + H.players.length + " คน</div></div>" +
+    '<div style="display:flex;flex-wrap:wrap;gap:14px;align-content:flex-start;flex:1;min-height:0;overflow:hidden">' + (chips || '<div style="font-size:32px;color:#B4BEDA">ยังไม่มีใครเข้าห้อง</div>') + "</div>" +
+    '<div style="display:flex;flex-direction:column;gap:12px;padding:20px 26px;border-radius:24px;background:#171E38;border:3px solid #2B3560">' +
+    '<div class="field"><span>ชื่อห้อง</span><input class="wide" data-cfg="room" maxlength="30" value="' + esc(c.room) + '"></div>' +
+    '<div style="display:flex;gap:26px"><div class="field" style="flex:1"><span>จำนวนรอบ</span><input type="number" data-cfg="rounds" min="1" max="10" value="' + c.rounds + '"></div><div class="field" style="flex:1"><span>ท้าได้ต่อรอบ</span><select data-cfg="maxCh">' + [1, 2, 3].map(function (n) { return '<option value="' + n + '"' + (Number(c.maxCh) === n ? " selected" : "") + ">" + n + " ช่อง</option>"; }).join("") + "</select></div></div>" +
+    '<div style="display:flex;gap:26px"><div class="field" style="flex:1"><span>เวลาจอง (วิ)</span><input type="number" data-cfg="t1" min="5" max="120" value="' + c.t1 + '"></div><div class="field" style="flex:1"><span>เวลาท้า (วิ)</span><input type="number" data-cfg="t2" min="5" max="120" value="' + c.t2 + '"></div><div class="field" style="flex:1"><span>เวลาพิสูจน์ (วิ)</span><input type="number" data-cfg="t3" min="10" max="300" value="' + c.t3 + '"></div></div>' +
+    '<label class="field" style="justify-content:flex-start;cursor:pointer"><input type="checkbox" data-cfg="aNot1"' + (c.aNot1 ? " checked" : "") + '><span>ช่องยอดปิรามิดใช้สมการที่ a ≠ 1 เช่น 2x² + 5x − 3 = 0</span></label></div>' +
+    '<div style="display:flex;justify-content:flex-end"><button class="pb" data-a="start"' + (H.players.length ? "" : " disabled") + ">เริ่มเกม</button></div></div></div>";
+}
+function hPick() {
+  var n = Object.keys(G.own).length;
+  return hdr(rTitle("จองสมการ"), ring()) + '<div class="main">' + hPyr(false) + "</div>" +
+    '<div class="ftr"><div style="font-size:30px;color:#B4BEDA">แตะสมการบนมือถือเพื่อจอง คนละ 1 ช่อง · จองแล้ว ' + n + " / 15 ช่อง · บางช่องอาจแยกตัวประกอบไม่ได้</div><button class=\"gb\" data-a=\"skip\">ข้ามเวลา</button></div>";
+}
+function hChal() {
+  var n = 0; for (var k in G.ch) n += G.ch[k].length;
+  return hdr(rTitle("ท้า!"), ring()) + '<div class="main">' + hPyr(false) + "</div>" +
+    '<div class="ftr"><div style="font-size:30px;color:#B4BEDA">ท้าช่องของเพื่อนที่คิดว่าเขาทำไม่ได้ · ท้าได้คนละ ' + cfgNum("maxCh", 1, 3) + " ช่อง · ท้าแล้ว " + n + ' ครั้ง</div><button class="gb" data-a="skip">ข้ามเวลา</button></div>';
+}
+function hProve() {
+  var l = challengedOwners(), done = l.filter(function (p) { return G.ans[p]; }).length;
+  return hdr(rTitle("พิสูจน์ด้วยการแยกตัวประกอบ"), ring()) + '<div class="main">' + hPyr(false) + "</div>" +
+    '<div class="ftr"><div style="font-size:30px;color:#B4BEDA">คนที่ถูกท้าพิมพ์รูปแยกตัวประกอบและคำตอบทั้งสองค่า หรือกด “ช่องนี้แยกไม่ได้” · ส่งแล้ว ' + done + " / " + l.length + ' คน</div><button class="gb" data-a="skip">จบเวลา</button></div>';
+}
+function hRev0() {
+  return hdr(rTitle("เฉลย"), '<div class="chip">ช่องหลอกรอบนี้ ' + G.cells.filter(function (c) { return c.eq.decoy; }).length + " ช่อง</div>") + '<div class="main">' + hPyr(true) + "</div>" +
+    '<div class="ftr"><div style="font-size:28px;color:#B4BEDA">สีเหลือง = รูปแยกตัวประกอบ · ลำดับตัวประกอบสลับกันได้ เช่น (x − 6)(x + 5) = (x + 5)(x − 6)</div><button class="pb" data-a="step">ดูผลการท้าและคะแนน</button></div>';
+}
+function hRev1() {
+  var ch = G.cells.filter(function (c) { return c.res && c.res.kind === "chal"; });
+  var cards = ch.map(function (c) {
+    var r = c.res, o = G.own[c.id], typed = !r.sent ? '<span class="neg">ไม่ได้ส่งคำตอบ</span>' : r.claim ? "กด “ช่องนี้แยกไม่ได้”" : esc(r.f) + " · x = " + esc(r.r1) + ", " + esc(r.r2) + (r.ok ? "" : ' <span class="neg">(' + (!r.fOk && !r.rOk ? "ผิดทั้งรูปและคำตอบ" : !r.fOk ? "รูปแยกตัวประกอบผิด" : "คำตอบผิด") + ")</span>");
+    return '<div class="rc"><div class="t">' + esc(hname(o)) + " · " + esc(eqText(c.eq)) + ' <span class="' + (r.ok ? "pos" : "neg") + '">' + (r.ok ? "✓ พิสูจน์ได้" : "✗ ไม่ผ่าน") + '</span></div><div>พิมพ์: ' + typed + '</div><div style="color:#B4BEDA">' + esc(hname(o)) + " " + sgnTxt(r.dOwn) + " · คนท้า " + r.chs.map(function (p) { return esc(hname(p)); }).join(", ") + " คนละ " + sgnTxt(r.dCh) + "</div></div>";
+  }).join("");
+  var list = ranking(), last = G.round >= G.rounds;
+  var rows = list.slice(0, 10).map(function (p) { var d = G.delta[p.pid] || 0; return '<div class="lr"><span class="rk">' + rankOf(p.pid) + '</span><span class="nm"><i style="display:inline-block;width:16px;height:16px;border-radius:50%;margin-right:12px;background:' + pcol(p.idx) + '"></i>' + esc(p.name) + '</span><span class="dl ' + (d > 0 ? "pos" : d < 0 ? "neg" : "") + '">' + (d ? sgnTxt(d) : "") + '</span><span class="pt">' + (G.scores[p.pid] || 0) + "</span></div>"; }).join("");
+  return hdr(rTitle("ผลการท้าและคะแนน"), "") + '<div class="main"><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px;overflow:hidden"><div class="hd" style="font-weight:700;font-size:36px">ผลการท้า</div>' + (cards || '<div style="font-size:32px;color:#B4BEDA">รอบนี้ไม่มีการท้า</div>') + "</div>" +
+    '<div style="width:760px;flex:none;display:flex;flex-direction:column;gap:10px"><div class="hd" style="font-weight:700;font-size:36px">อันดับ</div>' + rows + (list.length > 10 ? '<div style="font-size:26px;color:#B4BEDA">และอีก ' + (list.length - 10) + " คน</div>" : "") + "</div></div>" +
+    '<div class="ftr"><div></div><button class="pb" data-a="next">' + (last ? "ดูผู้ชนะ" : "รอบถัดไป") + "</button></div>";
+}
+function hEnd() {
+  var w = winners(), list = ranking();
+  var rows = list.slice(0, 10).map(function (p) { var win = w.indexOf(p.pid) >= 0; return '<div class="lr" style="' + (win ? "border:4px solid #FFD84D" : "") + '"><span class="rk">' + rankOf(p.pid) + '</span><span class="nm"><i style="display:inline-block;width:16px;height:16px;border-radius:50%;margin-right:12px;background:' + pcol(p.idx) + '"></i>' + esc(p.name) + '</span><span class="pt">' + (G.scores[p.pid] || 0) + "</span></div>"; }).join("");
+  return '<div class="main" style="flex-direction:column;align-items:stretch;gap:18px;padding-top:10px"><div style="text-align:center"><div class="hd" style="font-weight:700;font-size:54px;color:#FFD84D">' + (w.length > 1 ? "ผู้ชนะร่วม" : "ผู้ชนะ") + '</div><div class="hd pop" style="font-weight:800;font-size:92px;line-height:1.2">' + w.map(function (p) { return esc(hname(p)); }).join(" และ ") + "</div></div>" +
+    '<div style="display:flex;flex-direction:column;gap:10px;max-width:1200px;width:100%;margin:0 auto;' + (list.length > 8 ? "zoom:.8" : "") + '">' + rows + (list.length > 10 ? '<div style="font-size:26px;color:#B4BEDA">และอีก ' + (list.length - 10) + " คน (ปุ่มคัดลอกได้ทุกคน)</div>" : "") + "</div></div>" +
+    '<div class="ftr"><button class="gb" data-a="copy">' + (H.copied ? "คัดลอกแล้ว ✓" : "คัดลอกอันดับ") + '</button><div style="display:flex;gap:16px"><button class="gb" data-a="toLobby">กลับล็อบบี้</button><button class="pb" data-a="again">เล่นใหม่ด้วยผู้เล่นเดิม</button></div></div>';
+}
+function renderHost() {
+  var el = document.getElementById("stage"); if (!el) return;
+  var keep = {}; [].forEach.call(el.querySelectorAll("[data-cfg]"), function (x) { keep[x.dataset.cfg] = x.type === "checkbox" ? x.checked : x.value; });   /* do not lose settings being typed when someone joins */
+  var focus = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.cfg : null;
+  var p = H.phase, h = p === "lobby" ? hLobby() : p === "pick" ? hPick() : p === "chal" ? hChal() : p === "prove" ? hProve() : p === "rev" ? (G.step ? hRev1() : hRev0()) : hEnd();
+  var inGame = G && p !== "lobby" && p !== "end";
+  el.innerHTML = h + (inGame ? '<button class="gb" data-a="askEnd" style="position:absolute;left:50%;top:12px;transform:translateX(-50%);min-height:44px;font-size:22px;padding:0 18px">จบเกม</button>' : "") +
+    (H.ce ? '<div class="endov"><div class="endbox"><div class="hd" style="font-weight:700;font-size:56px">จบเกมตอนนี้ใช่ไหม</div><div style="font-size:32px;color:#B4BEDA">ไปหน้าผู้ชนะทันที โดยใช้คะแนนที่ได้แล้ว</div><div style="display:flex;gap:20px;justify-content:center"><button class="gb" data-a="cancelEnd">เล่นต่อ</button><button class="pb" data-a="doEnd" style="background:#FF8A80">จบเกม</button></div></div></div>' : "");
+  [].forEach.call(el.querySelectorAll("[data-cfg]"), function (x) { var v = keep[x.dataset.cfg]; if (v !== undefined) { if (x.type === "checkbox") x.checked = v; else x.value = v; } if (x.dataset.cfg === focus) x.focus(); });
+}
+function fitStage() { var el = document.getElementById("stage"); if (!el) return; var s = Math.min(innerWidth / 1920, innerHeight / 1080); el.style.transform = "translate(" + (innerWidth - 1920 * s) / 2 + "px," + (innerHeight - 1080 * s) / 2 + "px) scale(" + s + ")"; }
+function hostBoot() {
+  MODE = "host"; document.body.className = "host"; ss("fx-role", "host");
+  document.getElementById("app").innerHTML = '<div id="stage"></div>';
+  fitStage(); window.addEventListener("resize", fitStage);
+  if (restoreHost()) { Net.open(H.code, "host", onHostMsg); changed(); } else HACT.newRoom();
+  document.getElementById("stage").addEventListener("click", function (e) { var b = e.target.closest("[data-a]"); if (!b || b.disabled) return; if (HACT[b.dataset.a]) HACT[b.dataset.a](b); });
+  document.getElementById("stage").addEventListener("change", function (e) { if (e.target.dataset.cfg) { readCfg(); saveHost(); } });
+  startTimers();
+}
+
+/* ============================================================ PLAYER (phone) ============================================================ */
+var P = { pid: ss("fx-pid") || rid(), name: ss("fx-name") || "", code: "", joined: false, joining: false, st: null, recvAt: 0, error: "", sent: {} };
+ss("fx-pid", P.pid);
+/* the keypad: three fields (factored form, root 1, root 2) */
+var K = { key: "", f: ["", "", ""], a: 0, arm: false, armT: null };
+var KEYS = ["(", ")", "x", "⌫", "7", "8", "9", "+", "4", "5", "6", "−", "1", "2", "3", "/", "ล้าง", "0", "◂", "▸"];
+var KLAB = { "⌫": "ลบ 1 ตัว", "◂": "ช่องก่อนหน้า", "▸": "ช่องถัดไป", "−": "ลบ", "/": "เศษส่วน" };
+function kReset(key) { if (K.key !== key) { K.key = key; K.f = ["", "", ""]; K.a = 0; K.arm = false; } }
+function inPlayers(st) { return !!(st && st.players && st.players.some(function (p) { return p.pid === P.pid; })); }
+function pLeft() { if (!P.st || P.st.remaining === null || P.st.remaining === undefined) return null; return Math.max(0, P.st.remaining - (Date.now() - P.recvAt)); }
+function tmHtml() { var l = pLeft(); return '<div class="tm" id="tm">' + (l === null ? "–" : Math.ceil(l / 1000)) + "</div>"; }
+function topBar(a, b, right) { return '<div class="top"><div><div class="a">' + a + '</div><div class="b">' + b + "</div></div>" + (right || "") + "</div>"; }
+function pName(pid) { var l = (P.st && P.st.players) || []; for (var i = 0; i < l.length; i++) if (l[i].pid === pid) return l[i].name; return "?"; }
+function viewJoin() {
+  return '<div id="pw"><div><h1>Calcu แยกตัวประกอบ</h1><div class="muted">ใส่รหัสห้องจากจอใหญ่ แล้วใส่ชื่อเล่น</div></div>' +
+    '<div class="box"><label for="code">รหัสห้อง</label><input id="code" inputmode="numeric" maxlength="4" autocomplete="off" value="' + esc(P.code) + '">' +
+    '<label for="nick">ชื่อเล่น (หรือชื่อกลุ่ม)</label><input id="nick" maxlength="20" autocomplete="off" value="' + esc(P.name) + '">' +
+    (P.error ? '<div class="err" role="alert" style="margin-top:10px">' + esc(P.error) + "</div>" : "") +
+    '<button class="go" data-a="join" style="margin-top:14px"' + (P.joining ? " disabled" : "") + ">" + (P.joining ? "กำลังเข้าห้อง…" : "เข้าร่วม") + "</button></div></div>";
+}
+/* the list of equations, grouped by points. mode: "pick" | "chal" | "view" */
+function cellList(st, mode) {
+  var h = "", mine = -1, myCh = 0;
+  st.cells.forEach(function (c) { if (c.o === P.pid) mine = c.id; if (c.ch.indexOf(P.pid) >= 0) myCh++; });
+  [0, 1, 2, 3, 4].forEach(function (row) {
+    if (!st.cells.some(function (c) { return c.row === row; })) return;
+    h += '<div class="grp">' + st.cells.filter(function (c) { return c.row === row; })[0].pts + " คะแนน</div>";
+    st.cells.filter(function (c) { return c.row === row; }).forEach(function (c) {
+      var cls = "pc", ow, dis = false, chMe = c.ch.indexOf(P.pid) >= 0;
+      if (c.o === P.pid) { cls += " mine"; ow = "ของคุณ" + (c.ch.length ? '<br><span class="no">⚔ ถูกท้า ' + c.ch.length + "</span>" : ""); }
+      else if (c.o) { cls += chMe ? " chme" : " taken"; ow = esc(pName(c.o)) + (c.ch.length ? '<br><span class="no">⚔ ' + c.ch.length + "</span>" : ""); }
+      else ow = '<span class="muted">ว่าง</span>';
+      if (mode === "pick") dis = !!c.o && c.o !== P.pid;
+      else if (mode === "chal") dis = !c.o || c.o === P.pid || (!chMe && myCh >= st.maxCh);
+      else dis = true;
+      if (mode === "chal" && chMe) ow = "คุณท้าแล้ว<br>" + ow;
+      h += '<button type="button" class="' + cls + '"' + (dis ? " disabled" : ' data-a="' + mode + '" data-c="' + c.id + '"') + ' style="' + (mode === "view" ? "opacity:1" : "") + '"><span class="pp">' + c.pts + '</span><span class="eq">' + esc(c.eq) + '</span><span class="ow">' + ow + "</span></button>";
+    });
+  });
+  return h;
+}
+function keypad(st, c) {
+  kReset(st.round + ":" + c.id);
+  function fld(i, label, pre) { var v = K.f[i], on = K.a === i; return '<button type="button" class="fld' + (on ? " on" : "") + '" data-a="fld" data-i="' + i + '" aria-label="' + label + '">' + pre + (v ? esc(v) : on ? "" : '<span class="ph">แตะเพื่อพิมพ์</span>') + (on ? "▏" : "") + "</button>"; }
+  var ready = K.f[0] && K.f[1] && K.f[2];
+  return '<div class="box"><div class="muted" style="font-size:.9rem">สมการที่คุณจอง · ' + c.pts + " คะแนน · ถูกท้า " + c.ch.length + ' คน</div><div class="hd" style="font-weight:700;font-size:1.7rem;line-height:1.3">' + esc(c.eq) + "</div></div>" +
+    '<div><label style="margin-top:0">รูปแยกตัวประกอบ</label>' + fld(0, "ช่องรูปแยกตัวประกอบ", "") + "</div>" +
+    '<div><label style="margin-top:0">คำตอบของสมการ</label><div class="two">' + fld(1, "คำตอบที่ 1", "x = ") + fld(2, "คำตอบที่ 2", "x = ") + "</div></div>" +
+    '<div class="kp">' + KEYS.map(function (k) { var cl = k === "(" || k === ")" || k === "x" ? "k1" : k === "+" || k === "−" || k === "/" ? "k2" : k === "⌫" || k === "ล้าง" ? "k3" : k === "◂" || k === "▸" ? "k4" : ""; return '<button type="button" class="' + cl + '" data-a="key" data-k="' + esc(k) + '" aria-label="' + esc(KLAB[k] || k) + '">' + esc(k) + "</button>"; }).join("") + "</div>" +
+    '<div class="two"><button type="button" class="gh dec' + (K.arm ? " arm" : "") + '" data-a="decoy">' + (K.arm ? "แตะอีกครั้งเพื่อยืนยัน" : "ช่องนี้แยกไม่ได้") + '</button><button type="button" class="go" data-a="submit"' + (ready ? "" : " disabled") + ">ส่งคำตอบ</button></div>" +
+    '<div class="muted" style="font-size:.88rem">ส่งได้ครั้งเดียว · ต้องกรอกครบ 3 ช่อง · เศษส่วนใช้ / เช่น 1/2</div>';
+}
+function viewPlayer() {
+  var st = P.st, h = "";
+  if ((st.v || 0) > FX_V) return '<div id="pw"><div class="box"><h2>มีเวอร์ชันใหม่ของเกม</h2><div class="muted">หน้านี้เป็นเวอร์ชันเก่า กดรีเฟรชเพื่อเล่นต่อ (ชื่อและคะแนนยังอยู่)</div><button class="go" data-a="reload" style="margin-top:12px">รีเฟรชหน้า</button></div></div>';
+  if (!inPlayers(st)) return '<div id="pw"><div class="box"><h2>ไม่พบชื่อของคุณในห้องนี้</h2><button class="go" data-a="leave" style="margin-top:10px">กลับไปหน้าเข้าห้อง</button></div></div>';
+  var row = (st.rows || []).filter(function (r) { return r.pid === P.pid; })[0], ra = st.round ? esc(P.name) + " · รอบ " + st.round + " / " + st.rounds : esc(P.name);
+  var mine = st.cells ? st.cells.filter(function (c) { return c.o === P.pid; })[0] : null;
+  if (st.phase === "lobby") {
+    h = topBar("รหัสห้อง " + esc(P.code), "เข้าห้องแล้ว") + '<div class="box"><h2>' + esc(P.name) + '</h2><div class="muted">รอครูกดเริ่มเกม ชื่อของคุณขึ้นบนจอใหญ่แล้ว</div></div>' +
+      '<div class="box"><div class="muted" style="font-size:.9rem">ผู้เล่นในห้อง (' + st.players.length + ')</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">' + st.players.map(function (p) { return '<span style="padding:4px 12px;border-radius:99px;border:2px solid #14213D;background:' + pcol(p.idx) + '">' + esc(p.name) + "</span>"; }).join("") + "</div></div>";
+  } else if (st.phase === "pick") {
+    h = topBar(ra, "จองสมการ", tmHtml()) + '<div class="tip">แตะสมการที่คุณมั่นใจว่าแยกตัวประกอบได้ จองได้ 1 ช่อง (แตะซ้ำเพื่อยกเลิก) · บางช่องอาจแยกไม่ได้!</div>' + cellList(st, "pick");
+  } else if (st.phase === "chal") {
+    var myCh = st.cells.filter(function (c) { return c.ch.indexOf(P.pid) >= 0; }).length;
+    h = topBar(ra, "ท้า!", tmHtml()) + '<div class="tip">แตะช่องของเพื่อนที่คิดว่าเขาทำไม่ได้ · ท้าได้ ' + st.maxCh + " ช่อง (ท้าแล้ว " + myCh + ") · แตะซ้ำเพื่อยกเลิก</div>" + cellList(st, "chal");
+  } else if (st.phase === "prove") {
+    if (mine && mine.ch.length && !mine.sent && !P.sent[st.round]) h = topBar(ra, "พิสูจน์!", tmHtml()) + keypad(st, mine);
+    else if (mine && mine.ch.length) h = topBar(ra, "ส่งคำตอบแล้ว", tmHtml()) + '<div class="box"><h2>ส่งแล้ว ✓</h2><div class="muted">รอเฉลยบนจอใหญ่</div></div>';
+    else h = topBar(ra, "เพื่อนกำลังพิสูจน์", tmHtml()) + '<div class="tip">คนที่ถูกท้ากำลังพิมพ์คำตอบ ลองแยกตัวประกอบในใจไปด้วย!</div>' + cellList({ cells: st.cells.filter(function (c) { return c.ch.length; }), maxCh: st.maxCh }, "view").replace(/<div class="grp">[^<]*<\/div>/g, "");
+  } else if (st.phase === "rev") {
+    var d = row ? row.d : 0, box = "";
+    if (mine) {
+      var r = mine.res || {}, typed = r.kind !== "chal" ? "" : !r.sent ? "ไม่ได้ส่งคำตอบ" : r.claim ? "คุณกด “ช่องนี้แยกไม่ได้”" : "คุณพิมพ์ " + esc(r.f) + " · x = " + esc(r.r1) + ", " + esc(r.r2);
+      box = '<div class="box"><div class="muted" style="font-size:.9rem">สมการของคุณ · ' + mine.pts + ' คะแนน</div><div class="hd" style="font-weight:700;font-size:1.3rem">' + esc(mine.eq) + "</div>" +
+        '<div style="margin-top:6px"><b>เฉลย:</b> ' + (mine.decoy ? "ช่องหลอก แยกตัวประกอบด้วยจำนวนเต็มไม่ได้" : esc(mine.key) + "<br>" + esc(mine.roots)) + "</div>" +
+        (r.kind === "chal" ? '<div style="margin-top:6px">' + typed + "</div>" + '<h2 class="' + (r.ok ? "ok" : "no") + '" style="margin-top:6px">' + (r.ok ? "✓ พิสูจน์ได้" : "✗ ไม่ผ่าน" + (r.sent && !r.claim && !mine.decoy ? (!r.fOk && !r.rOk ? " (ผิดทั้งรูปและคำตอบ)" : !r.fOk ? " (รูปแยกตัวประกอบผิด)" : " (คำตอบผิด)") : "")) + "</h2>" : '<h2 class="ok" style="margin-top:6px">ไม่มีคนท้า</h2>') + "</div>";
+    }
+    var mych = st.cells.filter(function (c) { return c.ch.indexOf(P.pid) >= 0; }).map(function (c) { var r = c.res || {}; return '<div class="tr"><span style="flex:1">คุณท้า ' + esc(pName(c.o)) + " · " + esc(c.eq) + '</span><b class="' + (r.ok ? "no" : "ok") + '">' + (r.ok ? "เขาทำได้" : "ท้าสำเร็จ") + "</b></div>"; }).join("");
+    h = topBar(ra, "เฉลย", '<span class="tm" style="font-size:1rem">' + (d > 0 ? "+" + d : d < 0 ? "−" + Math.abs(d) : "0") + "</span>") + box + (mych ? '<div class="box">' + mych + "</div>" : "") +
+      (!mine && !mych ? '<div class="box"><div class="muted">รอบนี้คุณไม่ได้จองหรือท้า ดูเฉลยบนจอใหญ่</div></div>' : "") +
+      '<div class="box"><h2>อันดับ</h2>' + st.rows.slice(0, 8).map(function (r) { return '<div class="tr' + (r.pid === P.pid ? " me" : "") + '"><span class="muted" style="width:26px">' + r.rk + '</span><b style="flex:1">' + esc(r.name) + '</b><span class="' + (r.d > 0 ? "ok" : r.d < 0 ? "no" : "muted") + '" style="width:44px;text-align:right">' + (r.d ? (r.d > 0 ? "+" : "−") + Math.abs(r.d) : "") + "</span><b style=\"width:40px;text-align:right\">" + r.score + "</b></div>"; }).join("") + (row && row.rk > 8 ? '<div class="tr me"><span class="muted" style="width:26px">' + row.rk + '</span><b style="flex:1">' + esc(row.name) + "</b><b>" + row.score + "</b></div>" : "") + "</div>" +
+      '<div class="muted" style="text-align:center">รอครูไปรอบถัดไป</div>';
+  } else if (st.phase === "end") {
+    var ws = st.rows.filter(function (r) { return (st.winners || []).indexOf(r.pid) >= 0; });
+    h = topBar(esc(P.name), "จบเกมแล้ว") + '<div class="box" style="text-align:center"><div class="muted">' + (ws.length > 1 ? "ผู้ชนะร่วม" : "ผู้ชนะ") + '</div><div class="hd" style="font-size:1.8rem;font-weight:800">' + ws.map(function (r) { return esc(r.name); }).join(" และ ") + "</div><div>" + (ws[0] ? ws[0].score : 0) + " คะแนน</div></div>" +
+      '<div class="box"><h2>อันดับทั้งหมด</h2>' + st.rows.map(function (r) { return '<div class="tr' + (r.pid === P.pid ? " me" : "") + '"><span class="muted" style="width:26px">' + r.rk + '</span><b style="flex:1">' + esc(r.name) + (r.pid === P.pid ? " (คุณ)" : "") + "</b><b>" + r.score + "</b></div>"; }).join("") + "</div>";
+  }
+  if ((st.v || 0) < FX_V) h = '<div class="err">หน้าจอใหญ่เป็นเวอร์ชันเก่า ให้ครูรีเฟรชหน้าจอใหญ่</div>' + h;
+  return '<div id="pw">' + h + "</div>";
+}
+function renderPlayer() {
+  if (!P.joined || !P.st) return;
+  var y = window.scrollY; document.getElementById("app").innerHTML = viewPlayer(); window.scrollTo(0, y);
+}
+function onPlayerMsg(m) {
+  if (!m) return;
+  if (m.type === "reject" && m.to === P.pid) { P.error = m.reason; P.joining = false; P.joined = false; Net.close(); ss("fx-joined", "0"); document.getElementById("app").innerHTML = viewJoin(); return; }
+  if (m.type === "adopt" && m.to === P.pid) { P.pid = m.pid; ss("fx-pid", P.pid); Net.send({ type: "join", pid: P.pid, name: P.name, v: FX_V }); return; }
+  if (m.type !== "state") return;
+  if (!inPlayers(m) && !P.joined) return;
+  var prev = P.st ? P.st.phase + P.st.round : "";
+  P.st = m; P.recvAt = Date.now();
+  if (inPlayers(m) && !P.joined) { P.joined = true; P.joining = false; P.error = ""; ss("fx-name", P.name); ss("fx-code", P.code); ss("fx-joined", "1"); }
+  if (prev !== m.phase + m.round) window.scrollTo(0, 0);
+  renderPlayer();
+}
+function pjoin() {
+  var code = (document.getElementById("code").value || "").replace(/\D/g, ""), name = document.getElementById("nick").value.trim().slice(0, 20);
+  P.code = code; P.name = name;
+  if (!/^\d{4}$/.test(code)) { P.error = "รหัสห้องมี 4 หลัก"; document.getElementById("app").innerHTML = viewJoin(); return; }
+  if (!name) { P.error = "กรอกชื่อเล่นก่อน"; document.getElementById("app").innerHTML = viewJoin(); return; }
+  P.error = ""; P.joining = true; document.getElementById("app").innerHTML = viewJoin();
+  Net.open(code, P.pid, onPlayerMsg); Net.send({ type: "join", pid: P.pid, name: name, v: FX_V });
+  setTimeout(function () { if (!P.joined && P.joining) { P.joining = false; P.error = "ไม่พบห้องนี้ ตรวจรหัสห้อง และให้แน่ใจว่าจอใหญ่เปิดหน้าเกมไว้"; Net.close(); ss("fx-joined", "0"); document.getElementById("app").innerHTML = viewJoin(); } }, 8000);
+}
+function sendAns(m) {
+  var st = P.st; P.sent[st.round] = 1; Net.send(m); renderPlayer();
+  setTimeout(function () { var c = P.st && P.st.cells ? P.st.cells.filter(function (x) { return x.o === P.pid; })[0] : null; if (P.st && P.st.phase === "prove" && c && !c.sent) Net.send(m); }, 2500);   /* resend once if the Host did not get it */
+}
+var PACT = {
+  join: pjoin,
+  reload: function () { location.reload(); },
+  leave: function () { P.joined = false; P.st = null; Net.close(); ss("fx-joined", "0"); document.getElementById("app").innerHTML = viewJoin(); },
+  pick: function (b) { var st = P.st; if (!st || st.phase !== "pick") return; Net.send({ type: "pick", pid: P.pid, round: st.round, cell: Number(b.dataset.c) }); },
+  chal: function (b) { var st = P.st; if (!st || st.phase !== "chal") return; Net.send({ type: "chal", pid: P.pid, round: st.round, cell: Number(b.dataset.c) }); },
+  fld: function (b) { K.a = Number(b.dataset.i); K.arm = false; renderPlayer(); },
+  key: function (b) {
+    var k = b.dataset.k, v = K.f[K.a];
+    if (k === "⌫") v = v.slice(0, -1);
+    else if (k === "ล้าง") v = "";
+    else if (k === "◂") K.a = Math.max(0, K.a - 1);
+    else if (k === "▸") K.a = Math.min(2, K.a + 1);
+    else if (v.length < (K.a === 0 ? 30 : 10)) v += k;
+    if (k !== "◂" && k !== "▸") K.f[K.a] = v;
+    K.arm = false; renderPlayer();
+  },
+  decoy: function () {
+    var st = P.st; if (!st || st.phase !== "prove" || P.sent[st.round]) return;
+    if (!K.arm) { K.arm = true; renderPlayer(); clearTimeout(K.armT); K.armT = setTimeout(function () { if (K.arm) { K.arm = false; renderPlayer(); } }, 3000); return; }
+    K.arm = false; sendAns({ type: "ans", pid: P.pid, round: st.round, decoy: true });
+  },
+  submit: function () {
+    var st = P.st; if (!st || st.phase !== "prove" || P.sent[st.round] || !(K.f[0] && K.f[1] && K.f[2])) return;
+    sendAns({ type: "ans", pid: P.pid, round: st.round, f: K.f[0], r1: K.f[1], r2: K.f[2] });
+  }
+};
+function playerBoot() {
+  MODE = "player"; document.body.className = ""; ss("fx-role", "player");
+  var app = document.getElementById("app");
+  app.addEventListener("click", function (e) { var b = e.target.closest("[data-a]"); if (!b || b.disabled) return; if (PACT[b.dataset.a]) PACT[b.dataset.a](b); });
+  setInterval(function () { var t = document.getElementById("tm"); if (t && P.st && P.st.phase !== "rev") { var l = pLeft(); t.textContent = l === null ? "–" : Math.ceil(l / 1000); } }, 200);
+  var jm = /^#join=(\d{4})$/.exec(location.hash || "");
+  if (jm) P.code = jm[1]; else if (ss("fx-joined") === "1") P.code = ss("fx-code") || "";
+  app.innerHTML = viewJoin();
+  if (P.code && P.name && ss("fx-joined") === "1") pjoin();
+}
+
+/* ============================================================ start ============================================================ */
+function roleScreen() {
+  var app = document.getElementById("app");
+  app.innerHTML = '<div class="role"><h1>Calcu แยกตัวประกอบ</h1><p>จองสมการกำลังสอง ท้าเพื่อน แล้วพิสูจน์ด้วยการแยกตัวประกอบ</p>' +
+    '<button class="rbtn pri" data-r="player">เข้าห้อง<small>นักเรียน: ใส่รหัสห้องจากจอใหญ่ แล้วเล่นบนมือถือ</small></button>' +
+    '<button class="rbtn" data-r="host">เปิดจอใหญ่ (Host)<small>ครู: ใช้จอนี้ขึ้นโปรเจกเตอร์ แสดงปิรามิดสมการและคะแนน</small></button></div>';
+  app.onclick = function (e) { var b = e.target.closest("[data-r]"); if (!b) return; app.onclick = null; ({ host: hostBoot, player: playerBoot })[b.dataset.r](); };
+}
+(function () {
+  var h = location.hash, r = ss("fx-role");
+  if (h === "#host") hostBoot(); else if (h === "#player" || /^#join=\d{4}$/.test(h)) playerBoot();
+  else if (r === "host") hostBoot(); else if (r === "player") playerBoot(); else roleScreen();
+})();
+</script>
+</body>
+</html>

@@ -313,7 +313,7 @@ body.host { overflow: hidden; background: #0A0E1D; }
    Mathmory (ภาพจำยังชัดเจน): a 3x3 board of digits 0-9 in pink / green / white is shown for a few seconds, then every cell turns black,
    a rule appears and the players tap the cells that satisfy it (one answer each). Correct = seconds left (to 0.1) + bonus 10 / (number correct)
    (big-screen mode only), times the question's multiplier. */
-var MM_V = 2026112302;   /* page version: RAISE THIS NUMBER EVERY TIME THIS FILE CHANGES (YYYYMMDD + 2 digits) */
+var MM_V = 2026112303;   /* page version: RAISE THIS NUMBER EVERY TIME THIS FILE CHANGES (YYYYMMDD + 2 digits) */
 /* board size: 3x3, 4x4 or 5x5, chosen before the game (setSize). One page runs one game, so plain globals are enough. */
 var N = 3, CELLS = 9;
 function setSize(n) { n = Number(n); N = n === 4 || n === 5 ? n : 3; CELLS = N * N; }
@@ -1406,9 +1406,17 @@ function roleScreen() {
     '<button class="rbtn" data-r="solo">เล่นคนเดียว<small>เล่นบนมือถือเครื่องนี้ ไม่ต้องมีรหัสห้อง ไม่นับคะแนนชมรม</small></button></div>';
   app.onclick = function (e) { var b = e.target.closest("[data-r]"); if (!b) return; app.onclick = null; ({ host: hostBoot, player: playerBoot, solo: soloBoot, head: headBoot })[b.dataset.r](); };
 }
+/* "สร้างห้อง" from the club pages: big screen or friends room */
+function createScreen() {
+  var app = document.getElementById("app");
+  app.innerHTML = '<div class="role"><a href="/games/" style="align-self:flex-start;font-weight:700;text-decoration:none;padding:8px 0">← กลับเว็บชมรม</a><h1>สร้างห้อง</h1><p>ภาพจำยังชัดเจน · เลือกวิธีเล่น</p>' +
+    '<button class="rbtn pri" data-r="host">เปิดจอใหญ่ (Host)<small>ใช้จอนี้แสดงตารางบนโปรเจกเตอร์ ผู้เล่นตอบบนมือถือ</small></button>' +
+    '<button class="rbtn" data-r="head">เล่นกับเพื่อน (ไม่มีจอใหญ่)<small>มือถือเครื่องนี้เป็นหัวห้องและเล่นด้วย ตารางขึ้นบนมือถือทุกเครื่อง ไม่นับคะแนนชมรม</small></button></div>';
+  app.onclick = function (e) { var b = e.target.closest("[data-r]"); if (!b) return; app.onclick = null; ({ host: hostBoot, head: headBoot })[b.dataset.r](); };
+}
 (function () {
   var h = location.hash, r = ss("mm-role");
-  if (h === "#host") hostBoot(); else if (h === "#player" || /^#join=\d{4}$/.test(h)) playerBoot(); else if (h === "#solo") soloBoot(); else if (h === "#head") headBoot();
+  if (h === "#create") createScreen(); else if (h === "#host") hostBoot(); else if (h === "#player" || /^#join=\d{4}$/.test(h)) playerBoot(); else if (h === "#solo") soloBoot(); else if (h === "#head") headBoot();
   else if (r === "host") hostBoot(); else if (r === "player") playerBoot(); else if (r === "head") headBoot(); else roleScreen();
 })();
 </script>

@@ -4,6 +4,41 @@
   <p class="lead">เกมที่เล่นได้บนเว็บของชมรม เลือกเกม กดเล่นได้เลย ไม่ต้องสมัคร อยากรู้กติกากดปุ่ม "กติกา" ข้างปุ่มเล่น</p>
 </div>
 <div class="wrap" style="padding-top:12px;padding-bottom:64px;display:flex;flex-direction:column;gap:32px">
+  <div class="gc" id="mathmory">
+    <div class="gb">
+      <div style="display:grid;grid-template-columns:repeat(3,auto);gap:6px" aria-hidden="true"><span style="width:62px;height:56px;border-radius:10px;border:2px solid var(--edge);background:#FF8FC8;display:flex;align-items:center;justify-content:center;font-family:Prompt,sans-serif;font-weight:700;font-size:24px;color:#14213D">7</span><span style="width:62px;height:56px;border-radius:10px;border:2px solid var(--edge);background:#63D68F;display:flex;align-items:center;justify-content:center;font-family:Prompt,sans-serif;font-weight:700;font-size:24px;color:#14213D">2</span><span style="width:62px;height:56px;border-radius:10px;border:2px solid var(--edge);background:#05070F;display:flex;align-items:center;justify-content:center;font-family:Prompt,sans-serif;font-weight:700;font-size:24px;color:#9C8CFF">?</span><span style="width:62px;height:56px;border-radius:10px;border:2px solid var(--edge);background:#F4F6FB;display:flex;align-items:center;justify-content:center;font-family:Prompt,sans-serif;font-weight:700;font-size:24px;color:#14213D">4</span><span style="width:62px;height:56px;border-radius:10px;border:2px solid var(--edge);background:#05070F;display:flex;align-items:center;justify-content:center;font-family:Prompt,sans-serif;font-weight:700;font-size:24px;color:#9C8CFF">?</span><span style="width:62px;height:56px;border-radius:10px;border:2px solid var(--edge);background:#63D68F;display:flex;align-items:center;justify-content:center;font-family:Prompt,sans-serif;font-weight:700;font-size:24px;color:#14213D">5</span><span style="width:62px;height:56px;border-radius:10px;border:2px solid var(--edge);background:#63D68F;display:flex;align-items:center;justify-content:center;font-family:Prompt,sans-serif;font-weight:700;font-size:24px;color:#14213D">3</span><span style="width:62px;height:56px;border-radius:10px;border:2px solid var(--edge);background:#FF8FC8;display:flex;align-items:center;justify-content:center;font-family:Prompt,sans-serif;font-weight:700;font-size:24px;color:#14213D">8</span><span style="width:62px;height:56px;border-radius:10px;border:2px solid var(--edge);background:#05070F;display:flex;align-items:center;justify-content:center;font-family:Prompt,sans-serif;font-weight:700;font-size:24px;color:#9C8CFF">?</span></div>
+      <div style="flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+          <h2 style="font-weight:800;font-size:38px;line-height:1.25">ภาพจำยังชัดเจน</h2>
+          <span style="padding:3px 14px;border-radius:99px;background:#C9D6FF;color:#14213D;border:2px solid var(--edge);font-family:Prompt,'Noto Sans Thai',sans-serif;font-weight:700;font-size:15px;line-height:1.5">เล่นพร้อมกันหลายคน · เล่นคนเดียวได้</span>
+        </div>
+        <p style="margin:0;font-size:19px;line-height:1.65">ตารางตัวเลขสีโผล่ให้จำไม่กี่วินาที แล้วดับเป็นสีดำ จากนั้นกฎจะโผล่ ให้เลือกช่องที่ตรงกฎบนมือถือ ยิ่งตอบเร็วยิ่งได้คะแนนมาก และข้อหลัง ๆ คะแนนคูณมากขึ้น เล่นบนจอใหญ่ทั้งห้อง เล่นกับเพื่อน หรือเล่นคนเดียวก็ได้</p>
+        <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:6px">
+          <a class="btn b-acc" href="/mathmory/#player">เข้าห้อง</a>
+          <a class="btn b-gold" href="/mathmory/#create">สร้างห้อง</a>
+          <a class="btn b-card" href="/mathmory/#solo">เล่นคนเดียว</a>
+          <button class="rb" type="button" data-rule="r2">ซ่อนกติกา ▴</button>
+        </div>
+        <div class="fb f-hint" id="ckGame" hidden style="margin-top:6px"><b>เปิดเช็กชื่อประจำสัปดาห์อยู่</b> สมาชิกชมรมเช็กชื่อได้หลังเล่นเกม คนนอกชมรมข้ามได้เลย<br><a class="go" href="/checkin/" style="text-decoration:underline">เช็กชื่อประจำสัปดาห์ →</a></div>
+      </div>
+    </div>
+    <div class="rules" id="r2">
+      <h3>กติกา ภาพจำยังชัดเจน</h3>
+      <ol>
+        <li><b>จำ:</b> ตารางตัวเลขสี (3×3, 4×4 หรือ 5×5 ตามที่ตั้งไว้) โผล่ให้จำไม่กี่วินาที จำทั้งตัวเลข สี และตำแหน่ง</li>
+        <li><b>กฎโผล่:</b> ตารางกลายเป็นสีดำ แล้วกฎของข้อนั้นจะขึ้น เช่น “เลือก 3 ช่อง ที่เป็นจำนวนเฉพาะ”</li>
+        <li><b>ตอบบนมือถือ:</b> แตะช่องตามกฎ (ลำดับที่แตะขึ้นเป็น A B C แตะผิดกด Reset) แล้วต้องกด “ส่งคำตอบ” ส่งได้ครั้งเดียว ผิดได้ 0 คะแนน</li>
+        <li><b>เฉลย:</b> ดูคำตอบที่ถูกและคะแนนของข้อนั้น แล้วไปข้อถัดไป</li>
+      </ol>
+      <ul>
+        <li>คะแนนแต่ละข้อ = (เวลาที่เหลือ + โบนัส 10 ÷ จำนวนคนที่ตอบถูก) × ตัวคูณของข้อ</li>
+        <li>ข้อหลัง ๆ ตัวคูณมากขึ้น (×1 ×2 ×3) และข้อสุดท้าย ×4</li>
+        <li><b>กฎเดาใจ:</b> ห้องที่มีผู้เล่น 5 คนขึ้นไป บางข้อไม่มีคำตอบตายตัว ต้องเดาว่าเพื่อนจะเลือกอะไร</li>
+        <li>คะแนนรวมสูงสุดชนะ ถ้าเท่ากันชนะร่วม</li>
+        <li>เล่นกับเพื่อน (ไม่มีจอใหญ่) และเล่นคนเดียว ไม่นับคะแนนชมรม · เล่นคนเดียวไม่มีโบนัส และมีตารางสถิติ 10 อันดับ</li>
+      </ul>
+    </div>
+  </div>
   <div class="gc" id="calcu">
     <div class="gb">
       <div style="display:flex;flex-direction:column;gap:6px;align-items:center" aria-hidden="true"><div style="display:flex;gap:6px"><span class="pt" style="background:#FF8A80">163</span></div><div style="display:flex;gap:6px"><span class="pt" style="background:#8BE3A8">97</span><span class="pe">151</span></div><div style="display:flex;gap:6px"><span class="pe">59</span><span class="pt" style="background:#FFD84D">113</span><span class="pe">139</span></div></div>
@@ -18,7 +53,6 @@
           <a class="btn b-gold" href="/calcu/#create">สร้างห้อง</a>
           <button class="rb" type="button" data-rule="r1">ซ่อนกติกา ▴</button>
         </div>
-        <div class="fb f-hint" id="ckGame" hidden style="margin-top:6px"><b>เปิดเช็กชื่อประจำสัปดาห์อยู่</b> สมาชิกชมรมเช็กชื่อได้หลังเล่นเกม คนนอกชมรมข้ามได้เลย<br><a class="go" href="/checkin/" style="text-decoration:underline">เช็กชื่อประจำสัปดาห์ →</a></div>
       </div>
     </div>
     <div class="rules" id="r1">
@@ -41,5 +75,5 @@
   </div>
 
 </div><script>
-sigmaRpc("get_state").then(function(s){ if(s&&s.open&&s.kind==="game"&&s.week===3) document.getElementById("ckGame").hidden=false; }).catch(function(){});
+sigmaRpc("get_state").then(function(s){ if(s&&s.open&&s.kind==="game"&&s.week===4) document.getElementById("ckGame").hidden=false; }).catch(function(){});
 </script></div><div class="foot"><div class="wrap"><span class="pf" style="font-weight:700">67 Math Problems with Sigma Boys</span><span>67 MATH PROBLEMS WITH SIGMA BOYS</span></div></div></body></html>

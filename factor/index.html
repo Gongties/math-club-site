@@ -124,7 +124,7 @@ body.host { overflow: hidden; background: #0A0E1D; color: #EEF1FA; }
    factored over the integers. Players reserve one equation, challenge others, and a challenged player must type the factored form
    AND both roots on a keypad (or claim "cannot be factored" on a decoy). Order of the factors and of the roots does not matter:
    the typed product is multiplied out and compared with the equation. Not linked from the club site; not counted for the club. */
-var FX_V = 2026112301;   /* page version: RAISE THIS NUMBER EVERY TIME THIS FILE CHANGES (YYYYMMDD + 2 digits) */
+var FX_V = 2026112401;   /* page version: RAISE THIS NUMBER EVERY TIME THIS FILE CHANGES (YYYYMMDD + 2 digits) */
 var ROW_PTS = [10, 8, 6, 4, 2];
 /* decoy patterns, same table as Calcu: [chance %, decoys in the bottom two rows (9 cells), decoys in the top three rows (6 cells)] */
 var DECOY_PATTERNS = [[20, 3, 1], [25, 3, 0], [10, 2, 2], [10, 2, 1], [15, 2, 0], [10, 1, 1], [10, 1, 0]];
@@ -474,7 +474,7 @@ var HACT = {
   again: function () { hostNewGame(); changed(); },
   toLobby: function () { G = null; H.phase = "lobby"; changed(); },
   copy: function () {
-    var txt = "Calcu แยกตัวประกอบ · " + H.cfg.room + " · ผลสุดท้าย\n" + ranking().map(function (p) { return rankOf(p.pid) + ". " + p.name + " — " + (G.scores[p.pid] || 0); }).join("\n");
+    var txt = "Calcu แยกตัวประกอบ " + H.cfg.room + " ผลสุดท้าย\n" + ranking().map(function (p) { return rankOf(p.pid) + ". " + p.name + " — " + (G.scores[p.pid] || 0); }).join("\n");
     var done = function () { H.copied = 1; renderHost(); setTimeout(function () { H.copied = 0; renderHost(); }, 2000); };
     function fb() { try { var ta = document.createElement("textarea"); ta.value = txt; ta.style.cssText = "position:fixed;left:-9999px"; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); done(); } catch (e) {} }
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, fb); else fb();
@@ -486,14 +486,14 @@ function readCfg() {
 }
 /* ----- host screens ----- */
 function hdr(title, right) {
-  return '<div class="hdr"><div style="min-width:0"><div class="s1">รหัสห้อง <b class="hd" style="font-size:36px;color:#FFD84D;letter-spacing:.08em">' + H.code + "</b> · " + esc(H.cfg.room) + '</div><div class="s2">' + title + "</div></div>" + right + "</div>";
+  return '<div class="hdr"><div style="min-width:0"><div class="s1">รหัสห้อง <b class="hd" style="font-size:36px;color:#FFD84D;letter-spacing:.08em">' + H.code + "</b> " + esc(H.cfg.room) + '</div><div class="s2">' + title + "</div></div>" + right + "</div>";
 }
 function ring() { return '<div class="ring" id="tm">' + secsLeft() + "</div>"; }
 function secsLeft() { return G && G.deadline ? String(Math.max(0, Math.ceil((G.deadline - Date.now()) / 1000))) : "–"; }
-function rTitle(t) { return "รอบ " + G.round + " / " + G.rounds + ' · <span style="color:#FFD84D">' + t + "</span>"; }
+function rTitle(t) { return "รอบ " + G.round + " / " + G.rounds + ' <span style="color:#FFD84D">' + t + "</span>"; }
 function ownLine(c) {
   var o = G.own[c.id]; if (!o) return '<div class="ow">ว่าง</div>';
-  var n = (G.ch[c.id] || []).length, sent = H.phase === "prove" && n ? (G.ans[o] ? " · ✓ ส่งแล้ว" : " · กำลังพิมพ์…") : "";
+  var n = (G.ch[c.id] || []).length, sent = H.phase === "prove" && n ? (G.ans[o] ? " ✓ ส่งแล้ว" : " กำลังพิมพ์…") : "";
   return '<div class="ow"><i style="background:' + hcol(o) + '"></i><span style="overflow:hidden;text-overflow:ellipsis">' + esc(hname(o)) + "</span>" + (n ? '<span style="color:#FF8A80;flex:none">⚔ ' + n + "</span>" : "") + '<span style="flex:none;color:#EEF1FA">' + sent + "</span></div>";
 }
 function hPyr(rev) {
@@ -504,8 +504,8 @@ function hPyr(rev) {
       var o = G.own[c.id], n = (G.ch[c.id] || []).length, cls = "pc";
       if (!rev) { if (o) cls += " own"; if (n) cls += " chd"; h += '<div class="' + cls + '"><span class="pp">' + c.pts + '</span><div class="eq">' + esc(eqText(c.eq)) + "</div>" + ownLine(c) + "</div>"; return; }
       var r = c.res, out = ""; cls += " rv";
-      if (r && r.kind === "free") { cls += " good"; out = esc(hname(o)) + ' <span class="pos">+' + r.dOwn + "</span> · ไม่มีคนท้า"; }
-      else if (r) { cls += r.ok ? " good" : " bad"; out = esc(hname(o)) + " " + (r.ok ? '<span class="pos">✓ ' + sgnTxt(r.dOwn) + "</span>" : '<span class="neg">✗ ' + sgnTxt(r.dOwn) + "</span>") + " · ⚔ " + r.n; }
+      if (r && r.kind === "free") { cls += " good"; out = esc(hname(o)) + ' <span class="pos">+' + r.dOwn + "</span> ไม่มีคนท้า"; }
+      else if (r) { cls += r.ok ? " good" : " bad"; out = esc(hname(o)) + " " + (r.ok ? '<span class="pos">✓ ' + sgnTxt(r.dOwn) + "</span>" : '<span class="neg">✗ ' + sgnTxt(r.dOwn) + "</span>") + " ⚔ " + r.n; }
       else out = "ไม่มีคนจอง";
       if (c.eq.decoy) cls += " dec";
       h += '<div class="' + cls + '"><span class="pp">' + c.pts + '</span><div class="eq sm">' + esc(eqText(c.eq)) + '</div><div class="key">' + (c.eq.decoy ? "แยกตัวประกอบไม่ได้" : esc(c.eq.key)) + '</div><div class="rt">' + (c.eq.decoy ? "ช่องหลอก" : esc(rootsText(c.eq))) + '</div><div class="ow" style="color:#EEF1FA">' + out + "</div></div>";
@@ -534,27 +534,27 @@ function hLobby() {
 function hPick() {
   var n = Object.keys(G.own).length;
   return hdr(rTitle("จองสมการ"), ring()) + '<div class="main">' + hPyr(false) + "</div>" +
-    '<div class="ftr"><div style="font-size:30px;color:#B4BEDA">แตะสมการบนมือถือเพื่อจอง คนละ 1 ช่อง · จองแล้ว ' + n + " / 15 ช่อง · บางช่องอาจแยกตัวประกอบไม่ได้</div><button class=\"gb\" data-a=\"skip\">ข้ามเวลา</button></div>";
+    '<div class="ftr"><div style="font-size:30px;color:#B4BEDA">แตะสมการบนมือถือเพื่อจอง คนละ 1 ช่อง จองแล้ว ' + n + " / 15 ช่อง บางช่องอาจแยกตัวประกอบไม่ได้</div><button class=\"gb\" data-a=\"skip\">ข้ามเวลา</button></div>";
 }
 function hChal() {
   var n = 0; for (var k in G.ch) n += G.ch[k].length;
   return hdr(rTitle("ท้า!"), ring()) + '<div class="main">' + hPyr(false) + "</div>" +
-    '<div class="ftr"><div style="font-size:30px;color:#B4BEDA">ท้าช่องของเพื่อนที่คิดว่าเขาทำไม่ได้ · ท้าได้คนละ ' + cfgNum("maxCh", 1, 3) + " ช่อง · ท้าแล้ว " + n + ' ครั้ง</div><button class="gb" data-a="skip">ข้ามเวลา</button></div>';
+    '<div class="ftr"><div style="font-size:30px;color:#B4BEDA">ท้าช่องของเพื่อนที่คิดว่าเขาทำไม่ได้ ท้าได้คนละ ' + cfgNum("maxCh", 1, 3) + " ช่อง ท้าแล้ว " + n + ' ครั้ง</div><button class="gb" data-a="skip">ข้ามเวลา</button></div>';
 }
 function hProve() {
   var l = challengedOwners(), done = l.filter(function (p) { return G.ans[p]; }).length;
   return hdr(rTitle("พิสูจน์ด้วยการแยกตัวประกอบ"), ring()) + '<div class="main">' + hPyr(false) + "</div>" +
-    '<div class="ftr"><div style="font-size:30px;color:#B4BEDA">คนที่ถูกท้าพิมพ์รูปแยกตัวประกอบและคำตอบทั้งสองค่า หรือกด “ช่องนี้แยกไม่ได้” · ส่งแล้ว ' + done + " / " + l.length + ' คน</div><button class="gb" data-a="skip">จบเวลา</button></div>';
+    '<div class="ftr"><div style="font-size:30px;color:#B4BEDA">คนที่ถูกท้าพิมพ์รูปแยกตัวประกอบและคำตอบทั้งสองค่า หรือกด “ช่องนี้แยกไม่ได้” ส่งแล้ว ' + done + " / " + l.length + ' คน</div><button class="gb" data-a="skip">จบเวลา</button></div>';
 }
 function hRev0() {
   return hdr(rTitle("เฉลย"), '<div class="chip">ช่องหลอกรอบนี้ ' + G.cells.filter(function (c) { return c.eq.decoy; }).length + " ช่อง</div>") + '<div class="main">' + hPyr(true) + "</div>" +
-    '<div class="ftr"><div style="font-size:28px;color:#B4BEDA">สีเหลือง = รูปแยกตัวประกอบ · ลำดับตัวประกอบสลับกันได้ เช่น (x − 6)(x + 5) = (x + 5)(x − 6)</div><button class="pb" data-a="step">ดูผลการท้าและคะแนน</button></div>';
+    '<div class="ftr"><div style="font-size:28px;color:#B4BEDA">สีเหลือง = รูปแยกตัวประกอบ ลำดับตัวประกอบสลับกันได้ เช่น (x − 6)(x + 5) = (x + 5)(x − 6)</div><button class="pb" data-a="step">ดูผลการท้าและคะแนน</button></div>';
 }
 function hRev1() {
   var ch = G.cells.filter(function (c) { return c.res && c.res.kind === "chal"; });
   var cards = ch.map(function (c) {
-    var r = c.res, o = G.own[c.id], typed = !r.sent ? '<span class="neg">ไม่ได้ส่งคำตอบ</span>' : r.claim ? "กด “ช่องนี้แยกไม่ได้”" : esc(r.f) + " · x = " + esc(r.r1) + ", " + esc(r.r2) + (r.ok ? "" : ' <span class="neg">(' + (!r.fOk && !r.rOk ? "ผิดทั้งรูปและคำตอบ" : !r.fOk ? "รูปแยกตัวประกอบผิด" : "คำตอบผิด") + ")</span>");
-    return '<div class="rc"><div class="t">' + esc(hname(o)) + " · " + esc(eqText(c.eq)) + ' <span class="' + (r.ok ? "pos" : "neg") + '">' + (r.ok ? "✓ พิสูจน์ได้" : "✗ ไม่ผ่าน") + '</span></div><div>พิมพ์: ' + typed + '</div><div style="color:#B4BEDA">' + esc(hname(o)) + " " + sgnTxt(r.dOwn) + " · คนท้า " + r.chs.map(function (p) { return esc(hname(p)); }).join(", ") + " คนละ " + sgnTxt(r.dCh) + "</div></div>";
+    var r = c.res, o = G.own[c.id], typed = !r.sent ? '<span class="neg">ไม่ได้ส่งคำตอบ</span>' : r.claim ? "กด “ช่องนี้แยกไม่ได้”" : esc(r.f) + " x = " + esc(r.r1) + ", " + esc(r.r2) + (r.ok ? "" : ' <span class="neg">(' + (!r.fOk && !r.rOk ? "ผิดทั้งรูปและคำตอบ" : !r.fOk ? "รูปแยกตัวประกอบผิด" : "คำตอบผิด") + ")</span>");
+    return '<div class="rc"><div class="t">' + esc(hname(o)) + " " + esc(eqText(c.eq)) + ' <span class="' + (r.ok ? "pos" : "neg") + '">' + (r.ok ? "✓ พิสูจน์ได้" : "✗ ไม่ผ่าน") + '</span></div><div>พิมพ์: ' + typed + '</div><div style="color:#B4BEDA">' + esc(hname(o)) + " " + sgnTxt(r.dOwn) + " คนท้า " + r.chs.map(function (p) { return esc(hname(p)); }).join(", ") + " คนละ " + sgnTxt(r.dCh) + "</div></div>";
   }).join("");
   var list = ranking(), last = G.round >= G.rounds;
   var rows = list.slice(0, 10).map(function (p) { var d = G.delta[p.pid] || 0; return '<div class="lr"><span class="rk">' + rankOf(p.pid) + '</span><span class="nm"><i style="display:inline-block;width:16px;height:16px;border-radius:50%;margin-right:12px;background:' + pcol(p.idx) + '"></i>' + esc(p.name) + '</span><span class="dl ' + (d > 0 ? "pos" : d < 0 ? "neg" : "") + '">' + (d ? sgnTxt(d) : "") + '</span><span class="pt">' + (G.scores[p.pid] || 0) + "</span></div>"; }).join("");
@@ -635,27 +635,27 @@ function keypad(st, c) {
   kReset(st.round + ":" + c.id);
   function fld(i, label, pre) { var v = K.f[i], on = K.a === i; return '<button type="button" class="fld' + (on ? " on" : "") + '" data-a="fld" data-i="' + i + '" aria-label="' + label + '">' + pre + (v ? esc(v) : on ? "" : '<span class="ph">แตะเพื่อพิมพ์</span>') + (on ? "▏" : "") + "</button>"; }
   var ready = K.f[0] && K.f[1] && K.f[2];
-  return '<div class="box"><div class="muted" style="font-size:.9rem">สมการที่คุณจอง · ' + c.pts + " คะแนน · ถูกท้า " + c.ch.length + ' คน</div><div class="hd" style="font-weight:700;font-size:1.7rem;line-height:1.3">' + esc(c.eq) + "</div></div>" +
+  return '<div class="box"><div class="muted" style="font-size:.9rem">สมการที่คุณจอง ' + c.pts + " คะแนน ถูกท้า " + c.ch.length + ' คน</div><div class="hd" style="font-weight:700;font-size:1.7rem;line-height:1.3">' + esc(c.eq) + "</div></div>" +
     '<div><label style="margin-top:0">รูปแยกตัวประกอบ</label>' + fld(0, "ช่องรูปแยกตัวประกอบ", "") + "</div>" +
     '<div><label style="margin-top:0">คำตอบของสมการ</label><div class="two">' + fld(1, "คำตอบที่ 1", "x = ") + fld(2, "คำตอบที่ 2", "x = ") + "</div></div>" +
     '<div class="kp">' + KEYS.map(function (k) { var cl = k === "(" || k === ")" || k === "x" ? "k1" : k === "+" || k === "−" || k === "/" ? "k2" : k === "⌫" || k === "ล้าง" ? "k3" : k === "◂" || k === "▸" ? "k4" : ""; return '<button type="button" class="' + cl + '" data-a="key" data-k="' + esc(k) + '" aria-label="' + esc(KLAB[k] || k) + '">' + esc(k) + "</button>"; }).join("") + "</div>" +
     '<div class="two"><button type="button" class="gh dec' + (K.arm ? " arm" : "") + '" data-a="decoy">' + (K.arm ? "แตะอีกครั้งเพื่อยืนยัน" : "ช่องนี้แยกไม่ได้") + '</button><button type="button" class="go" data-a="submit"' + (ready ? "" : " disabled") + ">ส่งคำตอบ</button></div>" +
-    '<div class="muted" style="font-size:.88rem">ส่งได้ครั้งเดียว · ต้องกรอกครบ 3 ช่อง · เศษส่วนใช้ / เช่น 1/2</div>';
+    '<div class="muted" style="font-size:.88rem">ส่งได้ครั้งเดียว ต้องกรอกครบ 3 ช่อง เศษส่วนใช้ / เช่น 1/2</div>';
 }
 function viewPlayer() {
   var st = P.st, h = "";
   if ((st.v || 0) > FX_V) return '<div id="pw"><div class="box"><h2>มีเวอร์ชันใหม่ของเกม</h2><div class="muted">หน้านี้เป็นเวอร์ชันเก่า กดรีเฟรชเพื่อเล่นต่อ (ชื่อและคะแนนยังอยู่)</div><button class="go" data-a="reload" style="margin-top:12px">รีเฟรชหน้า</button></div></div>';
   if (!inPlayers(st)) return '<div id="pw"><div class="box"><h2>ไม่พบชื่อของคุณในห้องนี้</h2><button class="go" data-a="leave" style="margin-top:10px">กลับไปหน้าเข้าห้อง</button></div></div>';
-  var row = (st.rows || []).filter(function (r) { return r.pid === P.pid; })[0], ra = st.round ? esc(P.name) + " · รอบ " + st.round + " / " + st.rounds : esc(P.name);
+  var row = (st.rows || []).filter(function (r) { return r.pid === P.pid; })[0], ra = st.round ? esc(P.name) + " รอบ " + st.round + " / " + st.rounds : esc(P.name);
   var mine = st.cells ? st.cells.filter(function (c) { return c.o === P.pid; })[0] : null;
   if (st.phase === "lobby") {
     h = topBar("รหัสห้อง " + esc(P.code), "เข้าห้องแล้ว") + '<div class="box"><h2>' + esc(P.name) + '</h2><div class="muted">รอครูกดเริ่มเกม ชื่อของคุณขึ้นบนจอใหญ่แล้ว</div></div>' +
       '<div class="box"><div class="muted" style="font-size:.9rem">ผู้เล่นในห้อง (' + st.players.length + ')</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">' + st.players.map(function (p) { return '<span style="padding:4px 12px;border-radius:99px;border:2px solid #14213D;background:' + pcol(p.idx) + '">' + esc(p.name) + "</span>"; }).join("") + "</div></div>";
   } else if (st.phase === "pick") {
-    h = topBar(ra, "จองสมการ", tmHtml()) + '<div class="tip">แตะสมการที่คุณมั่นใจว่าแยกตัวประกอบได้ จองได้ 1 ช่อง (แตะซ้ำเพื่อยกเลิก) · บางช่องอาจแยกไม่ได้!</div>' + cellList(st, "pick");
+    h = topBar(ra, "จองสมการ", tmHtml()) + '<div class="tip">แตะสมการที่คุณมั่นใจว่าแยกตัวประกอบได้ จองได้ 1 ช่อง (แตะซ้ำเพื่อยกเลิก) บางช่องอาจแยกไม่ได้!</div>' + cellList(st, "pick");
   } else if (st.phase === "chal") {
     var myCh = st.cells.filter(function (c) { return c.ch.indexOf(P.pid) >= 0; }).length;
-    h = topBar(ra, "ท้า!", tmHtml()) + '<div class="tip">แตะช่องของเพื่อนที่คิดว่าเขาทำไม่ได้ · ท้าได้ ' + st.maxCh + " ช่อง (ท้าแล้ว " + myCh + ") · แตะซ้ำเพื่อยกเลิก</div>" + cellList(st, "chal");
+    h = topBar(ra, "ท้า!", tmHtml()) + '<div class="tip">แตะช่องของเพื่อนที่คิดว่าเขาทำไม่ได้ ท้าได้ ' + st.maxCh + " ช่อง (ท้าแล้ว " + myCh + ") แตะซ้ำเพื่อยกเลิก</div>" + cellList(st, "chal");
   } else if (st.phase === "prove") {
     if (mine && mine.ch.length && !mine.sent && !P.sent[st.round]) h = topBar(ra, "พิสูจน์!", tmHtml()) + keypad(st, mine);
     else if (mine && mine.ch.length) h = topBar(ra, "ส่งคำตอบแล้ว", tmHtml()) + '<div class="box"><h2>ส่งแล้ว ✓</h2><div class="muted">รอเฉลยบนจอใหญ่</div></div>';
@@ -663,12 +663,12 @@ function viewPlayer() {
   } else if (st.phase === "rev") {
     var d = row ? row.d : 0, box = "";
     if (mine) {
-      var r = mine.res || {}, typed = r.kind !== "chal" ? "" : !r.sent ? "ไม่ได้ส่งคำตอบ" : r.claim ? "คุณกด “ช่องนี้แยกไม่ได้”" : "คุณพิมพ์ " + esc(r.f) + " · x = " + esc(r.r1) + ", " + esc(r.r2);
-      box = '<div class="box"><div class="muted" style="font-size:.9rem">สมการของคุณ · ' + mine.pts + ' คะแนน</div><div class="hd" style="font-weight:700;font-size:1.3rem">' + esc(mine.eq) + "</div>" +
+      var r = mine.res || {}, typed = r.kind !== "chal" ? "" : !r.sent ? "ไม่ได้ส่งคำตอบ" : r.claim ? "คุณกด “ช่องนี้แยกไม่ได้”" : "คุณพิมพ์ " + esc(r.f) + " x = " + esc(r.r1) + ", " + esc(r.r2);
+      box = '<div class="box"><div class="muted" style="font-size:.9rem">สมการของคุณ ' + mine.pts + ' คะแนน</div><div class="hd" style="font-weight:700;font-size:1.3rem">' + esc(mine.eq) + "</div>" +
         '<div style="margin-top:6px"><b>เฉลย:</b> ' + (mine.decoy ? "ช่องหลอก แยกตัวประกอบด้วยจำนวนเต็มไม่ได้" : esc(mine.key) + "<br>" + esc(mine.roots)) + "</div>" +
         (r.kind === "chal" ? '<div style="margin-top:6px">' + typed + "</div>" + '<h2 class="' + (r.ok ? "ok" : "no") + '" style="margin-top:6px">' + (r.ok ? "✓ พิสูจน์ได้" : "✗ ไม่ผ่าน" + (r.sent && !r.claim && !mine.decoy ? (!r.fOk && !r.rOk ? " (ผิดทั้งรูปและคำตอบ)" : !r.fOk ? " (รูปแยกตัวประกอบผิด)" : " (คำตอบผิด)") : "")) + "</h2>" : '<h2 class="ok" style="margin-top:6px">ไม่มีคนท้า</h2>') + "</div>";
     }
-    var mych = st.cells.filter(function (c) { return c.ch.indexOf(P.pid) >= 0; }).map(function (c) { var r = c.res || {}; return '<div class="tr"><span style="flex:1">คุณท้า ' + esc(pName(c.o)) + " · " + esc(c.eq) + '</span><b class="' + (r.ok ? "no" : "ok") + '">' + (r.ok ? "เขาทำได้" : "ท้าสำเร็จ") + "</b></div>"; }).join("");
+    var mych = st.cells.filter(function (c) { return c.ch.indexOf(P.pid) >= 0; }).map(function (c) { var r = c.res || {}; return '<div class="tr"><span style="flex:1">คุณท้า ' + esc(pName(c.o)) + " " + esc(c.eq) + '</span><b class="' + (r.ok ? "no" : "ok") + '">' + (r.ok ? "เขาทำได้" : "ท้าสำเร็จ") + "</b></div>"; }).join("");
     h = topBar(ra, "เฉลย", '<span class="tm" style="font-size:1rem">' + (d > 0 ? "+" + d : d < 0 ? "−" + Math.abs(d) : "0") + "</span>") + box + (mych ? '<div class="box">' + mych + "</div>" : "") +
       (!mine && !mych ? '<div class="box"><div class="muted">รอบนี้คุณไม่ได้จองหรือท้า ดูเฉลยบนจอใหญ่</div></div>' : "") +
       '<div class="box"><h2>อันดับ</h2>' + st.rows.slice(0, 8).map(function (r) { return '<div class="tr' + (r.pid === P.pid ? " me" : "") + '"><span class="muted" style="width:26px">' + r.rk + '</span><b style="flex:1">' + esc(r.name) + '</b><span class="' + (r.d > 0 ? "ok" : r.d < 0 ? "no" : "muted") + '" style="width:44px;text-align:right">' + (r.d ? (r.d > 0 ? "+" : "−") + Math.abs(r.d) : "") + "</span><b style=\"width:40px;text-align:right\">" + r.score + "</b></div>"; }).join("") + (row && row.rk > 8 ? '<div class="tr me"><span class="muted" style="width:26px">' + row.rk + '</span><b style="flex:1">' + esc(row.name) + "</b><b>" + row.score + "</b></div>" : "") + "</div>" +

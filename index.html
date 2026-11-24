@@ -12,7 +12,7 @@
 sigmaRpc("get_state").then(function(s){
   if(!s||!s.week) return;
   var game=s.kind==="game", open=!!s.open, $=function(i){return document.getElementById(i)};
-  $("wbTag").textContent=(open?"สัปดาห์ที่ "+s.week+" · ":"กิจกรรมล่าสุด · สัปดาห์ที่ "+s.week+" · ")+(game?"เกม":"โจทย์");
+  $("wbTag").textContent=(open?"สัปดาห์ที่ "+s.week+" ":"กิจกรรมล่าสุด สัปดาห์ที่ "+s.week+" ")+(game?"เกม":"โจทย์");
   $("wbGo").textContent= game ? "ไปเล่นเกม →" : "ไปที่โจทย์ →";
   $("wbGo").href= game ? "/games/" : "/puzzles/";
   $("wkBanner").hidden=false;

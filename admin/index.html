@@ -26,9 +26,16 @@
       <div class="row"><button class="btn b-gold" id="bRank" type="button" hidden>บันทึกอันดับเกม</button></div>
       <div class="fb f-ok" id="rkMsg" hidden></div>
     </div>
+    <div class="pbox" style="gap:14px;flex:none">
+      <div class="pf" style="font-weight:800;font-size:24px">ตารางสรุปการเข้าร่วม</div>
+      <div class="muted" style="font-size:16px;line-height:1.5">นักเรียนทุกคนในรายชื่อ กับทุกสัปดาห์ที่มีการเช็กชื่อ แต่ละช่องบอกว่ามาไหม ได้อันดับที่เท่าไร และได้กี่คะแนน (ใช้ไฟล์ supabase-weekly.sql)</div>
+      <div class="row"><button class="btn b-card" id="bAtt" type="button">แสดงตาราง</button><button class="btn b-gold" id="bCsv" type="button" disabled>ส่งออก CSV</button></div>
+      <div class="fb f-ok" id="attMsg" hidden></div>
+      <div id="attWrap" hidden style="overflow-x:auto;max-height:70vh;overflow-y:auto;border:2px solid var(--grid);border-radius:14px"><table id="attTb" style="border-collapse:collapse;font-size:15px;min-width:100%"></table></div>
+    </div>
   </div>
 </div>
-<style>.fl{display:block;margin-bottom:6px;font-family:Prompt,'Noto Sans Thai',sans-serif;font-weight:700;font-size:17px;line-height:1.4}#tbody td{padding:8px 6px;border-top:1.5px solid var(--grid)}</style>
+<style>.fl{display:block;margin-bottom:6px;font-family:Prompt,'Noto Sans Thai',sans-serif;font-weight:700;font-size:17px;line-height:1.4}#tbody td{padding:8px 6px;border-top:1.5px solid var(--grid)}#attTb th,#attTb td{padding:6px 8px;border-bottom:1.5px solid var(--grid);text-align:left;white-space:nowrap;vertical-align:top}#attTb thead th{position:sticky;top:0;background:var(--card);color:var(--muted);font-size:13px;font-weight:700;z-index:1}#attTb .ab{color:var(--muted)}#attTb .wc{line-height:1.35;text-align:center}#attTb .wc small{display:block;color:var(--muted)}</style>
 <script>
 (function(){
   var $=function(i){return document.getElementById(i)}, PW="", ST=null, ROWS=[];
@@ -100,6 +107,43 @@
     sigmaRpc("admin_set_ranks2",{p_pass:PW,p_week:ST.week,p_ids:arr.map(function(x){return x.id}),p_vals:arr.map(function(x){return x.r})}).then(function(ok){
       flash("rkMsg", ok?"บันทึกอันดับเกมแล้ว ("+arr.length+" คน) ช่องอันดับแสดงอันดับที่ระบบเรียงให้":"บันทึกไม่สำเร็จ", !ok); if(ok) return loadList(ST.week,ST.kind);
     }).catch(function(){ flash("rkMsg","บันทึกไม่สำเร็จ (ยังไม่ได้รัน supabase-tied-ranks.sql ใน Supabase หรือเชื่อมต่อไม่ได้)",true); });
+  });
+  var ATT=null;
+  function attCell(by,w){ for(var i=0;i<by.length;i++) if(by[i].w===w) return by[i]; return null; }
+  function wkName(w){ return "สัปดาห์ "+w.week+(w.title?" "+w.title:""); }
+  $("bAtt").addEventListener("click",function(){
+    $("bAtt").disabled=true; flash("attMsg","กำลังโหลด…");
+    sigmaRpc("admin_attendance",{p_pass:PW}).then(function(d){
+      $("bAtt").disabled=false;
+      if(!d){ flash("attMsg","รหัสผ่านไม่ถูกต้อง",true); return; }
+      ATT=d; var W=d.weeks||[], R=d.rows||[];
+      var h='<thead><tr><th>ชื่อ-นามสกุล</th><th>ชั้น/ห้อง/เลขที่</th><th>ชื่อเล่น</th>'+W.map(function(w){return '<th class="wc">'+esc(wkName(w))+'</th>';}).join("")+'<th class="wc">มา (ครั้ง)</th><th class="wc">คะแนนรวม</th></tr></thead><tbody>';
+      h+=R.map(function(r){
+        var by=r.by||[];
+        return '<tr><td>'+esc(r.name)+(r.sid?"":' <small class="ab">(ไม่อยู่ในรายชื่อ)</small>')+'</td><td>ม.'+r.grade+'/'+r.room+'/'+r.number+'</td><td>'+esc(r.nick||"—")+'</td>'+
+          W.map(function(w){ var c=attCell(by,w.week); return c?'<td class="wc">✓ '+(c.r?"อันดับ "+c.r:"ไม่มีอันดับ")+'<small>'+c.p+' คะแนน</small></td>':'<td class="wc ab">–</td>'; }).join("")+
+          '<td class="wc">'+by.length+'</td><td class="wc"><b>'+(r.points||0)+'</b></td></tr>';
+      }).join("")+'</tbody>';
+      $("attTb").innerHTML=h; $("attWrap").hidden=false; $("bCsv").disabled=false;
+      flash("attMsg","นักเรียน "+R.length+" คน "+W.length+" สัปดาห์");
+    }).catch(function(){ $("bAtt").disabled=false; flash("attMsg","โหลดไม่สำเร็จ (ยังไม่ได้รัน supabase-weekly.sql ใน Supabase หรือเชื่อมต่อไม่ได้)",true); });
+  });
+  function csvCell(v){ v=v==null?"":String(v); if(/^[=+\-@\t\r]/.test(v)) v="'"+v; return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+  $("bCsv").addEventListener("click",function(){
+    if(!ATT) return;
+    var W=ATT.weeks||[], head=["เลขประจำตัว","ชื่อ-นามสกุล","ชั้น","ห้อง","เลขที่","ชื่อเล่น"];
+    W.forEach(function(w){ head.push("สัปดาห์ "+w.week+" มา","สัปดาห์ "+w.week+" อันดับ","สัปดาห์ "+w.week+" คะแนน"); });
+    head.push("มา (ครั้ง)","คะแนนรวม");
+    var lines=[head.map(csvCell).join(",")];
+    (ATT.rows||[]).forEach(function(r){
+      var by=r.by||[], a=[r.sid||"",r.name,r.grade,r.room,r.number,r.nick||""];
+      W.forEach(function(w){ var c=attCell(by,w.week); a.push(c?1:0, c&&c.r?c.r:"", c?c.p:0); });
+      a.push(by.length, r.points||0);
+      lines.push(a.map(csvCell).join(","));
+    });
+    var d=new Date(), f="attendance-"+d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2)+".csv";
+    var blob=new Blob(["\ufeff"+lines.join("\r\n")],{type:"text/csv;charset=utf-8"}), u=URL.createObjectURL(blob), el=document.createElement("a");
+    el.href=u; el.download=f; document.body.appendChild(el); el.click(); el.remove(); setTimeout(function(){URL.revokeObjectURL(u)},2000);
   });
   try{ var p=sessionStorage.getItem("sigma-admin"); if(p){ PW=p; refresh().catch(function(){}); } }catch(x){}
 })();

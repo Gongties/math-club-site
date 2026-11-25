@@ -722,7 +722,7 @@ var MODE = null;   /* "host" | "player" */
 /* page version: RAISE THIS NUMBER EVERY TIME THIS FILE CHANGES (YYYYMMDD + 2 digits).
    The Host/head sends it in every state and players send it when they join: a phone with an older page is told to refresh,
    a phone with a newer page than the Host/head warns that the Host/head should refresh, and the lobby marks players on an old page. */
-var CALCU_V = 2026112401;
+var CALCU_V = 2026112501;
 
 /* ============================================================ HOST ============================================================ */
 var DEF_CFG = { room: "ห้องชมรม", target: 50, start: 0, ranges: [[1, 5], [1, 10], [1, 12], [1, 15]], showScores: true, maxMult: 3, penalty: "value",
@@ -758,7 +758,8 @@ function secsLeft() { return !G || (!G.deadline && !G.paused) ? "–" : String(M
 
 function hostNewGame() {
   var sc = {}; H.players.forEach(function (p) { sc[p.pid] = Number(H.cfg.start) || 0; });
-  G = H.G = { round: 0, isFinal: false, finalPending: false, ended: false, scores: sc, lastDelta: {}, breakdown: null, king: null, kingEv: null, kingWin: null, sd: null, sdPending: null };
+  G = H.G = { round: 0, isFinal: false, finalPending: false, ended: false, scores: sc, lastDelta: {}, breakdown: null, king: null, kingEv: null, kingWin: null, sd: null, sdPending: null,
+    runId: "calcu-" + (H.code || "0000") + "-" + Date.now().toString(36), subOk: false };   /* runId: one game = one run when the result is sent to the club system */
   var key = JSON.stringify(cfgRanges()) + "|" + cfgMax();
   if (!H.poolCache[key]) H.poolCache[key] = buildPools(cfgRanges(), cfgMax());
   G.pools = H.poolCache[key]; G.maxV = cfgMax();
@@ -982,7 +983,7 @@ function broadcast() {   /* coalesce bursts: at most one full state per gap, a t
   else if (!BC.t) BC.t = setTimeout(function () { BC.t = null; BC.last = Date.now(); Net.send(publicState()); }, gap - (now - BC.last));
 }
 var SV = { t: null };
-var G_KEYS = ["round", "isFinal", "finalPending", "ended", "scores", "lastDelta", "breakdown", "nums", "cells", "res", "chal", "subs", "subTree", "steps", "rev", "summarized", "paused", "remaining", "deadline", "toast", "maxV", "prevScores", "king", "kingEv", "kingWin", "sd", "sdPending"];
+var G_KEYS = ["round", "isFinal", "finalPending", "ended", "scores", "lastDelta", "breakdown", "nums", "cells", "res", "chal", "subs", "subTree", "steps", "rev", "summarized", "paused", "remaining", "deadline", "toast", "maxV", "prevScores", "king", "kingEv", "kingWin", "sd", "sdPending", "runId", "subOk"];
 function saveHost() {   /* the host keeps the whole game in this browser, so a reload of the host page can continue it */
   clearTimeout(SV.t);
   SV.t = setTimeout(function () {
@@ -1025,18 +1026,26 @@ function onHostMsg(m) {
   if (m.type === "hello") { broadcast(); return; }
   if (m.type === "join") {
     var ex = findP(m.pid);
+    /* club student ID (5 digits): only a big-screen room counts for the club, and the ID is never sent on to the phones */
+    var sid = MODE === "host" && /^\d{5}$/.test(String(m.sid || "")) ? String(m.sid) : "";
+    var dup = sid ? H.players.filter(function (p) { return p.sid === sid && p.pid !== m.pid; })[0] : null;
+    if (dup && (!ex || H.phase === "lobby")) {   /* the same ID on another phone: the new phone replaces the old one */
+      Net.send({ type: "reject", to: dup.pid, reason: "เลขประจำตัวนี้เข้าห้องจากเครื่องอื่นแล้ว เครื่องนี้จึงถูกตัดออก" });
+      if (H.phase !== "lobby") { Net.send({ type: "adopt", to: m.pid, pid: dup.pid }); return; }   /* in a running game the new phone takes over the old player (score kept) */
+      H.players = H.players.filter(function (p) { return p !== dup; });
+    } else if (dup) sid = ex.sid || "";
     if (!ex) {
       if (H.phase !== "lobby") {
         var nm0 = String(m.name || "").trim().slice(0, 20), old = null;   /* same nickname = the same player coming back on a new page/tab */
-        H.players.forEach(function (p) { if (p.name === nm0) old = p; });
-        if (old) { Net.send({ type: "adopt", to: m.pid, pid: old.pid }); return; }
+        H.players.forEach(function (p) { if (p.name === nm0 && (!p.sid || !sid || p.sid === sid)) old = p; });
+        if (old) { if (sid && !old.sid) old.sid = sid; Net.send({ type: "adopt", to: m.pid, pid: old.pid }); return; }
         Net.send({ type: "reject", to: m.pid, reason: "เกมเริ่มไปแล้ว ถ้าเคยเข้าห้องนี้ ให้พิมพ์ชื่อเล่นเดิมเพื่อกลับเข้าห้อง" }); return;
       }
       var nm = String(m.name || "").trim().slice(0, 20) || "ผู้เล่น", base = nm, k = 2;
       while (H.players.some(function (p) { return p.name === nm; })) nm = base + " " + (k++);
-      H.players.push({ pid: m.pid, name: nm, idx: H.nextIdx++, v: m.v || 0 });
+      H.players.push({ pid: m.pid, name: nm, idx: H.nextIdx++, v: m.v || 0, sid: sid });
       if (G) G.scores[m.pid] = Number(H.cfg.start) || 0;
-    } else ex.v = m.v || 0;
+    } else { ex.v = m.v || 0; if (H.phase === "lobby") ex.sid = sid; else if (sid && !ex.sid) ex.sid = sid; }
     changed(); return;
   }
   if (!findP(m.pid) || !G) return;
@@ -1110,7 +1119,8 @@ var HACT = {
     function fallback() { try { var ta = document.createElement("textarea"); ta.value = txt; ta.style.cssText = "position:fixed;left:-9999px;top:0"; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); done(); } catch (e) { G.toast = "คัดลอกไม่สำเร็จ"; renderHost(); } }
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, fallback); else fallback();
   },
-  toLobby: function () { G = H.G = null; H.phase = "lobby"; changed(); }
+  toLobby: function () { G = H.G = null; H.phase = "lobby"; changed(); },
+  subOpen: function () { subOpen(); }
 };
 
 /* ----- host views (1920x1080 stage, same layout as the design boards) ----- */
@@ -1142,7 +1152,7 @@ function hpyr(mode) {
 }
 function hLobby() {
   var csz = H.players.length > 30 ? " xs" : H.players.length > 14 ? " sm" : "";
-  var chips = H.players.map(function (p) { return '<div class="chip' + csz + '"><i style="background:' + hcol(p.pid) + '"></i>' + esc(p.name) + (oldPage(p) ? ' <span style="color:#FF8A80">⚠ ต้องรีเฟรช</span>' : "") + "</div>"; }).join("");
+  var chips = H.players.map(function (p) { return '<div class="chip' + csz + '"><i style="background:' + hcol(p.pid) + '"></i>' + esc(p.name) + (p.sid ? ' <span style="color:#5BD98F" title="นับคะแนนชมรม">✓</span>' : "") + (oldPage(p) ? ' <span style="color:#FF8A80">⚠ ต้องรีเฟรช</span>' : "") + "</div>"; }).join("");
   var nOld = H.players.filter(oldPage).length;
   return '<div style="display:flex;gap:80px;flex:1;min-height:0"><div style="width:760px;display:flex;flex-direction:column;gap:28px">' +
     '<div><div class="hd" style="font-weight:700;font-size:120px;line-height:1.15">Calcuเหรอ?</div><div style="font-size:44px;line-height:1.3;color:#B4BEDA">' + esc(H.cfg.room) + " เป้าหมาย " + H.cfg.target + ' คะแนน</div><div style="font-size:34px;line-height:1.3;color:#9C8CFF">วิธีจบเกม: ' + END_NAMES[H.cfg.endMode || "crown"] + '</div></div>' +
@@ -1151,6 +1161,7 @@ function hLobby() {
     '<div style="display:flex;align-items:center;gap:24px"><button class="gb" data-a="resetRoom" style="white-space:nowrap">' + (H.cr ? "กดอีกครั้งเพื่อล้างห้องและสร้างรหัสใหม่" : "สร้างห้องใหม่") + '</button><a href="/games/" style="font-size:30px;font-weight:700;color:#9C8CFF;text-decoration:none;white-space:nowrap">← กลับเว็บชมรม</a></div></div>' +
     '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:28px"><div style="display:flex;align-items:baseline;justify-content:space-between"><div class="hd" style="font-weight:700;font-size:64px;line-height:1.3">ผู้เล่นที่เข้าห้องแล้ว</div><div class="hd" style="font-weight:700;font-size:64px;line-height:1.3;color:#9C8CFF">' + H.players.length + ' คน</div></div>' +
     (nOld ? '<div style="font-size:30px;line-height:1.4;color:#FF8A80">' + nOld + " คนใช้หน้าเกมเวอร์ชันเก่า ให้รีเฟรชหน้าบนมือถือก่อนเริ่มเกม</div>" : "") +
+    (H.players.length ? '<div style="font-size:28px;line-height:1.4;color:#B4BEDA"><span style="color:#5BD98F">✓</span> นับคะแนนชมรม ' + subCounted().length + " จาก " + H.players.length + " คน (คนที่ไม่มี ✓ ไม่ได้ใส่เลขประจำตัว เล่นได้แต่ไม่นับคะแนน)</div>" : "") +
     '<div style="display:flex;flex-wrap:wrap;gap:18px;align-content:flex-start;flex:1">' + (chips || '<div style="font-size:36px;color:#B4BEDA">ยังไม่มีใครเข้าห้อง</div>') + "</div>" +
     '<div style="display:flex;justify-content:space-between;align-items:center"><button class="gb" data-a="cfg">ตั้งค่าห้อง</button><div style="display:flex;align-items:center;gap:24px">' + (H.players.length < 2 ? '<span style="font-size:30px;color:#B4BEDA">ต้องมีผู้เล่นอย่างน้อย 2 ชื่อ</span>' : "") +
     '<button class="pb" data-a="start"' + (startOk() ? "" : " disabled") + ">เริ่มเกม</button></div></div></div></div>";
@@ -1331,7 +1342,96 @@ function hEnd() {
     (ei.decided ? '<div style="font-size:32px;line-height:1.4;color:#B4BEDA">คะแนนเท่ากัน ตัดสินด้วยคะแนนรวมก่อนรอบสุดท้าย</div>' : "") +
     (ei.sd ? '<div style="font-size:32px;line-height:1.4;color:#B4BEDA">' + sdScoreLine(hname) + (G.sd.winners.length > 1 ? " แต้มเท่ากัน ครองบัลลังก์ร่วม" : "") + '</div>' : ei.king ? '<div style="font-size:32px;line-height:1.4;color:#B4BEDA">ครองบัลลังก์ครบ 2 รอบติดกัน</div>' : "") +
     (chips ? '<div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:1500px">' + chips + (others.length > 6 ? '<div class="chip sm">และอีก ' + (others.length - 6) + " คน</div>" : "") + "</div>" : "") + "</div>" +
-    '<div class="ftr"><div>' + copyBtn() + '</div><div style="display:flex;gap:16px"><button class="gb" data-a="toLobby">กลับล็อบบี้</button><button class="pb" data-a="again">เล่นใหม่ด้วยผู้เล่นเดิม</button></div></div>';
+    '<div class="ftr"><div style="display:flex;gap:16px">' + copyBtn() +
+    (MODE === "host" && subCounted().length ? '<button class="gb" data-a="subOpen">' + (G.subOk ? "ส่งผลแล้ว ✓ (ส่งอีกครั้ง)" : "ส่งผลเข้าระบบคะแนนชมรม") + "</button>" : "") +
+    '</div><div style="display:flex;gap:16px"><button class="gb" data-a="toLobby">กลับล็อบบี้</button><button class="pb" data-a="again">เล่นใหม่ด้วยผู้เล่นเดิม</button></div></div>';
+}
+/* ---------- send the result to the club system (big-screen room only) ----------
+   Needs supabase-game-results.sql and supabase-weekly.sql. The teacher types the admin password here; it is never stored, only sent to admin_submit_game.
+   place = the order of this game: the winner(s) first (after a Sudden Death, its winner), then everyone else by total score (equal scores share a place).
+   The overlay lives outside #stage so a redraw of the Host screen cannot wipe the password being typed. Same as /mathmory/. */
+var SBC = null;
+function sbc() { if (!SBC) { try { if (window.supabase && window.supabase.createClient) SBC = window.supabase.createClient(SB.url, SB.key, { auth: { persistSession: false } }); } catch (e) {} } return SBC; }
+var SUB = { open: false, st: "idle", week: null, kind: "", msg: "", res: null };
+function subCounted() { return H.players.filter(function (p) { return p.sid; }); }
+function subPlaces() {
+  var win = endInfo().winners, out = {}, rest = ranking().filter(function (p) { return win.indexOf(p.pid) < 0; }), prev = null, rk = 0;
+  win.forEach(function (pid) { out[pid] = 1; });
+  rest.forEach(function (p, i) { var v = G.scores[p.pid]; if (v !== prev) { rk = win.length + 1 + i; prev = v; } out[p.pid] = rk; });
+  return out;
+}
+function subOpen() {
+  if (MODE !== "host" || H.phase !== "end" || !G || !subCounted().length) return;
+  SUB = { open: true, st: "loading", week: null, kind: "", msg: "", res: null }; subDraw();
+  var c = sbc(); if (!c) { SUB.st = "err"; SUB.msg = "ต่อระบบไม่ได้ ตรวจอินเทอร์เน็ตของจอนี้"; subDraw(); return; }
+  try {
+    /* Calcu needs supabase-weekly.sql (negative scores and the place field): without it the old function would rank by score and drop negative scores, so check first */
+    c.rpc("my_scores", { p_id: "00000" }).then(function (r0) {
+      if (r0.error) { SUB.st = "err"; SUB.msg = "ยังไม่ได้รัน supabase-weekly.sql ใน Supabase รันไฟล์นี้ก่อน แล้วกดส่งผลอีกครั้ง"; subDraw(); return; }
+      return c.rpc("get_state").then(function (r) {
+        var d = r && r.data; if (r.error || !d) { SUB.st = "err"; SUB.msg = "อ่านสัปดาห์ปัจจุบันไม่ได้ ลองใหม่อีกครั้ง"; subDraw(); return; }
+        SUB.st = "ready"; SUB.week = d.week; SUB.kind = d.kind; subDraw();
+      });
+    }).then(null, function () { SUB.st = "err"; SUB.msg = "อ่านสัปดาห์ปัจจุบันไม่ได้ ลองใหม่อีกครั้ง"; subDraw(); });
+  } catch (e) { SUB.st = "err"; SUB.msg = "อ่านสัปดาห์ปัจจุบันไม่ได้ ลองใหม่อีกครั้ง"; subDraw(); }
+}
+function subSend() {
+  var pw = document.getElementById("subpw"), pass = pw ? pw.value : "";
+  if (SUB.st !== "ready" || SUB.kind !== "game" || !pass || !G) return;
+  var pl = subPlaces(), items = subCounted().map(function (p) { return { student_id: p.sid, nick: p.name, score: Number(G.scores[p.pid]) || 0, place: pl[p.pid] }; });
+  var c = sbc(); if (!c) return;
+  SUB.st = "sending"; subDraw();
+  function fail(msg) { SUB.st = "ready"; SUB.msg = msg; subDraw(); }
+  try {
+    c.rpc("admin_submit_game", { p_pass: pass, p_week: SUB.week, p_run: G.runId, p_items: items }).then(function (r) {
+      var d = r && r.data;
+      if (r.error || !d) return fail("บันทึกไม่สำเร็จ (ยังไม่ได้รัน supabase-weekly.sql หรือเน็ตมีปัญหา) ลองใหม่อีกครั้ง");
+      if (d.r === "forbidden") return fail("รหัสผ่านไม่ถูกต้อง");
+      if (d.r === "not_game_week") return fail("สัปดาห์ " + SUB.week + " ไม่ได้ตั้งเป็นประเภท \"เกม\" ไปตั้งที่หน้าแอดมินก่อน");
+      if (d.r === "has_manual_ranks") return fail("สัปดาห์นี้มีอันดับที่กรอกเองในหน้าแอดมินแล้ว ระบบไม่เขียนทับ ลบอันดับเดิมในหน้าแอดมินก่อน");
+      if (d.r !== "ok") return fail("ส่งข้อมูลไม่ถูกต้อง ลองใหม่อีกครั้ง");
+      G.subOk = true; saveHost(); SUB.st = "ok"; SUB.res = d; subDraw(); renderHost();
+    }, function () { fail("ส่งไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วลองใหม่"); });
+  } catch (e) { fail("ส่งไม่สำเร็จ ลองใหม่อีกครั้ง"); }
+}
+function subClose() { SUB.open = false; subDraw(); }
+function subDraw() {
+  var ov = document.getElementById("subov");
+  if (!SUB.open) { if (ov) ov.remove(); return; }
+  if (!ov) {
+    ov = document.createElement("div"); ov.id = "subov";
+    ov.style.cssText = "position:fixed;inset:0;z-index:100;background:rgba(5,7,15,.9);display:flex;align-items:center;justify-content:center;font-family:Sarabun,'Noto Sans Thai',sans-serif;color:#EEF1FA";
+    ov.addEventListener("click", function (e) { var b = e.target.closest("[data-s]"); if (!b || b.disabled) return; if (b.dataset.s === "send") subSend(); else if (b.dataset.s === "close") subClose(); });
+    ov.addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target.id === "subpw") subSend(); });
+    document.body.appendChild(ov);
+  }
+  var old = document.getElementById("subpw"), keep = old ? old.value : "", had = old && document.activeElement === old;
+  var cnt = subCounted().length, all = H.players.length, h = "", btn = "min-height:64px;padding:0 34px;border-radius:16px;font:inherit;font-size:28px;font-weight:700;cursor:pointer;";
+  h += '<div style="width:min(980px,92vw);max-height:92vh;overflow:auto;box-sizing:border-box;padding:40px 48px;border-radius:28px;background:#171E38;border:3px solid #2B3560;display:flex;flex-direction:column;gap:20px">' +
+    '<div style="font-family:Prompt,sans-serif;font-weight:700;font-size:46px">ส่งผลเข้าระบบคะแนนชมรม</div>';
+  if (SUB.st === "loading") h += '<div style="font-size:30px;color:#B4BEDA">กำลังตรวจสัปดาห์ปัจจุบัน…</div>';
+  else if (SUB.st === "err") h += '<div style="font-size:30px;color:#FF8A80" role="alert">' + esc(SUB.msg) + "</div>";
+  else if (SUB.st === "ok") {
+    var r = SUB.res || {}, unk = (r.unknown || []).map(function (id) { var p = H.players.filter(function (x) { return x.sid === id; })[0]; return p ? p.name : "(ไม่ทราบชื่อ)"; });
+    h += '<div style="font-size:36px;color:#5BD98F;font-weight:700">✓ บันทึกแล้ว ' + (r.saved || 0) + " คน (สัปดาห์ที่ " + esc(SUB.week) + ")</div>" +
+      '<div style="font-size:28px;line-height:1.6;color:#EEF1FA">สัปดาห์นี้มีผลเกมในระบบ ' + (r.rounds || 1) + " รอบ ระบบรวมคะแนนชมรมของทุกรอบแล้วจัดอันดับสัปดาห์ใหม่ให้ ดูผลที่หน้าแอดมิน</div>" +
+      (unk.length ? '<div style="font-size:28px;color:#FF8A80">ไม่พบเลขประจำตัวในรายชื่อ ' + unk.length + " คน: " + esc(unk.join(", ")) + " (ไม่ได้บันทึก)</div>" : "") +
+      (r.bad_nick ? '<div style="font-size:28px;color:#FFD65A">ชื่อเล่น ' + r.bad_nick + " คนไม่ผ่านตัวกรอง จึงไม่ได้บันทึกชื่อ (ยังนับคะแนน)</div>" : "") +
+      (r.invalid ? '<div style="font-size:28px;color:#FF8A80">ข้อมูล ' + r.invalid + " รายการใช้ไม่ได้ ไม่ได้บันทึก</div>" : "");
+  } else {
+    var game = SUB.kind === "game";
+    h += '<div style="font-size:32px">สัปดาห์ที่ <b style="color:#FFD65A">' + esc(SUB.week) + "</b> (" + (game ? "เกม" : "โจทย์") + ")</div>" +
+      (game ? "" : '<div style="font-size:28px;color:#FF8A80" role="alert">สัปดาห์นี้ตั้งเป็นประเภท "โจทย์" ไปตั้งเป็น "เกม" ที่หน้าแอดมินก่อน แล้วเปิดหน้านี้อีกครั้ง</div>') +
+      '<div style="font-size:28px;line-height:1.6;color:#B4BEDA">นับคะแนนชมรม <b style="color:#5BD98F">' + cnt + "</b> คน (คนที่ใส่เลขประจำตัว) อีก " + (all - cnt) + " คนเล่นได้แต่ไม่นับ<br>อันดับของเกมนี้: ผู้ชนะเป็นอันดับ 1 คนที่เหลือเรียงตามคะแนนรวม ถ้าส่งรอบเดียวกันซ้ำจะไม่นับซ้ำ ถ้าเล่นหลายรอบในสัปดาห์เดียวกัน ให้ส่งทุกรอบ ระบบเปลี่ยนอันดับแต่ละรอบเป็นคะแนนชมรมแล้วรวมกัน</div>" +
+      (SUB.msg ? '<div style="font-size:28px;color:#FF8A80" role="alert">' + esc(SUB.msg) + "</div>" : "") +
+      '<label style="font-size:28px;font-weight:700" for="subpw">รหัสผ่านแอดมิน</label>' +
+      '<input id="subpw" type="password" autocomplete="off" style="font:inherit;font-size:32px;min-height:64px;padding:0 18px;border-radius:14px;border:3px solid #2B3560;background:#05070F;color:#EEF1FA"' + (SUB.st === "sending" || !game ? " disabled" : "") + ">";
+  }
+  h += '<div style="display:flex;gap:16px;justify-content:flex-end;margin-top:6px">' +
+    (SUB.st === "ready" || SUB.st === "sending" ? '<button data-s="send" style="' + btn + 'border:0;background:#9C8CFF;color:#0E1326"' + (SUB.st === "sending" || SUB.kind !== "game" ? " disabled" : "") + ">" + (SUB.st === "sending" ? "กำลังส่ง…" : "ส่งผล") + "</button>" : "") +
+    '<button data-s="close" style="' + btn + 'border:3px solid #5A6785;background:transparent;color:#EEF1FA"' + (SUB.st === "sending" ? " disabled" : "") + ">" + (SUB.st === "ok" ? "ปิด" : "ยกเลิก") + "</button></div></div>";
+  ov.innerHTML = h;
+  var nw = document.getElementById("subpw"); if (nw) { nw.value = keep; if (had || SUB.st === "ready") nw.focus(); }
 }
 /* ----- Sudden Death on the projector ----- */
 function sdLine(s, nm) { return "Sudden Death: " + s.ps.map(function (p) { return esc(nm(p)) + " " + fmtN(s.pts[p]); }).join(", "); }
@@ -1576,12 +1676,12 @@ document.addEventListener("click", function (e) {
 
 /* ============================================================ PLAYER ============================================================ */
 var JSTEP = 1;   /* join screen: 1 = tap the room code, 2 = type the name */
-var P = { pid: ss("calcu-pid") || rid(), name: ss("calcu-name") || "", code: ss("calcu-code") || "", joined: false, st: null, recvAt: 0, work: null, workKey: "", sent: false, error: "", joining: false };
+var P = { pid: ss("calcu-pid") || rid(), name: ss("calcu-name") || "", sid: ss("calcu-sid") || "", sidInfo: null, ckOpen: !!ss("calcu-sidok"), code: ss("calcu-code") || "", joined: false, st: null, recvAt: 0, work: null, workKey: "", sent: false, error: "", joining: false };
 ss("calcu-pid", P.pid);
 /* a copy of the player's identity is kept in localStorage with a heartbeat: if the tab was closed (heartbeat older than 6 s) a new tab takes it over */
 var PL = {
   read: function () { try { return JSON.parse(localStorage.getItem("calcu-pl") || "null"); } catch (e) { return null; } },
-  write: function () { try { localStorage.setItem("calcu-pl", JSON.stringify({ pid: P.pid, name: P.name, code: P.code, t: Date.now() })); } catch (e) {} },
+  write: function () { try { localStorage.setItem("calcu-pl", JSON.stringify({ pid: P.pid, name: P.name, code: P.code, sid: P.sid || "", sidok: P.sid && ss("calcu-sidok") === P.sid ? 1 : 0, t: Date.now() })); } catch (e) {} },
   clear: function () { try { localStorage.removeItem("calcu-pl"); } catch (e) {} }
 };
 function me() { return P.st && P.st.me ? P.st.me[P.pid] : null; }
@@ -1625,6 +1725,38 @@ function getWork() {
   if (P.workKey !== key) { P.workKey = key; P.work = freshWork(st.nums); P.sent = false; }
   return P.work;
 }
+/* club student ID on the join page (step 2): shown only while the teacher has check-in open; looked up with lookup_student so the player sees the name. Same as /mathmory/ */
+function sidMsg() {
+  var si = P.sidInfo, help = '<span>ใส่เพื่อนับคะแนนชมรมเมื่อเล่นกับจอใหญ่ในกิจกรรม ชื่อเล่นที่ใส่จะเป็นชื่อบนกระดานอันดับ เว้นว่างไว้ก็เล่นได้แต่ไม่นับคะแนน</span>';
+  if (!si || !P.sid || si.id !== P.sid) return help;
+  if (si.state === "loading") return "<span>กำลังค้นหา…</span>";
+  if (si.state === "ok") return si.text ? '<b style="color:#14562F">✓ ' + esc(si.text) + "</b> <span>ถ้าไม่ใช่คุณ ให้แก้เลข</span>" : '<b style="color:#14562F">✓ เลขประจำตัวนี้ใช้ได้</b>';
+  if (si.state === "none") return '<b style="color:#B3261E">ไม่พบเลขประจำตัวนี้ ตรวจเลขอีกครั้ง</b>';
+  return '<b style="color:#B3261E">ค้นหาเลขประจำตัวไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่ หรือลบเลขออกเพื่อเล่นโดยไม่นับคะแนน</b>';
+}
+function ckPoll() {   /* asked every 8 s until the player is in a room */
+  if (P.joined || MODE !== "player") return;
+  var c = sbc(); if (!c) return;
+  try {
+    c.rpc("get_state").then(function (r) {
+      var d = r && r.data; if (r.error || !d) return;
+      P.ckOpen = !!d.open || !!ss("calcu-sidok");
+      var b = document.getElementById("sidbox"); if (b) b.style.display = P.ckOpen ? "" : "none";
+    }, function () {});
+  } catch (e) {}
+}
+function sidShow() { var el = document.getElementById("sidmsg"); if (el) el.innerHTML = sidMsg(); }
+function sidLookup(sid, cb) {
+  P.sidInfo = { id: sid, state: "loading" }; sidShow();
+  function set(v) { if (!P.sidInfo || P.sidInfo.id !== sid) return; v.id = sid; P.sidInfo = v; if (v.state === "ok") ss("calcu-sidok", sid); sidShow(); if (cb) cb(); }   /* an answer for an ID that was already edited is ignored */
+  var c = sbc(); if (!c) { set({ state: "err" }); return; }
+  try {
+    c.rpc("lookup_student", { p_id: sid }).then(function (r) {
+      var d = r && r.data; if (r.error || !d) return set({ state: "err" });
+      set(d.found ? { state: "ok", text: d.name + " (ม." + d.grade + "/" + d.room + " เลขที่ " + d.number + ")" } : { state: "none" });
+    }, function () { set({ state: "err" }); });
+  } catch (e) { set({ state: "err" }); }
+}
 function viewJoin() {
   var cd = String(P.code || "").replace(/\D/g, "").slice(0, 4), tiles = "", step2 = JSTEP === 2 && cd.length === 4;
   for (var i = 0; i < 4; i++) tiles += '<span class="ct' + (cd[i] ? " f" : (i === cd.length ? " n" : "")) + '">' + (cd[i] || "") + "</span>";
@@ -1633,7 +1765,9 @@ function viewJoin() {
   var codeBox = '<input id="code" type="hidden" value="' + esc(cd) + '"><div class="jcd" id="cdisp" role="group" aria-labelledby="codelab">' + tiles + "</div>";
   if (step2) {
     return '<div id="pw" class="jn">' + head + '<div class="tk"><div class="jtop"><div class="fl" id="codelab">รหัสห้อง</div><button type="button" class="jedit" data-a="editcode">← แก้รหัส</button></div>' + codeBox +
-      '<div class="dv"></div><div><label class="fl" for="nick">ชื่อเล่นของคุณ (หรือชื่อคู่/กลุ่ม)</label><input class="in" id="nick" type="text" maxlength="20" value="' + esc(P.name) + '"></div>' + err +
+      '<div class="dv"></div><div><label class="fl" for="nick">ชื่อเล่นของคุณ (หรือชื่อคู่/กลุ่ม)</label><input class="in" id="nick" type="text" maxlength="20" value="' + esc(P.name) + '"></div>' +
+      '<div id="sidbox"' + (P.ckOpen ? "" : ' style="display:none"') + '><label class="fl" for="sid">เลขประจำตัวนักเรียน 5 หลัก (ไม่บังคับ)</label><input class="in" id="sid" inputmode="numeric" maxlength="5" autocomplete="off" value="' + esc(P.sid) + '">' +
+      '<div id="sidmsg" style="font-size:.85rem;margin-top:6px;line-height:1.5;color:#14213D">' + sidMsg() + "</div></div>" + err +
       '<button class="go" data-a="join"' + (P.joining ? " disabled" : "") + ">" + (P.joining ? "กำลังเข้าห้อง…" : "เข้าร่วม") + '</button></div><div class="jn-note">ใช้ชื่อเล่นเท่านั้น</div></div>';
   }
   var keys = "";
@@ -1646,7 +1780,7 @@ function viewGameP() {
   var st = P.st, m = me(), h = "";
   if (!m) return '<div id="pw"><div class="box"><h2>ไม่พบชื่อของคุณในห้องนี้</h2><button class="go" data-a="leave" style="width:100%;margin-top:10px">กลับไปหน้าเข้าห้อง</button></div></div>';
   if (st.phase === "lobby") {
-    h = '<div class="ph"><div><div class="a">รหัสห้อง ' + esc(P.code) + '</div><div class="b">เข้าห้องแล้ว</div></div>' + dkWrap("") + '</div><div class="box"><h2>' + esc(P.name) + '</h2><div class="muted">' + (st.hostless ? "รอหัวห้องกดเริ่มเกม" : "รอ Host กดเริ่มเกม ชื่อของคุณขึ้นบนจอใหญ่แล้ว") + '</div></div><div class="card"><div class="lab">ผู้เล่นในห้อง (' + st.players.length + ")</div><div style=\"display:flex;flex-wrap:wrap;gap:6px\">" +
+    h = '<div class="ph"><div><div class="a">รหัสห้อง ' + esc(P.code) + '</div><div class="b">เข้าห้องแล้ว</div></div>' + dkWrap("") + '</div><div class="box"><h2>' + esc(P.name) + '</h2><div class="muted">' + (st.hostless ? "รอหัวห้องกดเริ่มเกม" : "รอ Host กดเริ่มเกม ชื่อของคุณขึ้นบนจอใหญ่แล้ว") + '</div>' + (!st.hostless && P.sid && P.sidInfo && P.sidInfo.state === "ok" ? '<div style="margin-top:6px;color:#2E9E6B;font-weight:700">✓ นับคะแนนชมรม' + (P.sidInfo.text ? " " + esc(P.sidInfo.text) : "") + "</div>" : "") + '</div><div class="card"><div class="lab">ผู้เล่นในห้อง (' + st.players.length + ")</div><div style=\"display:flex;flex-wrap:wrap;gap:6px\">" +
       st.players.map(function (p) { return '<span style="padding:4px 12px;border-radius:99px;color:#fff;background:' + pcol(p.idx) + '">' + esc(p.name) + "</span>"; }).join("") + "</div></div>";
   } else if (st.phase === "p1") {
     h = phd("เฟส 1 จองผลลัพธ์", tmHtml()) + numsCard() + pyrPhone("p1") + (m.res !== null ?
@@ -1745,7 +1879,7 @@ function renderPlayer() {
 function onPlayerMsg(m) {
   if (!m) return;
   if (m.type === "reject" && m.to === P.pid) { P.error = m.reason; P.joining = false; P.joined = false; Net.close(); ss("calcu-joined", "0"); PL.clear(); renderPlayerForce(); return; }
-  if (m.type === "adopt" && m.to === P.pid) { P.pid = m.pid; ss("calcu-pid", P.pid); Net.send({ type: "join", pid: P.pid, name: P.name, v: CALCU_V }); return; }
+  if (m.type === "adopt" && m.to === P.pid) { P.pid = m.pid; ss("calcu-pid", P.pid); Net.send({ type: "join", pid: P.pid, name: P.name, sid: P.sid, v: CALCU_V }); return; }
   if (m.type !== "state") return;
   if (!m.me || !m.me[P.pid]) { if (!P.joined) return; }
   P.st = m; P.recvAt = Date.now();
@@ -1756,12 +1890,23 @@ function onPlayerMsg(m) {
 }
 function pjoin() {
   var code = document.getElementById("code").value.trim(), name = document.getElementById("nick").value.trim();
-  P.code = code; P.name = name;
+  var sidEl = document.getElementById("sid"), sid = sidEl && P.ckOpen ? sidEl.value.replace(/\D/g, "").slice(0, 5) : "";   /* the ID box only shows while the teacher has check-in open */
+  P.code = code; P.name = name; P.sid = sid; ss("calcu-sid", sid);
+  function show(err) { P.error = err; P.joining = false; renderPlayerForce(); }
   if (!/^\d{4}$/.test(code)) { P.error = "รหัสห้องมี 4 หลัก"; JSTEP = 1; renderPlayerForce(); return; }
   if (!name) { P.error = "กรอกชื่อเล่นก่อน"; renderPlayerForce(); return; }
+  if (sid) {
+    if (sid.length !== 5) return show("เลขประจำตัวมี 5 หลัก ถ้าไม่ต้องการนับคะแนนชมรม ให้ลบเลขออกแล้วเล่นได้เลย");
+    if ((!P.sidInfo || P.sidInfo.id !== sid) && ss("calcu-sidok") === sid) P.sidInfo = { id: sid, state: "ok", text: "" };   /* already checked on this phone (page reloaded during a game) */
+    var si = P.sidInfo;
+    if (!si || si.id !== sid) { P.error = ""; P.joining = true; renderPlayerForce(); sidLookup(sid, function () { P.joining = false; pjoin(); }); return; }
+    if (si.state === "loading") return show("รอสักครู่ กำลังค้นหาเลขประจำตัว แล้วกดเข้าร่วมอีกครั้ง");
+    if (si.state === "none") return show("ไม่พบเลขประจำตัวนี้ ตรวจเลขอีกครั้ง หรือลบเลขออกเพื่อเล่นโดยไม่นับคะแนนชมรม");
+    if (si.state === "err") return show("ค้นหาเลขประจำตัวไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่ หรือลบเลขออกเพื่อเล่นโดยไม่นับคะแนนชมรม");
+  }
   P.error = ""; P.joining = true; renderPlayerForce();
   Net.open(code, P.pid, onPlayerMsg);
-  Net.send({ type: "join", pid: P.pid, name: name, v: CALCU_V });
+  Net.send({ type: "join", pid: P.pid, name: name, sid: sid, v: CALCU_V });
   setTimeout(function () { if (!P.joined && P.joining) { P.joining = false; P.error = "ไม่พบห้องนี้ ตรวจรหัสห้องและให้แน่ใจว่าเปิดหน้า Host ไว้แล้ว"; JSTEP = 1; Net.close(); ss("calcu-joined", "0"); PL.clear(); renderPlayerForce(); } }, 8000);
 }
 function renderPlayerForce() { var app2 = document.getElementById("app"); app2.innerHTML = viewJoin(); }
@@ -1903,12 +2048,20 @@ function playerBoot() {
     if (/^\d$/.test(e.key)) { if (joinCode().length < 4) setJoinCode(joinCode() + e.key); } else if (e.key === "Backspace") setJoinCode(joinCode().slice(0, -1));
   });
   setInterval(function () { var t = document.getElementById("tm"); if (t && P.st) { var l = pLeft(); t.textContent = l === null ? "–" : Math.ceil(l / 1000); } }, 250);
+  document.getElementById("app").addEventListener("input", function (e) {   /* club student ID box: digits only, look it up once all 5 are typed */
+    if (!e.target || e.target.id !== "sid") return;
+    var d = e.target.value.replace(/\D/g, "").slice(0, 5); if (d !== e.target.value) e.target.value = d;
+    P.sid = d; ss("calcu-sid", d);
+    if (d.length === 5) sidLookup(d); else { P.sidInfo = null; sidShow(); }
+  });
+  ckPoll(); setInterval(ckPoll, 8000);
   /* a player who reloads the page rejoins the same room with the same id */
   setInterval(function () { if (P.joined) PL.write(); }, 2000);
   if (ss("calcu-joined") !== "1") {   /* tab was closed and reopened: take over the identity of a tab that is no longer sending its heartbeat */
     var old = PL.read();
     if (old && old.pid && old.name && /^\d{4}$/.test(old.code || "") && Date.now() - old.t > 6000 && Date.now() - old.t < 8 * 3600 * 1000) {
       P.pid = old.pid; P.name = old.name; P.code = old.code; ss("calcu-pid", P.pid); ss("calcu-name", P.name); ss("calcu-code", P.code); ss("calcu-joined", "1");
+      if (/^\d{5}$/.test(old.sid || "")) { P.sid = old.sid; ss("calcu-sid", P.sid); if (old.sidok) { ss("calcu-sidok", P.sid); P.ckOpen = true; } }
     }
   }
   if (P.code && P.name && ss("calcu-joined") === "1") { JSTEP = 2; renderPlayerForce(); document.getElementById("code").value = P.code; document.getElementById("nick").value = P.name; pjoin(); }

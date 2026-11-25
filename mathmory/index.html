@@ -190,6 +190,8 @@ body.host { overflow: hidden; background: #0A0E1D; }
 #pw .arw.up { color: #6EDC9A; } #pw .arw.dn { color: #FF8A80; } #pw .arw.eq { color: #B4BEDA; }
 .grid .cell .cnt { position: absolute; top: -8px; right: -8px; min-width: 26px; height: 26px; border-radius: 13px; padding: 0 6px; background: #14213D; color: #EEF1FA; border: 2px solid #EEF1FA; font-size: .85rem; line-height: 22px; font-family: Sarabun, sans-serif; z-index: 2; }
 /* lobby: remove a player, scroll the list */
+#stage .qrbox { width: 230px; height: 230px; background: #fff; border-radius: 20px; padding: 10px; }
+#stage .qrbox svg { width: 100%; height: 100%; display: block; }
 #stage .plist { display: flex; flex-wrap: wrap; gap: 16px; align-content: flex-start; flex: 1; min-height: 0; overflow-y: auto; padding-right: 8px; }
 #stage .plist::-webkit-scrollbar { width: 14px; } #stage .plist::-webkit-scrollbar-thumb { background: #2B3560; border-radius: 7px; }
 #stage .plist .chip { font-size: 28px; padding: 6px 8px 6px 18px; gap: 10px; }
@@ -313,7 +315,7 @@ body.host { overflow: hidden; background: #0A0E1D; }
    Mathmory (ภาพจำยังชัดเจน): a 3x3 board of digits 0-9 in pink / green / white is shown for a few seconds, then every cell turns black,
    a rule appears and the players tap the cells that satisfy it (one answer each). Correct = seconds left (to 0.1) + bonus 10 / (number correct)
    (big-screen mode only), times the question's multiplier. */
-var MM_V = 2026112502;   /* page version: RAISE THIS NUMBER EVERY TIME THIS FILE CHANGES (YYYYMMDD + 2 digits) */
+var MM_V = 2026112503;   /* page version: RAISE THIS NUMBER EVERY TIME THIS FILE CHANGES (YYYYMMDD + 2 digits) */
 /* board size: 3x3, 4x4 or 5x5, chosen before the game (setSize). One page runs one game, so plain globals are enough. */
 var N = 3, CELLS = 9;
 function setSize(n) { n = Number(n); N = n === 4 || n === 5 ? n : 3; CELLS = N * N; }
@@ -843,12 +845,80 @@ function hPre() {
   }
   return hdr(qTitle(), '<div class="ring">–</div>') + '<div class="main" style="justify-content:center">' + hgrid(false, null, { q: 1 }) + '<div class="side"></div></div><div class="ftr"></div>' + ov;
 }
+/* ================= QR code (byte mode, error level M, versions 1–6; no library) ================= */
+function qrMatrix(text) {
+  var data = [], u = unescape(encodeURIComponent(text)); for (var i = 0; i < u.length; i++) data.push(u.charCodeAt(i));
+  var TOT = [0, 26, 44, 70, 100, 134, 172], EC = [0, 10, 16, 26, 18, 24, 16], NB = [0, 1, 1, 1, 2, 2, 4], AL = [[], [], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34]];
+  var ver = 1; while (ver <= 6 && 12 + data.length * 8 > (TOT[ver] - EC[ver] * NB[ver]) * 8) ver++;
+  if (ver > 6) return null;
+  var capBits = (TOT[ver] - EC[ver] * NB[ver]) * 8, bits = [];
+  function put(v, n) { for (var i = n - 1; i >= 0; i--) bits.push((v >>> i) & 1); }
+  put(4, 4); put(data.length, 8); data.forEach(function (b) { put(b, 8); });
+  put(0, Math.min(4, capBits - bits.length)); while (bits.length % 8) bits.push(0);
+  for (var p = 0xEC; bits.length < capBits; p ^= 0xEC ^ 0x11) put(p, 8);
+  var cw = []; for (i = 0; i < bits.length; i += 8) { var b = 0; for (var j = 0; j < 8; j++) b = (b << 1) | bits[i + j]; cw.push(b); }
+  function mul(x, y) { var z = 0; for (var i = 7; i >= 0; i--) { z = (z << 1) ^ ((z >>> 7) * 0x11D); z ^= ((y >>> i) & 1) * x; } return z; }
+  var deg = EC[ver], div = []; for (i = 0; i < deg - 1; i++) div.push(0); div.push(1);
+  var root = 1; for (i = 0; i < deg; i++) { for (j = 0; j < deg; j++) { div[j] = mul(div[j], root); if (j + 1 < deg) div[j] ^= div[j + 1]; } root = mul(root, 2); }
+  function rem(d) { var r = div.map(function () { return 0; }); d.forEach(function (x) { var f = x ^ r.shift(); r.push(0); div.forEach(function (c, k) { r[k] ^= mul(c, f); }); }); return r; }
+  var nb = NB[ver], bl = cw.length / nb, blocks = [], ecs = [], all = [];
+  for (var k = 0; k < nb; k++) { var d = cw.slice(k * bl, (k + 1) * bl); blocks.push(d); ecs.push(rem(d)); }
+  for (i = 0; i < bl; i++) blocks.forEach(function (x) { all.push(x[i]); });
+  for (i = 0; i < deg; i++) ecs.forEach(function (x) { all.push(x[i]); });
+  var n = ver * 4 + 17, M = [], F = [];
+  for (var y = 0; y < n; y++) { M.push([]); F.push([]); for (var x = 0; x < n; x++) { M[y].push(false); F[y].push(false); } }
+  function set(x, y, v) { M[y][x] = v; F[y][x] = true; }
+  for (i = 0; i < n; i++) { set(6, i, i % 2 === 0); set(i, 6, i % 2 === 0); }
+  [[3, 3], [n - 4, 3], [3, n - 4]].forEach(function (c) { for (var dy = -4; dy <= 4; dy++) for (var dx = -4; dx <= 4; dx++) { var xx = c[0] + dx, yy = c[1] + dy; if (xx < 0 || yy < 0 || xx >= n || yy >= n) continue; var dd = Math.max(Math.abs(dx), Math.abs(dy)); set(xx, yy, dd !== 2 && dd !== 4); } });
+  var al = AL[ver], L = al.length;
+  al.forEach(function (a, ia) { al.forEach(function (c, ic) { if ((ia === 0 && ic === 0) || (ia === 0 && ic === L - 1) || (ia === L - 1 && ic === 0)) return; for (var dy = -2; dy <= 2; dy++) for (var dx = -2; dx <= 2; dx++) set(a + dx, c + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1); }); });
+  function fmt(mask) {
+    var dd = mask, r = dd; for (var i = 0; i < 10; i++) r = (r << 1) ^ ((r >>> 9) * 0x537);
+    var fb = ((dd << 10) | r) ^ 0x5412; function g(i) { return ((fb >>> i) & 1) !== 0; }
+    for (i = 0; i <= 5; i++) set(8, i, g(i)); set(8, 7, g(6)); set(8, 8, g(7)); set(7, 8, g(8));
+    for (i = 9; i < 15; i++) set(14 - i, 8, g(i));
+    for (i = 0; i < 8; i++) set(n - 1 - i, 8, g(i));
+    for (i = 8; i < 15; i++) set(8, n - 15 + i, g(i));
+    set(8, n - 8, true);
+  }
+  fmt(0);
+  var bi = 0;
+  for (var right = n - 1; right >= 1; right -= 2) {
+    if (right === 6) right = 5;
+    for (var v = 0; v < n; v++) for (j = 0; j < 2; j++) {
+      x = right - j; var upw = ((right + 1) & 2) === 0; y = upw ? n - 1 - v : v;
+      if (!F[y][x] && bi < all.length * 8) { M[y][x] = ((all[bi >>> 3] >>> (7 - (bi & 7))) & 1) !== 0; bi++; }
+    }
+  }
+  function mf(m, x, y) { switch (m) { case 0: return (x + y) % 2 === 0; case 1: return y % 2 === 0; case 2: return x % 3 === 0; case 3: return (x + y) % 3 === 0; case 4: return (Math.floor(x / 3) + Math.floor(y / 2)) % 2 === 0; case 5: return x * y % 2 + x * y % 3 === 0; case 6: return (x * y % 2 + x * y % 3) % 2 === 0; default: return ((x + y) % 2 + x * y % 3) % 2 === 0; } }
+  function applyMask(m) { for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) if (!F[y][x] && mf(m, x, y)) M[y][x] = !M[y][x]; }
+  function pen() {
+    var p = 0, y, x, run, c, dark = 0;
+    for (y = 0; y < n; y++) { run = 0; c = null; for (x = 0; x < n; x++) { if (M[y][x] === c) run++; else { if (run >= 5) p += run - 2; c = M[y][x]; run = 1; } if (M[y][x]) dark++; } if (run >= 5) p += run - 2; }
+    for (x = 0; x < n; x++) { run = 0; c = null; for (y = 0; y < n; y++) { if (M[y][x] === c) run++; else { if (run >= 5) p += run - 2; c = M[y][x]; run = 1; } } if (run >= 5) p += run - 2; }
+    for (y = 0; y < n - 1; y++) for (x = 0; x < n - 1; x++) { c = M[y][x]; if (c === M[y][x + 1] && c === M[y + 1][x] && c === M[y + 1][x + 1]) p += 3; }
+    return p + (Math.ceil(Math.abs(dark * 20 - n * n * 10) / (n * n)) - 1) * 10;
+  }
+  var best = 0, bp = Infinity;
+  for (var m = 0; m < 8; m++) { applyMask(m); fmt(m); var pp = pen(); if (pp < bp) { bp = pp; best = m; } applyMask(m); }
+  applyMask(best); fmt(best);
+  return M;
+}
+function qrSvg(text) {
+  var M = qrMatrix(text); if (!M) return "";
+  var n = M.length, d = "";
+  for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) if (M[y][x]) d += "M" + x + " " + y + "h1v1h-1z";
+  return '<svg viewBox="-4 -4 ' + (n + 8) + " " + (n + 8) + '" shape-rendering="crispEdges" role="img" aria-label="QR code เข้าห้อง"><rect x="-4" y="-4" width="' + (n + 8) + '" height="' + (n + 8) + '" fill="#fff"/><path d="' + d + '" fill="#0E1326"/></svg>';
+}
+var QRC = { code: "", svg: "" };
+function lobbyQr() { if (QRC.code !== H.code) { QRC.code = H.code; QRC.svg = qrSvg(location.origin + "/mathmory/#join=" + H.code); } return QRC.svg; }
 function hLobby() {
   var chips = H.players.map(function (p) { var k = H.kill === p.pid; return '<span class="chip' + (k ? " kill" : "") + '"><i style="background:' + pcol(p.idx) + '"></i>' + esc(p.name) + (p.sid ? ' <span style="color:#63D68F;font-size:26px" title="นับคะแนนชมรม">✓</span>' : "") + ((p.v || 0) < MM_V ? ' <span style="color:#FF8A80;font-size:26px">⚠ ต้องรีเฟรช</span>' : "") + '<button class="kx" data-a="kick" data-p="' + esc(p.pid) + '" aria-label="ลบ ' + esc(p.name) + '">' + (k ? "ลบ?" : "✕") + "</button></span>"; }).join("");
   var c = H.cfg;
   return '<div style="display:flex;gap:80px;flex:1;min-height:0"><div style="width:720px;display:flex;flex-direction:column;gap:26px">' +
     '<div><div class="hd" style="font-weight:700;font-size:96px;line-height:1.15">ภาพจำยังชัดเจน</div><div style="font-size:36px;color:#B4BEDA">Mathmory จำตาราง แล้วเลือกช่องตามกฎ</div></div>' +
-    '<div><div style="font-size:32px;color:#B4BEDA">รหัสห้อง</div><div class="hd" style="font-weight:700;font-size:160px;line-height:1.1;letter-spacing:.12em;color:#FFD84D">' + H.code + "</div></div>" +
+    '<div style="display:flex;align-items:center;gap:36px"><div><div style="font-size:32px;color:#B4BEDA">รหัสห้อง</div><div class="hd" style="font-weight:700;font-size:160px;line-height:1.1;letter-spacing:.12em;color:#FFD84D">' + H.code + "</div></div>" +
+    '<div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:none"><div class="qrbox">' + lobbyQr() + '</div><div style="font-size:24px;color:#B4BEDA">สแกนเพื่อเข้าห้อง</div></div></div>' +
     '<div style="font-size:32px;line-height:1.55;color:#EEF1FA">เปิดเว็บชมรมบนมือถือ → เกม → ภาพจำยังชัดเจน → เข้าห้อง แล้วใส่รหัสห้อง</div>' +
     '<div style="display:flex;align-items:center;gap:24px"><button class="gb" data-a="resetRoom">' + (H.cr ? "กดอีกครั้งเพื่อล้างห้อง" : "สร้างห้องใหม่") + '</button><a href="/games/" style="font-size:30px;font-weight:700;text-decoration:none">← กลับเว็บชมรม</a></div></div>' +
     '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:22px"><div style="display:flex;justify-content:space-between;align-items:baseline"><div class="hd" style="font-weight:700;font-size:60px">ผู้เล่นที่เข้าห้องแล้ว</div><div class="hd" style="font-weight:700;font-size:60px;color:#9C8CFF">' + H.players.length + " คน</div></div>" +

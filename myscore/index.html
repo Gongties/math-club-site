@@ -10,6 +10,7 @@
       <div class="pbox" style="flex:1 1 220px;gap:4px;padding:22px"><div class="muted" style="font-size:16px">คะแนนรวม</div><div class="pf" id="pts" style="font-weight:800;font-size:56px;line-height:1.1"></div></div>
       <div class="pbox" style="flex:1 1 220px;gap:4px;padding:22px"><div class="muted" style="font-size:16px">อันดับรวม</div><div class="pf" id="rk" style="font-weight:800;font-size:56px;line-height:1.1"></div><div class="muted" id="rkOf" style="font-size:16px"></div></div>
     </div>
+    <div class="fb f-ok" id="alum" hidden>ศิษย์เก่าของชมรม คะแนนเดิมยังเก็บไว้ที่นี่</div>
     <div class="fb f-hint" id="noBoard" hidden>ยังไม่มีชื่อเล่น จึงยังไม่แสดงบนกระดานอันดับ ใส่ชื่อเล่นตอนเช็กชื่อหรือตอนเข้าเกมครั้งถัดไป แล้วชื่อจะขึ้นกระดานเอง</div>
     <h2 style="font-size:26px">รายสัปดาห์</h2>
     <div id="wks" style="display:flex;flex-direction:column;gap:10px"></div>
@@ -27,6 +28,7 @@
     $("rk").textContent=d.rank?d.rank:"–";
     $("rkOf").textContent=d.rank?"จากทั้งหมด "+d.of+" คนบนกระดาน":"";
     $("noBoard").hidden=!!d.on_board || !(d.by&&d.by.length);
+    $("alum").hidden=!d.alumni;
     var by={}; (d.by||[]).forEach(function(x){ by[x.w]=x; });
     var W=(d.weeks||[]).slice().reverse();
     $("wks").innerHTML=W.length?W.map(function(w){

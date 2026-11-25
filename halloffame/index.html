@@ -1,0 +1,48 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>หอเกียรติยศ | 67 Math Problems</title><meta name="description" content="ทำเนียบแชมป์ประจำสัปดาห์และสถิติเด่นของชมรม 67 Math Problems with Sigma Boys"><script>(function(){var t='dark';try{t=localStorage.getItem('sigma-theme')||'dark'}catch(e){}document.documentElement.setAttribute('data-theme',t==='light'?'light':'dark')})();</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700;800&family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet"><link rel="icon" type="image/svg+xml" href="/assets/favicon.svg"><link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="apple-touch-icon" href="/assets/apple-touch-icon.png"><meta property="og:type" content="website"><meta property="og:site_name" content="67 Math Problems with Sigma Boys"><meta property="og:locale" content="th_TH"><meta property="og:title" content="หอเกียรติยศ | 67 Math Problems with Sigma Boys"><meta property="og:description" content="ทำเนียบแชมป์ประจำสัปดาห์และสถิติเด่นของชมรม"><meta property="og:url" content="https://math-club-site.vercel.app/halloffame/"><meta property="og:image" content="https://math-club-site.vercel.app/assets/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><link rel="stylesheet" href="/assets/site.css"><script src="/assets/site.js"></script></head><body><!--nav--><div class="wrap"><div class="nav"><a class="logo" href="/"><span class="sig" aria-hidden="true">Σ</span><b>67 Math Problems<br>with Sigma Boys</b></a><div class="links"><a class="nl" href="/">หน้าแรก</a><a class="nl" href="/puzzles/">โจทย์ประจำสัปดาห์</a><a class="nl" href="/games/">เกม</a><a class="nl on" href="/leaderboard/">อันดับ</a><button class="tg" id="themeBtn" type="button" aria-label="สลับโหมดมืดและสว่าง"><span class="to-light"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M18.7 5.3L17 7M7 17l-1.7 1.7"/></svg>โหมดสว่าง</span><span class="to-dark"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a6.8 6.8 0 0 0 10.7 10.7z"/></svg>โหมดมืด</span></button></div></div></div><!--/nav--><div class="main">
+<div class="wrap" style="padding-top:44px;padding-bottom:64px;display:flex;flex-direction:column;gap:24px;max-width:900px">
+  <h1 class="pg-title">หอเกียรติยศ</h1>
+  <p class="lead">ทำเนียบแชมป์ของทุกสัปดาห์ และสถิติเด่นของชมรม แสดงเฉพาะชื่อเล่น</p>
+  <div id="hfMsg" class="fb f-hint">กำลังโหลด…</div>
+  <div id="hf" hidden style="display:flex;flex-direction:column;gap:24px">
+    <section style="display:flex;flex-direction:column;gap:12px"><h2 style="font-size:28px">แชมป์ประจำสัปดาห์</h2><div id="hfChamp" style="display:flex;flex-direction:column;gap:12px"></div></section>
+    <section style="display:flex;flex-direction:column;gap:12px"><h2 style="font-size:28px">สถิติเด่น</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+        <div style="padding:16px;border:2.5px solid var(--edge);border-radius:18px;background:#BDF0D5;color:#14213D"><div style="font-size:14px;font-weight:700">ขึ้นแท่น 3 อันดับแรกบ่อยสุด</div><div class="pf" id="hfPod" style="font-weight:800;font-size:22px;line-height:1.3"></div><div id="hfPodN" style="font-size:14px"></div></div>
+        <div style="padding:16px;border:2.5px solid var(--edge);border-radius:18px;background:#C9BFFF;color:#14213D"><div style="font-size:14px;font-weight:700">คะแนนรวมสูงสุด</div><div class="pf" id="hfTop" style="font-weight:800;font-size:22px;line-height:1.3"></div><div id="hfTopN" style="font-size:14px"></div></div>
+      </div>
+      <div style="padding:16px 18px;border:2.5px solid var(--edge);border-radius:18px;background:var(--card);display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><span class="pf" style="font-weight:700;font-size:20px">มาครบทุกสัปดาห์</span><span class="muted" id="hfAllN" style="font-size:15px"></span></div><div id="hfAll" style="display:flex;flex-wrap:wrap;gap:8px"></div></div>
+    </section>
+    <section style="display:flex;flex-direction:column;gap:12px"><h2 style="font-size:28px">ตารางแชมป์ 3 อันดับ</h2>
+      <div style="overflow-x:auto;border:2.5px solid var(--edge);border-radius:18px;background:var(--card)"><table style="width:100%;border-collapse:collapse;font-size:16px"><thead><tr style="text-align:left;color:var(--muted);font-size:14px"><th style="padding:10px 12px">สัปดาห์</th><th style="padding:10px 12px">ที่ 1</th><th style="padding:10px 12px">ที่ 2</th><th style="padding:10px 12px">ที่ 3</th></tr></thead><tbody id="hfTb"></tbody></table></div>
+    </section>
+    <a href="/leaderboard/" class="pf" style="font-weight:700;color:var(--accent)">← ดูกระดานอันดับ</a>
+  </div>
+</div>
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)}, TITLE={1:"Mathdle",2:"เจาะรหัสลับ ฉบับ67",3:"Calcuเหรอ?",4:"ภาพจำยังชัดเจน"};
+  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+  var CROWN='<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#14213D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l4 4 5-7 5 7 4-4-2 11H5L3 8z"/></svg>';
+  function names(list){return list.length?list.map(esc).join(", "):"–";}
+  sigmaRpc("get_leaderboard_weeks").then(function(d){
+    var W=d.weeks||[], R=d.rows||[];
+    if(!W.length||!R.length){ $("hfMsg").textContent="ยังไม่มีผลกิจกรรม รอสัปดาห์แรกก่อนนะ"; return; }
+    function at(w,r){ return R.filter(function(x){return (x.by||[]).some(function(b){return b.w===w&&b.r===r;});}).map(function(x){return x.nick;}); }
+    var NW=W.slice().reverse();
+    $("hfChamp").innerHTML=NW.map(function(w){
+      return '<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:2.5px solid var(--edge);border-radius:18px;background:var(--card);box-shadow:5px 5px 0 var(--shadow)"><div style="width:56px;height:56px;flex:none;border-radius:14px;background:#FFD84D;border:2.5px solid var(--edge);display:flex;align-items:center;justify-content:center;transform:rotate(-6deg)">'+CROWN+'</div>'+
+        '<div style="flex:1;min-width:0;line-height:1.35"><div class="muted" style="font-size:14px">สัปดาห์ที่ '+w.week+' '+(w.kind==="game"?"เกม":"โจทย์")+'</div><div style="font-size:16px">'+esc(w.title||TITLE[w.week]||"")+'</div><div class="pf" style="font-weight:800;font-size:24px;color:var(--accent)">'+names(at(w.week,1))+'</div></div></div>';
+    }).join("");
+    var pod=R.map(function(x){return {n:x.nick,c:(x.by||[]).filter(function(b){return b.r>=1&&b.r<=3;}).length};}), mx=Math.max.apply(null,pod.map(function(x){return x.c;}));
+    $("hfPod").innerHTML=mx?names(pod.filter(function(x){return x.c===mx;}).map(function(x){return x.n;})):"–"; $("hfPodN").textContent=mx?mx+" ครั้ง":"";
+    var tm=Math.max.apply(null,R.map(function(x){return x.points;}));
+    $("hfTop").innerHTML=names(R.filter(function(x){return x.points===tm;}).map(function(x){return x.nick;})); $("hfTopN").textContent=tm+" คะแนน";
+    var all=R.filter(function(x){return (x.by||[]).length===W.length;}).map(function(x){return x.nick;});
+    $("hfAllN").textContent=all.length+" คน";
+    $("hfAll").innerHTML=all.length?all.map(function(n){return '<span class="pf" style="padding:3px 12px;border-radius:99px;border:2px solid var(--accent);color:var(--accent);font-weight:600;font-size:15px">'+esc(n)+'</span>';}).join(""):'<span class="muted">ยังไม่มี</span>';
+    $("hfTb").innerHTML=NW.map(function(w){ return '<tr style="border-top:1.5px solid var(--grid)"><td class="pf" style="padding:10px 12px;font-weight:700;white-space:nowrap">'+w.week+'</td><td style="padding:10px 12px;font-weight:700;color:var(--accent)">'+names(at(w.week,1))+'</td><td style="padding:10px 12px">'+names(at(w.week,2))+'</td><td style="padding:10px 12px">'+names(at(w.week,3))+'</td></tr>'; }).join("");
+    $("hfMsg").hidden=true; $("hf").hidden=false; $("hf").style.display="flex";
+  }).catch(function(){ $("hfMsg").className="fb f-no"; $("hfMsg").textContent="โหลดไม่ได้ ลองรีเฟรชหน้าอีกครั้ง"; });
+})();
+</script>
+</div><!--foot--><div class="foot"><div class="wrap"><span class="pf" style="font-weight:700">67 Math Problems with Sigma Boys</span><span>67 MATH PROBLEMS WITH SIGMA BOYS</span></div></div><!--/foot--></body></html>

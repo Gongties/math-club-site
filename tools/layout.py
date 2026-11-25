@@ -32,6 +32,7 @@ PAGES = {
     "games/index.html": ("/games/", True, FOOT),
     "leaderboard/index.html": ("/leaderboard/", True, FOOT),
     "myscore/index.html": ("/leaderboard/", True, FOOT),
+    "halloffame/index.html": ("/leaderboard/", True, FOOT),
     "checkin/index.html": ("/puzzles/", True, FOOT),
     "admin/index.html": (None, True, FOOT),
     "week/1/index.html": ("/puzzles/", True, FOOT),

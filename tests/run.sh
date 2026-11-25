@@ -18,7 +18,7 @@ P="psql -h /tmp -p $PGPORT -U postgres -q -v ON_ERROR_STOP=1"
 for f in tests/sql/00-base.sql supabase-nick-ok-only.sql supabase-admin-delete.sql supabase-roster.sql supabase-admin-checkin.sql supabase-tied-ranks.sql supabase-game-results.sql tests/sql/01-admin-base.sql supabase-weekly.sql supabase-weekly.sql tests/sql/90-sample-data.sql tests/sql/95-checks.sql; do
   $P -f "$f" >/dev/null 2>/tmp/sql-err.txt || { echo "ไม่ผ่าน SQL $f"; cat /tmp/sql-err.txt; FAIL=1; }
 done
-grep -q "ผ่านทั้งหมด" /tmp/sql-err.txt && echo "ผ่าน  SQL checks (รัน supabase-weekly.sql ซ้ำได้)"
+grep -q "SQL checks: ผ่านทั้งหมด" /tmp/sql-err.txt && echo "ผ่าน  SQL checks (คะแนนรายสัปดาห์ คะแนนของฉัน การส่งผล Calcu และรันไฟล์ซ้ำได้)"
 $P -c "grant usage on schema public to anon; select admin_set('testpass', true, 5, 'game');" >/dev/null
 # 2) เว็บและตัวแทน Supabase
 note "เปิดเว็บในเครื่อง"
@@ -29,7 +29,11 @@ if python3 -c "import cv2" 2>/dev/null; then
   got=$(python3 -c "import cv2;print(cv2.QRCodeDetector().detectAndDecode(cv2.imread('/tmp/mm_qr.png'))[0])"); want="http://localhost:$WEB_PORT/mathmory/#join=$(cat /tmp/mm_code.txt)"
   [ "$got" = "$want" ] && echo "ผ่าน  QR ล็อบบี้ Mathmory ถอดได้ $got" || { echo "ไม่ผ่าน QR ได้ '$got'"; FAIL=1; }
 fi
-# 4) ตรวจไฟล์
+# 4) ขึ้นปีการศึกษาใหม่ (เปลี่ยนรายชื่อ จึงรันหลังการทดสอบหน้าเว็บ)
+note "ขึ้นปีการศึกษาใหม่"
+{ $P -f supabase-new-year.sql >/dev/null && $P -f supabase-new-year.sql >/dev/null && $P -f tests/sql/96-new-year.sql >/dev/null 2>/tmp/ny.txt; } 2>>/tmp/ny.txt
+grep -q "new-year checks: ผ่านทั้งหมด" /tmp/ny.txt && echo "ผ่าน  ขึ้นปีใหม่: ศิษย์เก่า สลับเลขที่ ผูกแถวเก่า คะแนนเดิมไม่หาย ข้อมูลซ้ำถูกปฏิเสธ" || { echo "ไม่ผ่าน ขึ้นปีใหม่"; cat /tmp/ny.txt; FAIL=1; }
+# 5) ตรวจไฟล์
 note "ตรวจไฟล์"
 python3 tools/layout.py --check || FAIL=1
 n=$(grep -rln $'\xc2\xb7' --include=*.html --include=*.js --include=*.sql --include=*.css --include=*.md . | grep -v "^./factor/index.html$" | wc -l)

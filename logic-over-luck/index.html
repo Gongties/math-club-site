@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Logic over Luck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body { font-family: Sarabun, "Noto Sans Thai", system-ui, sans-serif; background: #0E1326; color: #EEF1FA; -webkit-text-size-adjust: 100%; }
+[hidden] { display: none !important; }
+button { font: inherit; cursor: pointer; }
+button[disabled] { cursor: not-allowed; }
+.hd { font-family: Prompt, "Noto Sans Thai", sans-serif; }
+
+/* ---------- connection badge ---------- */
+#netb { position: fixed; z-index: 60; pointer-events: none; left: 10px; bottom: 6px; font: 12px/1 Sarabun, "Noto Sans Thai", sans-serif; opacity: .85; color: #B4BEDA; }
+#netb.ok { color: #5BD98F; } #netb.local { color: #FFD65A; } #netb.bad { color: #FF8A80; }
+body.ph #netb { left: auto; bottom: auto; right: 4px; top: 4px; width: 6px; height: 6px; border-radius: 50%; font-size: 0; background: #9AA5C0; }
+body.ph #netb.ok { background: #2E9E6B; } body.ph #netb.local { background: #D9A400; } body.ph #netb.bad { background: #D64545; }
+
+/* ---------- role screen ---------- */
+.role { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; gap: 16px; max-width: 520px; margin: 0 auto; padding: 24px 16px; }
+.role h1 { font-family: Prompt, "Noto Sans Thai", sans-serif; font-size: 2.2rem; margin: 0; line-height: 1.2; }
+.role p { margin: 0; color: #B4BEDA; line-height: 1.5; }
+.rbtn { min-height: 64px; border-radius: 16px; border: 2px solid #9C8CFF; background: transparent; color: #EEF1FA; font-weight: 700; font-size: 1.15rem; padding: 10px 16px; text-align: left; }
+.rbtn.pri { background: #9C8CFF; color: #0E1326; }
+.rbtn small { display: block; font-weight: 400; font-size: .9rem; opacity: .9; }
+.role a { color: #B4BEDA; }
+
+/* ---------- HOST stage (1920x1080 scaled to the window) ---------- */
+#hostwrap { position: fixed; inset: 0; background: #0E1326; overflow: hidden; }
+#stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; padding: 36px 64px 28px; display: flex; flex-direction: column; gap: 20px; overflow: hidden; }
+#stage .hdr { height: 120px; display: flex; align-items: center; justify-content: space-between; flex: none; }
+#stage .hl { width: 440px; } #stage .hr { width: 440px; display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
+#stage .s1 { font-size: 28px; color: #B4BEDA; line-height: 1.3; }
+#stage .s2 { font-family: Prompt, sans-serif; font-weight: 700; font-size: 44px; line-height: 1.25; }
+#stage .hc { text-align: center; }
+#stage .ti { font-family: Prompt, sans-serif; font-weight: 700; font-size: 56px; line-height: 1.2; }
+#stage .su { font-size: 30px; color: #B4BEDA; line-height: 1.3; }
+#stage .ring { width: 120px; height: 120px; border-radius: 50%; border: 10px solid #9C8CFF; display: flex; align-items: center; justify-content: center; font-family: Prompt, sans-serif; font-weight: 700; font-size: 58px; }
+#stage .ring.warn { border-color: #FF5A5F; color: #FF8A80; }
+#stage .ring.pz { border-color: #FFD65A; font-size: 30px; }
+#stage .main { flex: 1; min-height: 0; display: flex; gap: 40px; overflow: hidden; }
+#stage .ftr { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex: none; }
+.gb { font-size: 26px; min-height: 56px; padding: 0 26px; border-radius: 14px; border: 2px solid #5A6785; background: transparent; color: #EEF1FA; }
+.gb.red { border-color: #FF5A5F; color: #FF8A80; }
+.pb { font-family: Prompt, sans-serif; font-weight: 700; font-size: 38px; min-height: 76px; padding: 0 56px; border-radius: 18px; border: 0; background: #9C8CFF; color: #0E1326; }
+.pb[disabled] { opacity: .35; }
+.card { background: #171E38; border: 3px solid #2B3560; border-radius: 24px; padding: 28px 32px; }
+/* lobby */
+.lob { flex: 1; display: grid; grid-template-columns: 600px 1fr; gap: 40px; min-height: 0; }
+.lob .code { font-family: Prompt, sans-serif; font-weight: 700; font-size: 150px; letter-spacing: 16px; line-height: 1; color: #FFD84D; }
+.lob .qr { width: 300px; height: 300px; border-radius: 16px; overflow: hidden; }
+.lob .qr svg { width: 100%; height: 100%; display: block; }
+.lob .url { font-size: 26px; color: #B4BEDA; word-break: break-all; }
+.chips { display: flex; flex-wrap: wrap; gap: 12px; align-content: flex-start; overflow: hidden; }
+.chip { display: inline-flex; align-items: center; gap: 8px; font-size: 28px; padding: 6px 8px 6px 20px; border-radius: 99px; background: #232C50; border: 2px solid #2B3560; }
+.chip.done { border-color: #5BD98F; } .chip.kill { border-color: #FF5A5F; }
+.chip .kx { min-width: 40px; height: 40px; border-radius: 20px; border: 0; background: #2B3560; color: #EEF1FA; font-size: 22px; font-weight: 700; }
+.chip.kill .kx { background: #FF5A5F; }
+.big2 { font-family: Prompt, sans-serif; font-weight: 700; font-size: 96px; line-height: 1; }
+/* dice reference */
+.dref { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; width: 100%; align-content: start; }
+.dref .d { background: #171E38; border: 3px solid #2B3560; border-radius: 22px; padding: 22px; text-align: center; }
+.dref .d .n { font-family: Prompt, sans-serif; font-weight: 700; font-size: 34px; }
+.dref .d .f { font-size: 40px; letter-spacing: 6px; margin-top: 10px; font-weight: 700; color: #FFD84D; }
+.dref .d.ban { opacity: .3; }
+/* reveal grid */
+.rv { flex: 1; display: grid; grid-auto-flow: column; gap: 10px 24px; align-content: start; min-height: 0; }
+.rr { display: grid; grid-template-columns: 56px 1fr 230px 90px 120px 120px; align-items: center; gap: 10px; background: #171E38; border: 2px solid #2B3560; border-radius: 14px; padding: 0 16px; }
+.rr .rk { font-family: Prompt, sans-serif; font-weight: 700; color: #B4BEDA; }
+.rr .nm { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; }
+.rr .dn { color: #B4BEDA; white-space: nowrap; overflow: hidden; }
+.rr .x { font-family: Prompt, sans-serif; font-weight: 700; color: #FFD84D; text-align: center; }
+.rr .pt { text-align: right; color: #5BD98F; font-weight: 700; }
+.rr .pt.z { color: #8A93B0; }
+.rr .ac { text-align: right; font-family: Prompt, sans-serif; font-weight: 700; }
+.mv { font-size: .7em; margin-left: 4px; } .mv.up { color: #5BD98F; } .mv.dn { color: #FF8A80; }
+.stats { display: flex; gap: 28px; font-size: 28px; color: #B4BEDA; }
+.stats b { color: #EEF1FA; }
+/* end */
+.pod { display: flex; align-items: flex-end; justify-content: center; gap: 28px; height: 470px; }
+.pod .col { width: 380px; text-align: center; }
+.pod .blk { border-radius: 22px 22px 0 0; display: flex; align-items: flex-start; justify-content: center; padding-top: 18px; font-family: Prompt, sans-serif; font-weight: 700; font-size: 70px; color: #0E1326; }
+.pod .who { font-family: Prompt, sans-serif; font-weight: 700; font-size: 38px; line-height: 1.2; margin-bottom: 12px; word-break: break-word; }
+.pod .sc { font-size: 30px; color: #B4BEDA; margin-bottom: 10px; }
+.rest { display: flex; flex-wrap: wrap; gap: 10px 14px; font-size: 26px; }
+.rest span { background: #171E38; border: 2px solid #2B3560; border-radius: 99px; padding: 4px 16px; }
+/* overlays */
+.ov { position: absolute; inset: 0; z-index: 20; background: rgba(5, 8, 20, .85); display: flex; align-items: center; justify-content: center; }
+.ovb { width: 1100px; max-height: 960px; overflow: auto; padding: 48px; border-radius: 30px; background: #171E38; border: 3px solid #2B3560; display: flex; flex-direction: column; gap: 22px; font-size: 30px; }
+.ovb label { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.ovb input { font: inherit; font-size: 30px; width: 300px; padding: 8px 14px; border-radius: 12px; border: 2px solid #5A6785; background: #0E1326; color: #EEF1FA; }
+.ovb input.sm { width: 140px; text-align: center; }
+
+/* ---------- PLAYER (phone) ---------- */
+body.ph { background: #F3F6FF; color: #14213D; }
+#pw { max-width: 520px; margin: 0 auto; padding: 14px 14px 40px; display: flex; flex-direction: column; gap: 14px; }
+.pc { background: #fff; border: 3px solid #14213D; border-radius: 16px; box-shadow: 4px 4px 0 #14213D; padding: 14px 16px; }
+.ptop { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.ptop .t { font-family: Prompt, sans-serif; font-weight: 700; font-size: 1.35rem; line-height: 1.2; }
+.ptop .s { font-size: .95rem; color: #4A5578; }
+.tm { min-width: 58px; height: 58px; border-radius: 50%; border: 5px solid #9C8CFF; display: flex; align-items: center; justify-content: center; font-family: Prompt, sans-serif; font-weight: 700; font-size: 1.4rem; flex: none; }
+.tm.warn { border-color: #D64545; color: #B3261E; }
+.sbar { display: flex; justify-content: space-between; gap: 8px; font-size: .95rem; background: #14213D; color: #fff; border-radius: 12px; padding: 8px 12px; }
+.sbar b { color: #FFD84D; }
+.btn { min-height: 54px; border-radius: 14px; border: 3px solid #14213D; background: #FFD84D; color: #14213D; font-weight: 700; font-size: 1.1rem; padding: 8px 16px; box-shadow: 3px 3px 0 #14213D; }
+.btn.alt { background: #fff; }
+.btn[disabled] { opacity: .45; box-shadow: none; }
+.inp { width: 100%; font: inherit; font-size: 1.3rem; padding: 12px 14px; border-radius: 12px; border: 3px solid #14213D; background: #fff; color: #14213D; }
+.lbl { font-weight: 700; margin-bottom: 6px; display: block; }
+.err { color: #B3261E; font-weight: 700; }
+.ok { color: #14562F; font-weight: 700; }
+.muted { color: #4A5578; font-size: .95rem; line-height: 1.5; }
+.opt { display: flex; gap: 10px; align-items: flex-start; width: 100%; text-align: left; border: 2px solid #C9D0E6; border-radius: 12px; background: #fff; color: #14213D; padding: 10px 12px; }
+.opt .pr { flex: none; min-width: 34px; height: 34px; border-radius: 17px; background: #FFD84D; border: 2px solid #14213D; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.opt .nm { font-weight: 700; line-height: 1.3; }
+.opt .ds { font-size: .88rem; color: #4A5578; line-height: 1.35; }
+.opt.on { border: 3px solid #14213D; background: #E9E4FF; }
+.opt[disabled] { opacity: .4; }
+.opts { display: flex; flex-direction: column; gap: 8px; }
+.budget { position: sticky; top: 0; z-index: 5; }
+.rule { background: #E9E4FF; border-radius: 12px; padding: 10px 12px; line-height: 1.45; }
+.dice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.die { border: 3px solid #14213D; border-radius: 14px; background: #fff; padding: 12px 8px; text-align: center; color: #14213D; }
+.die .n { font-weight: 700; font-size: 1.05rem; }
+.die .f { font-family: Prompt, sans-serif; font-weight: 700; letter-spacing: 3px; margin-top: 4px; }
+.die.on { background: #FFD84D; box-shadow: 3px 3px 0 #14213D; }
+.die[disabled] { opacity: .35; }
+.roll { font-family: Prompt, sans-serif; font-weight: 700; font-size: 5rem; line-height: 1; text-align: center; }
+.steps { display: flex; flex-direction: column; gap: 6px; }
+.steps div { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dashed #C9D0E6; padding-bottom: 4px; }
+.steps b.p { color: #14562F; } .steps b.m { color: #B3261E; }
+.verw { background: #FFE9A8; border: 3px solid #14213D; border-radius: 14px; padding: 12px; font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="netb" aria-hidden="true"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="/logic-over-luck/engine.js?v=2026112801"></script>
+<script>
+"use strict";
+/* Logic over Luck (Rules Race: Math Club Edition v5). Big screen (#host) + phones (#join=CODE).
+   Rules and decisions: claude/rules_race_math_club_edition_v5.md, claude/logic-over-luck-decisions.md (project docs).
+   Scoring lives in /logic-over-luck/engine.js (window.LOL), tested against the Python simulator.
+   Secret data (personal rules, rolls before the reveal, the Random draw, die picks, re-roll choices) travels encrypted:
+   each phone and the Host make an ECDH P-256 key pair, the shared AES-GCM key is never sent. */
+
+/* page version: RAISE THIS NUMBER (and the ?v= of engine.js above) EVERY TIME THIS FOLDER CHANGES (YYYYMMDD + 2 digits) */
+var LOL_V = 2026112801;
+
+/* ---------- small helpers ---------- */
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+function ss(k, v) { try { if (v === undefined) return sessionStorage.getItem(k); if (v === null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch (e) { return null; } }
+function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+function rnd() { var a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] / 4294967296; }   /* fair random number for rolls and draws */
+function pick(arr) { return arr[Math.floor(rnd() * arr.length)]; }
+function newId() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); }
+function b64(u8) { var s = ""; for (var i = 0; i < u8.length; i++) s += String.fromCharCode(u8[i]); return btoa(s); }
+function unb64(s) { var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
+function secs(ms) { return Math.max(0, Math.ceil(ms / 1000)); }
+function sign(v) { return v > 0 ? "+" + v : v < 0 ? "−" + (-v) : "0"; }
+function num(v) { return v < 0 ? "−" + (-v) : String(v); }
+function rankOf(vals) { return vals.map(function (v) { return 1 + vals.filter(function (w) { return w > v; }).length; }); }
+
+/* ---------- names on cards (claude/logic-over-luck-terms.md, checked by the user) ---------- */
+var DIE_T = { std: "เต๋ามาตรฐาน", con: "เต๋าสม่ำเสมอ", risk: "เต๋าเสี่ยงสูง", prime: "เต๋าจำนวนเฉพาะ" };
+var COND_T = {
+  notrep: ["ทอยได้เลขไม่เหมือนกับรอบที่แล้ว", "เลขไม่เท่ากับรอบก่อน (รอบ 1 ไม่ผ่าน)"],
+  fib: ["ทอยได้เลขที่อยู่ในลำดับฟีโบนักชี", "ทอยได้ 1, 2, 3, 5, 8"],
+  even: ["ทอยได้เลขคู่", "ทอยได้ 0, 2, 4, 6, 8"],
+  odd: ["ทอยได้เลขคี่", "ทอยได้ 1, 3, 5, 7"],
+  f6: ["ทอยได้เลขที่เป็นตัวประกอบของ 6", "ทอยได้ 1, 2, 3, 6"],
+  gtmean: ["ทอยได้เลขที่มากกว่าค่าเฉลี่ยห้อง", "มากกว่าค่าเฉลี่ยของห้องรอบนี้"],
+  samedie: ["เลือกลูกเต๋าแบบเดียวกับผู้นำ", "ใช้เต๋าลูกเดียวกับผู้นำของคุณ"],
+  otherrr: ["มีคนอื่นทอยใหม่ในรอบนี้", "รอบนี้มีคนอื่นใช้สิทธิ์ทอยใหม่"],
+  div3: ["ทอยได้ 3 หรือ 6", "ทอยได้ 3, 6"],
+  sq: ["ทอยได้กำลังสองสมบูรณ์", "ทอยได้ 1, 4"],
+  ge6: ["ทอยได้ตั้งแต่ 6 ขึ้นไป", "ทอยได้ 6, 7, 8"],
+  up: ["ทอยได้เลขที่สูงกว่ารอบก่อน", "มากกว่าเลขรอบก่อน (รอบ 1 ไม่ผ่าน)"],
+  adj: ["ทอยได้เลขที่ติดกับรอบก่อน", "ห่างจากเลขรอบก่อน 1 พอดี (รอบ 1 ไม่ผ่าน)"],
+  mode: ["ทอยได้เลขที่เป็นฐานนิยมของห้อง", "ทอยได้ฐานนิยมของห้อง"],
+  deja: ["ทอยได้เลขเดิมกับรอบที่แล้ว", "เลขเท่ากับรอบก่อน (รอบ 1 ไม่ผ่าน)"],
+  uniq: ["ทอยได้เลขที่ไม่ซ้ำใครเลย", "ไม่มีใครในห้องทอยได้เลขเดียวกับคุณ"],
+  sameroll: ["ทอยได้เลขเดียวกับอันดับสูงสุดที่ไม่ใช่คุณ", "ทอยได้เลขเดียวกับผู้นำของคุณ"],
+  ends7: ["ผลรวมของคะแนนสะสมกับการทอยครั้งนี้ลงท้ายด้วย 7", "คะแนนสะสมต้นรอบ + เลขที่ทอย ลงท้ายด้วย 7 (ติดลบก็นับ)"],
+  sum7: ["ผลรวมการทอยครั้งนี้กับครั้งที่แล้วเท่ากับ 7", "เลขรอบนี้ + เลขรอบก่อน = 7 (รอบ 1 นับรอบก่อนเป็น 0)"]
+};
+var EFF_T = {
+  "+2": ["ได้รับ 2 คะแนน", "ได้ +2"],
+  shield: ["ได้รับ 1 คะแนนและโล่", "ได้ +1 และกันผลร้ายรอบนี้ (ไม่กันเกิน 10 แตก)"],
+  flip: ["แต้มของลูกเต๋าจะเท่ากับ 9 − เลขที่ทอย", "แต้มหน้าเต๋าเป็น 9 − เลขที่ทอย"],
+  "+3": ["ได้รับ 3 คะแนน", "ได้ +3"],
+  crowd: ["ได้แต้มเท่าจำนวนคนที่ทอยเลขเดียวกับคุณ รวมตัวเอง (สูงสุด 4)", "ได้แต้มเท่าจำนวนคนที่ทอยเลขเดียวกับคุณ รวมตัวเอง (สูงสุด 4)"],
+  interest: ["ได้ 1 คะแนน ทุก ๆ คะแนนสะสม 8 คะแนนที่มีตอนเริ่มรอบนี้", "ได้ 1 แต้มทุก 8 คะแนนสะสมที่มีต้นรอบ (เลือกได้ก่อนเกมเท่านั้น)"],
+  steal2: ["ได้ 4 คะแนน และอันดับ 1 เสียคะแนนสะสม 2 คะแนน", "ได้ +4 อันดับ 1 เสียคะแนนสะสม 2"],
+  echo: ["ได้คะแนนเท่ากับเลขลูกเต๋าในรอบที่แล้ว", "ได้แต้มเท่าเลขที่ทอยรอบก่อน"],
+  random: ["สุ่มผลลัพธ์ 1 ข้อจากข้ออื่นในทุกราคา", "ทุกรอบสุ่มผล 1 ข้อจากผลอื่นทั้งหมด"],
+  "+5": ["ได้รับ 5 คะแนน", "ได้ +5"],
+  x2: ["แต้มหน้าลูกเต๋าคูณ 2", "แต้มหน้าเต๋า × 2"],
+  spoiler: ["ได้รับ 5 คะแนน และคนที่ได้คะแนนในรอบนี้มากสุดเสียคะแนนสะสม 3 คะแนน", "ได้ +5 คนได้คะแนนรอบนี้สูงสุดเสียคะแนนสะสม 3 (คุณอาจเสีย 3 คะแนนเองได้)"],
+  next6: ["คะแนนรอบหน้าเพิ่ม 6 คะแนน", "ได้ +6 ในรอบถัดไป"],
+  "+7": ["ได้รับ 7 คะแนน", "ได้ +7"],
+  x3: ["แต้มหน้าลูกเต๋าคูณ 3", "แต้มหน้าเต๋า × 3"]
+};
+var RULE_T = { ban: "รอเติมสต๊อก", curse: "พากันลงเหว", prime: "เลขเฉพาะกิจ", median: "ชายกลาง", outlier: "หนีสังคม", minority: "เกาะติดเทรนด์ใหม่",
+  norepeat: "อย่าให้มีครั้งที่สอง", underdog: "Never Gonna Give You Up", bust: "อย่าบินสูงในฝูงไก่", robin: "โรบินฮู้ด", crowded: "ภาษีสังคม", bubble: "ฟองสบู่", lucky: "เลขนำโชค" };
+function condName(c) { return COND_T[c] ? COND_T[c][0] : c; }
+function effName(e) { return EFF_T[e] ? EFF_T[e][0] : e; }
+function facesOf(d) { return LOL.DICE[d].join(" "); }
+
+/* ---------- Realtime (same design as /calcu/ and /mathmory/: "lol-<code>" down, "lol-<code>-up" up, only the Host subscribes to "up") ---------- */
+var SB = { url: "https://pmiwrnbpoumkpmbbylvw.supabase.co", key: "sb_publishable_XhPC1F8vvNzOt7KoaEaQKw_C_0pJksR" };
+var Net = {
+  up: null, ch: null, me: null, mode: "", ready: false, q: [], client: null, timer: null, code: "", onmsg: null,
+  setStatus: function (st) {
+    var b = document.getElementById("netb"); if (!b) return;
+    b.className = st;
+    b.textContent = st === "ok" ? "เชื่อมต่อ Supabase แล้ว" : st === "local" ? "โหมดทดสอบ: ใช้ได้เฉพาะแท็บในเบราว์เซอร์เดียวกัน" : st === "bad" ? "ขาดการเชื่อมต่อ กำลังลองใหม่" : "กำลังเชื่อมต่อ…";
+  },
+  open: function (code, me, onmsg) {
+    this.close(); this.me = me; this.code = code; this.onmsg = onmsg; this.q = []; this.ready = false;
+    var self = this;
+    if (window.supabase && window.supabase.createClient) {
+      try {
+        this.mode = "supabase"; this.setStatus("wait");
+        this.client = window.supabase.createClient(SB.url, SB.key, { realtime: { params: { eventsPerSecond: 40 } } });
+        var isHost = me === "host", cfg = { config: { broadcast: { self: false, ack: false } } };
+        var ch = this.client.channel("lol-" + code, cfg), up = this.client.channel("lol-" + code + "-up", cfg);
+        this.ch = ch; this.up = up;
+        function recv(p) { try { onmsg(p.payload); } catch (err) { if (window.console) console.error(err); } }
+        if (isHost) up.on("broadcast", { event: "m" }, recv); else ch.on("broadcast", { event: "m" }, recv);
+        this.timer = setTimeout(function () { if (self.ch === ch && !self.ready) self.fallback(); }, 5000);
+        var need = isHost ? 2 : 1, got = 0;
+        function status(s) {
+          if (self.ch !== ch) return;
+          if (s === "SUBSCRIBED") { if (++got === need) { clearTimeout(self.timer); self.ready = true; self.setStatus("ok"); self.flush(); } }
+          else if (s === "CHANNEL_ERROR" || s === "TIMED_OUT" || s === "CLOSED") { if (!self.ready) self.fallback(); else self.setStatus("bad"); }
+        }
+        ch.subscribe(status); if (isHost) up.subscribe(status);
+        return;
+      } catch (err) { if (window.console) console.error(err); this.teardown(); }
+    }
+    this.local();
+  },
+  teardown: function () {
+    clearTimeout(this.timer);
+    try { if (this.client && this.ch) this.client.removeChannel(this.ch); } catch (e) {}
+    try { if (this.client && this.up) this.client.removeChannel(this.up); } catch (e) {}
+    try { if (this.client && this.client.realtime && this.client.realtime.disconnect) this.client.realtime.disconnect(); } catch (e) {}
+    this.client = null; this.ch = null; this.up = null; this.ready = false;
+  },
+  fallback: function () { this.teardown(); this.local(); },
+  local: function () {
+    var onmsg = this.onmsg, me = this.me; this.mode = "local";
+    this.ch = new BroadcastChannel("lol-" + this.code);
+    this.ch.onmessage = function (e) { var m = e.data; if (!m || m.from === me || (me !== "host" && m.from !== "host")) return; try { onmsg(m); } catch (err) { if (window.console) console.error(err); } };
+    this.ready = true; this.setStatus("local"); this.flush();
+  },
+  flush: function () { var q = this.q; this.q = []; for (var i = 0; i < q.length; i++) this.post(q[i]); },
+  post: function (m) {
+    if (this.mode === "supabase") {
+      var c = this.me === "host" ? this.ch : this.up;
+      try { var r = c.send({ type: "broadcast", event: "m", payload: m }); if (r && r.catch) r.catch(function () {}); } catch (e) { if (window.console) console.error(e); }
+    } else this.ch.postMessage(m);
+  },
+  send: function (m) {
+    if (!this.ch) return;
+    m.from = this.me === "host" ? "host" : "p"; m = JSON.parse(JSON.stringify(m));
+    if (!this.ready) { if (m.type === "state") this.q = this.q.filter(function (x) { return x.type !== "state"; }); if (this.q.length < 60) this.q.push(m); return; }
+    this.post(m);
+  },
+  close: function () {
+    if (this.mode === "supabase") this.teardown(); else if (this.ch) { try { this.ch.close(); } catch (e) {} }
+    this.ch = null; this.up = null; this.ready = false; this.q = []; clearTimeout(this.timer);
+  }
+};
+
+/* ---------- encryption of secret data (WebCrypto: ECDH P-256 -> AES-GCM 256) ---------- */
+var Sec = {
+  ok: function () { return !!(window.crypto && crypto.subtle && window.isSecureContext !== false); },
+  gen: function () {
+    return crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveKey"]).then(function (kp) {
+      return Promise.all([crypto.subtle.exportKey("jwk", kp.publicKey), crypto.subtle.exportKey("jwk", kp.privateKey)]);
+    }).then(function (j) { return { pub: { kty: j[0].kty, crv: j[0].crv, x: j[0].x, y: j[0].y }, priv: j[1] }; });
+  },
+  derive: function (privJwk, pubJwk) {
+    var alg = { name: "ECDH", namedCurve: "P-256" };
+    return Promise.all([crypto.subtle.importKey("jwk", privJwk, alg, false, ["deriveKey"]), crypto.subtle.importKey("jwk", pubJwk, alg, false, [])]).then(function (k) {
+      return crypto.subtle.deriveKey({ name: "ECDH", public: k[1] }, k[0], { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+    });
+  },
+  enc: function (key, obj) {
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    return crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, new TextEncoder().encode(JSON.stringify(obj))).then(function (ct) { return { iv: b64(iv), ct: b64(new Uint8Array(ct)) }; });
+  },
+  dec: function (key, m) {
+    return crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(m.iv) }, key, unb64(m.ct)).then(function (pt) { return JSON.parse(new TextDecoder().decode(pt)); });
+  }
+};
+
+/* ---------- QR code (same as /calcu/: byte mode, level M, versions 1-6, no library) ---------- */
+function qrMatrix(text) {
+  var data = [], u = unescape(encodeURIComponent(text)); for (var i = 0; i < u.length; i++) data.push(u.charCodeAt(i));
+  var TOT = [0, 26, 44, 70, 100, 134, 172], EC = [0, 10, 16, 26, 18, 24, 16], NB = [0, 1, 1, 1, 2, 2, 4], AL = [[], [], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34]];
+  var ver = 1; while (ver <= 6 && 12 + data.length * 8 > (TOT[ver] - EC[ver] * NB[ver]) * 8) ver++;
+  if (ver > 6) return null;
+  var capBits = (TOT[ver] - EC[ver] * NB[ver]) * 8, bits = [];
+  function put(v, n) { for (var i = n - 1; i >= 0; i--) bits.push((v >>> i) & 1); }
+  put(4, 4); put(data.length, 8); data.forEach(function (b) { put(b, 8); });
+  put(0, Math.min(4, capBits - bits.length)); while (bits.length % 8) bits.push(0);
+  for (var p = 0xEC; bits.length < capBits; p ^= 0xEC ^ 0x11) put(p, 8);
+  var cw = []; for (i = 0; i < bits.length; i += 8) { var b = 0; for (var j = 0; j < 8; j++) b = (b << 1) | bits[i + j]; cw.push(b); }
+  function mul(x, y) { var z = 0; for (var i = 7; i >= 0; i--) { z = (z << 1) ^ ((z >>> 7) * 0x11D); z ^= ((y >>> i) & 1) * x; } return z; }
+  var deg = EC[ver], div = []; for (i = 0; i < deg - 1; i++) div.push(0); div.push(1);
+  var root = 1; for (i = 0; i < deg; i++) { for (j = 0; j < deg; j++) { div[j] = mul(div[j], root); if (j + 1 < deg) div[j] ^= div[j + 1]; } root = mul(root, 2); }
+  function rem(d) { var r = div.map(function () { return 0; }); d.forEach(function (x) { var f = x ^ r.shift(); r.push(0); div.forEach(function (c, k) { r[k] ^= mul(c, f); }); }); return r; }
+  var nb = NB[ver], bl = cw.length / nb, blocks = [], ecs = [], all = [];
+  for (var k = 0; k < nb; k++) { var d = cw.slice(k * bl, (k + 1) * bl); blocks.push(d); ecs.push(rem(d)); }
+  for (i = 0; i < bl; i++) blocks.forEach(function (x) { all.push(x[i]); });
+  for (i = 0; i < deg; i++) ecs.forEach(function (x) { all.push(x[i]); });
+  var n = ver * 4 + 17, M = [], F = [];
+  for (var y = 0; y < n; y++) { M.push([]); F.push([]); for (var x = 0; x < n; x++) { M[y].push(false); F[y].push(false); } }
+  function set(x, y, v) { M[y][x] = v; F[y][x] = true; }
+  for (i = 0; i < n; i++) { set(6, i, i % 2 === 0); set(i, 6, i % 2 === 0); }
+  [[3, 3], [n - 4, 3], [3, n - 4]].forEach(function (c) { for (var dy = -4; dy <= 4; dy++) for (var dx = -4; dx <= 4; dx++) { var xx = c[0] + dx, yy = c[1] + dy; if (xx < 0 || yy < 0 || xx >= n || yy >= n) continue; var dd = Math.max(Math.abs(dx), Math.abs(dy)); set(xx, yy, dd !== 2 && dd !== 4); } });
+  var al = AL[ver], L = al.length;
+  al.forEach(function (a, ia) { al.forEach(function (c, ic) { if ((ia === 0 && ic === 0) || (ia === 0 && ic === L - 1) || (ia === L - 1 && ic === 0)) return; for (var dy = -2; dy <= 2; dy++) for (var dx = -2; dx <= 2; dx++) set(a + dx, c + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1); }); });
+  function fmt(mask) {
+    var dd = mask, r = dd; for (var i = 0; i < 10; i++) r = (r << 1) ^ ((r >>> 9) * 0x537);
+    var fb = ((dd << 10) | r) ^ 0x5412; function g(i) { return ((fb >>> i) & 1) !== 0; }
+    for (i = 0; i <= 5; i++) set(8, i, g(i)); set(8, 7, g(6)); set(8, 8, g(7)); set(7, 8, g(8));
+    for (i = 9; i < 15; i++) set(14 - i, 8, g(i));
+    for (i = 0; i < 8; i++) set(n - 1 - i, 8, g(i));
+    for (i = 8; i < 15; i++) set(8, n - 15 + i, g(i));
+    set(8, n - 8, true);
+  }
+  fmt(0);
+  var bi = 0;
+  for (var right = n - 1; right >= 1; right -= 2) {
+    if (right === 6) right = 5;
+    for (var v = 0; v < n; v++) for (j = 0; j < 2; j++) {
+      x = right - j; var upw = ((right + 1) & 2) === 0; y = upw ? n - 1 - v : v;
+      if (!F[y][x] && bi < all.length * 8) { M[y][x] = ((all[bi >>> 3] >>> (7 - (bi & 7))) & 1) !== 0; bi++; }
+    }
+  }
+  function mf(m, x, y) { switch (m) { case 0: return (x + y) % 2 === 0; case 1: return y % 2 === 0; case 2: return x % 3 === 0; case 3: return (x + y) % 3 === 0; case 4: return (Math.floor(x / 3) + Math.floor(y / 2)) % 2 === 0; case 5: return x * y % 2 + x * y % 3 === 0; case 6: return (x * y % 2 + x * y % 3) % 2 === 0; default: return ((x + y) % 2 + x * y % 3) % 2 === 0; } }
+  function applyMask(m) { for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) if (!F[y][x] && mf(m, x, y)) M[y][x] = !M[y][x]; }
+  function pen() {
+    var p = 0, y, x, run, c, dark = 0;
+    for (y = 0; y < n; y++) { run = 0; c = null; for (x = 0; x < n; x++) { if (M[y][x] === c) run++; else { if (run >= 5) p += run - 2; c = M[y][x]; run = 1; } if (M[y][x]) dark++; } if (run >= 5) p += run - 2; }
+    for (x = 0; x < n; x++) { run = 0; c = null; for (y = 0; y < n; y++) { if (M[y][x] === c) run++; else { if (run >= 5) p += run - 2; c = M[y][x]; run = 1; } } if (run >= 5) p += run - 2; }
+    for (y = 0; y < n - 1; y++) for (x = 0; x < n - 1; x++) { c = M[y][x]; if (c === M[y][x + 1] && c === M[y + 1][x] && c === M[y + 1][x + 1]) p += 3; }
+    return p + (Math.ceil(Math.abs(dark * 20 - n * n * 10) / (n * n)) - 1) * 10;
+  }
+  var best = 0, bp = Infinity;
+  for (var m = 0; m < 8; m++) { applyMask(m); fmt(m); var pp = pen(); if (pp < bp) { bp = pp; best = m; } applyMask(m); }
+  applyMask(best); fmt(best);
+  return M;
+}
+function qrSvg(text) {
+  var M = qrMatrix(text); if (!M) return "";
+  var n = M.length, d = "";
+  for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) if (M[y][x]) d += "M" + x + " " + y + "h1v1h-1z";
+  return '<svg viewBox="-4 -4 ' + (n + 8) + " " + (n + 8) + '" shape-rendering="crispEdges" role="img" aria-label="QR code เข้าห้อง"><rect x="-4" y="-4" width="' + (n + 8) + '" height="' + (n + 8) + '" fill="#fff"/><path d="' + d + '" fill="#0E1326"/></svg>';
+}
+
+
+/* =====================================================================
+   HOST (big screen). Runs the whole game; the phones only show what it sends.
+   ===================================================================== */
+var DEF_CFG = { room: "ห้องเรียน", tBuild: 60, tPick: 15, tRr: 10, tRev: 12 };
+var PVC = Date.now();   /* version numbers of secret data keep growing across a reload of the Host (phones drop anything older) */
+var H = null, KEYS = {}, LASTPRIV = {}, DIRTY = {}, HOSTKEY = null, HV = { kill: null, killT: 0, cfgOpen: false, endAsk: 0 };
+var TEST = /[?&]test\b/.test(location.search);
+
+function hostCfg() { var c = {}, s = null; try { s = JSON.parse(ls("lol-cfg") || "null"); } catch (e) {} for (var k in DEF_CFG) c[k] = s && s[k] != null ? s[k] : DEF_CFG[k]; return c; }
+function newCode() { var c; do { c = String(1000 + Math.floor(rnd() * 9000)); } while (H && c === H.code); return c; }
+function saveHost() { try { ls("lol-host", JSON.stringify({ t: Date.now(), H: H, kp: HOSTKEY })); } catch (e) {} }
+function hostBoot() {
+  document.body.className = "host";
+  document.getElementById("app").innerHTML = '<div id="hostwrap"><div id="stage"></div></div>';
+  fitStage(); window.addEventListener("resize", fitStage);
+  if (!Sec.ok()) { document.getElementById("stage").innerHTML = '<div class="card" style="margin:auto;font-size:36px">เบราว์เซอร์นี้เข้ารหัสข้อมูลไม่ได้ (ต้องเปิดผ่าน https) ใช้ Chrome, Edge หรือ Safari รุ่นใหม่</div>'; return; }
+  var saved = null; try { saved = JSON.parse(ls("lol-host") || "null"); } catch (e) {}
+  if (saved && saved.H && saved.kp && Date.now() - saved.t < 12 * 3600 * 1000) {
+    H = saved.H; HOSTKEY = saved.kp;
+    if (H.deadline && !H.paused) H.paused = Math.max(3000, H.deadline - saved.t);   /* after a reload the clock waits for the teacher */
+    H.deadline = 0;
+    H.players.forEach(function (p) { if (p.pub) deriveFor(p); });
+    startHost();
+  } else Sec.gen().then(function (kp) { HOSTKEY = kp; newRoom(); });
+}
+function newRoom() {
+  H = { code: newCode(), phase: "lobby", round: 0, deadline: 0, paused: 0, cfg: hostCfg(), players: [], room: null, places: null, runId: "" };
+  KEYS = {}; LASTPRIV = {}; DIRTY = {};
+  startHost();
+}
+var HT = null;
+function startHost() {
+  Net.open(H.code, "host", onHostMsg);
+  saveHost(); renderHost(); bcast();
+  clearInterval(HT);
+  HT = setInterval(function () {
+    if (H.deadline && !H.paused && Date.now() >= H.deadline) advance();
+    tickHost();
+  }, 200);
+  if (!HB) HB = setInterval(function () { bcast(); }, 3000);
+}
+var HB = null;
+function fitStage() {
+  var el = document.getElementById("stage"); if (!el) return;
+  var s = Math.min(innerWidth / 1920, innerHeight / 1080);
+  el.style.transform = "translate(" + (innerWidth - 1920 * s) / 2 + "px," + (innerHeight - 1080 * s) / 2 + "px) scale(" + s + ")";
+}
+function deriveFor(p) {
+  return Sec.derive(HOSTKEY.priv, p.pub).then(function (k) { KEYS[p.pid] = k; DIRTY[p.pid] = true; bcast(); }, function () {});
+}
+function byPid(pid) { for (var i = 0; i < H.players.length; i++) if (H.players[i].pid === pid) return H.players[i]; return null; }
+function newPlayer(pid, name, bot) {
+  return { pid: pid, name: name, idx: H.players.length, bot: !!bot, pub: null, built: false, cond: null, eff: null, die: null, prevDie: null,
+    x: null, rerolled: false, rrLeft: true, rrDone: false, reff: null, acc: 0, hist: [], prevX: null, next6: false, det: null, rp: 0, acc0: 0 };
+}
+function uniqueName(name, pid) {
+  name = String(name || "").trim().slice(0, 20) || "ผู้เล่น";
+  var base = name, k = 2;
+  while (H.players.some(function (p) { return p.name === name && p.pid !== pid; })) name = base + " " + (k++);
+  return name;
+}
+
+/* messages from phones */
+function onHostMsg(m) {
+  if (!m || !H) return;
+  if (m.type === "join") return hostJoin(m);
+  if (m.type === "need") { if (byPid(m.pid)) { DIRTY[m.pid] = true; bcast(); } return; }
+  if (m.type === "sec") {
+    var p = byPid(m.pid), k = KEYS[m.pid]; if (!p || !k) return;
+    Sec.dec(k, m).then(function (a) { hostAct(p, a); }, function () {});
+  }
+}
+function hostJoin(m) {
+  if (!m.pid || !m.pub) return;
+  var p = byPid(m.pid);
+  if (!p && H.phase !== "lobby") {   /* game already started: only someone coming back with the same name gets their seat */
+    var same = H.players.filter(function (q) { return !q.bot && q.name === String(m.name || "").trim(); })[0];
+    if (!same) { Net.send({ type: "reject", to: m.pid, msg: "เกมเริ่มไปแล้ว เข้าห้องนี้ไม่ได้ รอเกมหน้านะ" }); return; }
+    Net.send({ type: "adopt", to: m.pid, pid: same.pid });
+    return;
+  }
+  if (!p) { if (H.players.length >= 60) { Net.send({ type: "reject", to: m.pid, msg: "ห้องเต็มแล้ว" }); return; } p = newPlayer(m.pid, uniqueName(m.name, m.pid)); H.players.push(p); }
+  else if (H.phase === "lobby" && m.name) p.name = uniqueName(m.name, p.pid);
+  p.v = m.v || 0;
+  if (JSON.stringify(p.pub) !== JSON.stringify(m.pub)) { p.pub = m.pub; delete KEYS[p.pid]; deriveFor(p); }
+  else DIRTY[p.pid] = true;
+  saveHost(); renderHost(); bcast();
+}
+/* a secret action from a phone (already decrypted, so it really comes from that player) */
+function hostAct(p, a) {
+  if (a.a === "build" && H.phase === "build") {
+    if (!LOL.buildOk(a.cond, a.eff, { when: "start" })) return;
+    p.cond = a.cond; p.eff = a.eff; p.built = true;
+    if (H.players.every(function (q) { return q.built; })) H.deadline = Date.now() + 1500;
+  } else if (a.a === "pick" && H.phase === "pick") {
+    if (!LOL.DICE[a.die]) return;
+    p.die = a.die;
+    if (H.players.every(function (q) { return q.die; })) H.deadline = Date.now() + 800;
+  } else if (a.a === "rr" && H.phase === "reroll") {
+    if (!p.rrLeft || p.rrDone) return;
+    p.rrDone = true;
+    if (a.use) { p.x = pick(LOL.DICE[p.die]); p.rerolled = true; p.rrLeft = false; }
+    if (rrAllDone()) H.deadline = Date.now() + 800;
+  } else return;
+  saveHost(); renderHost(); bcast();
+}
+function rrAllDone() { return H.players.every(function (q) { return !q.rrLeft || q.rrDone || q.rerolled; }); }
+
+/* ---------- game flow ---------- */
+function setPhase(ph, sec) { H.phase = ph; H.paused = 0; H.deadline = sec ? Date.now() + sec * 1000 : 0; H.phaseAt = Date.now(); }
+function hostStart() {
+  if (H.players.length < 2) return;
+  H.runId = "lol-" + H.code + "-" + Date.now().toString(36);
+  H.n = H.players.length;
+  H.players.forEach(function (p) { p.built = false; p.cond = p.eff = null; p.acc = 0; p.hist = []; p.prevX = null; p.prevDie = null; p.next6 = false; p.rrLeft = true; p.det = null; p.rp = 0; });
+  H.round = 0; H.places = null; H.room = null;
+  setPhase("build", Number(H.cfg.tBuild) || 60);
+  botsDo(); saveHost(); renderHost(); bcast();
+}
+function advance() {
+  if (H.phase === "build") finishBuild();
+  else if (H.phase === "pick") endPick();
+  else if (H.phase === "reroll") endReroll();
+  else if (H.phase === "reveal") { if (H.round < 12) startRound(H.round + 1); else endGame(); }
+  saveHost(); renderHost(); bcast();
+}
+function randomBuild(when) {
+  var opts = [];
+  Object.keys(LOL.COND).forEach(function (c) { Object.keys(LOL.EFF).forEach(function (e) { if (LOL.buildOk(c, e, { when: when })) opts.push([c, e]); }); });
+  return pick(opts);
+}
+function finishBuild() {
+  H.players.forEach(function (p) { if (!p.built) { var b = randomBuild("start"); p.cond = b[0]; p.eff = b[1]; p.built = true; p.autoBuilt = true; } });
+  startRound(1);
+}
+function startRound(t) {
+  H.round = t;
+  H.players.forEach(function (p) {
+    p.die = null; p.x = null; p.rerolled = false; p.rrDone = false; p.det = null;
+    p.reff = p.eff === "random" ? LOL.RANDOM_POOL[Math.floor(rnd() * LOL.RANDOM_POOL.length)] : null;   /* Random: equal chance of the 14 other effects */
+  });
+  setPhase("pick", Number(H.cfg.tPick) || 15);
+  botsDo();
+}
+function endPick() {
+  H.players.forEach(function (p) {
+    if (!p.die) { p.die = p.prevDie || pick(LOL.DIE_IDS); p.autoDie = true; } else p.autoDie = false;   /* time ran out: keep last round's die (random in round 1) */
+    p.x = pick(LOL.DICE[p.die]);
+  });
+  if (rrAllDone()) return endReroll();
+  setPhase("reroll", Number(H.cfg.tRr) || 10);
+  botsDo();
+}
+function endReroll() {
+  var t = H.round, inp = { round: t, final: t === 12, rules: [], banned: [], lucky: null, cfg: {},
+    players: H.players.map(function (p) {
+      return { die: p.die, x: p.x, rerolled: p.rerolled, cond: p.cond, eff: p.eff === "random" ? p.reff : p.eff, acc: p.acc, prevX: p.prevX,
+        next6: p.next6, aura: false, hist: p.hist.slice(), tie: rnd() };
+    }) };
+  var res = LOL.scoreRound(inp), before = rankOf(H.players.map(function (p) { return p.acc; }));
+  H.players.forEach(function (p, i) {
+    var o = res.players[i];
+    p.acc0 = p.acc; p.acc = res.acc[i]; p.rp = res.roundPts[i]; p.hist.push(res.roundPts[i]);
+    p.next6 = o.next6Next; p.prevX = p.x; p.prevDie = p.die; p.rkBefore = before[i];
+    p.det = { steps: o.steps, fired: o.fired, eff: o.eff, stolen: o.stolen || 0, crowded: o.crowded || 0, robin: o.robin || 0, delulu: o.delulu || 0, rp: o.roundPts, acc0: p.acc0, acc: p.acc };
+  });
+  H.room = { mean: res.room.mean, mode: res.room.mode, median: res.room.median, rr: res.room.someoneRerolled };
+  setPhase("reveal", Number(H.cfg.tRev) || 12);
+}
+function endGame() {
+  H.places = LOL.finalPlaces(H.players.map(function (p) { return p.acc; }), H.players.map(function (p) { return p.hist; }));
+  setPhase("end", 0);
+}
+
+/* ---------- test bots (only with ?test in the Host's address) ---------- */
+function addBots(k) {
+  for (var i = 0; i < k; i++) { var pid = "bot" + newId(); H.players.push(newPlayer(pid, uniqueName("บอท " + (H.players.filter(function (p) { return p.bot; }).length + 1), pid), true)); }
+  saveHost(); renderHost(); bcast();
+}
+function botsDo() {
+  var ph = H.phase, t = H.round;
+  H.players.forEach(function (p) {
+    if (!p.bot) return;
+    setTimeout(function () {
+      if (H.phase !== ph || H.round !== t) return;
+      if (ph === "build") { var b = randomBuild("start"); hostAct(p, { a: "build", cond: b[0], eff: b[1] }); }
+      else if (ph === "pick") hostAct(p, { a: "pick", die: rnd() < .7 && p.prevDie ? p.prevDie : pick(LOL.DIE_IDS) });
+      else if (ph === "reroll" && p.rrLeft) hostAct(p, { a: "rr", use: p.x <= 1 && rnd() < .5 });
+    }, 400 + rnd() * 2500);
+  });
+}
+
+/* ---------- what the phones get ---------- */
+function leaderNames(i) {
+  return LOL.leadersFor(i, H.players.map(function (p) { return p.acc; })).map(function (j) { return H.players[j].name; });
+}
+function privOf(p, i) {
+  var o = { cond: p.cond, eff: p.eff, built: p.built, reff: p.reff, die: p.die, rrLeft: p.rrLeft, rrDone: p.rrDone, rerolled: p.rerolled };
+  if (H.phase === "reroll" || H.phase === "reveal") o.x = p.x;   /* your own roll, before everyone sees it */
+  if (H.phase === "reveal") o.det = p.det;
+  if (p.cond === "samedie" || p.cond === "sameroll") o.leaders = leaderNames(i);
+  return o;
+}
+function publicState() {
+  var accs = H.players.map(function (p) { return p.acc; }), rk = rankOf(accs);
+  var st = { type: "state", v: LOL_V, code: H.code, room: H.cfg.room, phase: H.phase, round: H.round, n: H.players.length,
+    left: H.deadline ? Math.max(0, H.deadline - Date.now()) : 0, paused: H.paused ? 1 : 0, hpub: HOSTKEY.pub,
+    players: H.players.map(function (p, i) { return { pid: p.pid, name: p.name, idx: i, bot: p.bot, acc: p.acc, rank: rk[i] }; }),
+    cnt: { built: H.players.filter(function (p) { return p.built; }).length, picked: H.players.filter(function (p) { return p.die; }).length } };
+  if (H.phase === "reveal" || H.phase === "end") {
+    st.rev = H.players.map(function (p) { return { die: p.prevDie, x: p.prevX, rp: p.rp, rk0: p.rkBefore }; });
+    st.stat = H.room;
+  }
+  if (H.phase === "end") st.places = H.places;
+  return st;
+}
+var BC = { t: null, last: 0, busy: false, again: false };
+function bcast() {
+  if (!H) return;
+  if (BC.t) return;
+  var gap = Math.min(1000, Math.max(150, H.players.length * 25)), wait = Math.max(0, BC.last + gap - Date.now());
+  BC.t = setTimeout(sendState, wait);
+}
+function sendState() {
+  BC.t = null;
+  if (BC.busy) { BC.again = true; return; }
+  BC.busy = true; BC.last = Date.now();
+  var st = publicState(), jobs = [];
+  st.sec = {}; st.pv = {};
+  H.players.forEach(function (p, i) {
+    if (p.bot) return;
+    var j = JSON.stringify(privOf(p, i)), L = LASTPRIV[p.pid];
+    if (!L || L.j !== j) { LASTPRIV[p.pid] = L = { j: j, v: ++PVC }; DIRTY[p.pid] = true; }
+    st.pv[p.pid] = L.v;
+    var k = KEYS[p.pid];
+    if (k && DIRTY[p.pid]) {
+      delete DIRTY[p.pid];
+      var o = JSON.parse(j); o.pv = L.v;
+      jobs.push(Sec.enc(k, o).then(function (e) { st.sec[p.pid] = e; }));
+    }
+  });
+  Promise.all(jobs).then(function () {
+    st.left = H.deadline ? Math.max(0, H.deadline - Date.now()) : 0;
+    Net.send(st);
+  }).then(function () { BC.busy = false; if (BC.again) { BC.again = false; bcast(); } }, function () { BC.busy = false; });
+}
+
+/* ---------- host controls ---------- */
+var HACT = {
+  start: function () { hostStart(); },
+  bots: function () { addBots(5); },
+  kick: function (b) {
+    var pid = b.dataset.p;
+    if (HV.kill !== pid) { HV.kill = pid; clearTimeout(HV.killT); HV.killT = setTimeout(function () { HV.kill = null; renderHost(); }, 3000); renderHost(); return; }
+    HV.kill = null; Net.send({ type: "reject", to: pid, msg: "ครูนำคุณออกจากห้อง เข้าใหม่ได้ถ้าต้องการ" });
+    H.players = H.players.filter(function (p) { return p.pid !== pid; }); H.players.forEach(function (p, i) { p.idx = i; });
+    delete KEYS[pid]; delete LASTPRIV[pid]; saveHost(); renderHost(); bcast();
+  },
+  cfg: function () { HV.cfgOpen = true; renderHost(); },
+  cfgSave: function () {
+    ["room", "tBuild", "tPick", "tRr", "tRev"].forEach(function (k) {
+      var el = document.getElementById("cf_" + k); if (!el) return;
+      var v = k === "room" ? (el.value.trim().slice(0, 30) || DEF_CFG.room) : Math.max(5, Math.min(600, Math.round(Number(el.value) || DEF_CFG[k])));
+      H.cfg[k] = v;
+    });
+    ls("lol-cfg", JSON.stringify(H.cfg)); HV.cfgOpen = false; saveHost(); renderHost(); bcast();
+  },
+  cfgClose: function () { HV.cfgOpen = false; renderHost(); },
+  pause: function () {
+    if (H.paused) { H.deadline = Date.now() + H.paused; H.paused = 0; }
+    else if (H.deadline) { H.paused = Math.max(1000, H.deadline - Date.now()); H.deadline = 0; }
+    saveHost(); renderHost(); bcast();
+  },
+  skip: function () { if (H.paused) { H.paused = 0; } H.deadline = Date.now(); },
+  end: function () {
+    if (Date.now() - HV.endAsk > 4000) { HV.endAsk = Date.now(); renderHost(); setTimeout(renderHost, 4100); return; }
+    HV.endAsk = 0; endGame(); saveHost(); renderHost(); bcast();
+  },
+  again: function () { H.phase = "lobby"; H.round = 0; H.places = null; H.deadline = 0; H.paused = 0; saveHost(); renderHost(); bcast(); },
+  newroom: function () { if (!confirm("สร้างห้องใหม่? ผู้เล่นทุกคนต้องเข้าห้องใหม่ด้วยรหัสใหม่")) return; H.players.forEach(function (p) { if (!p.bot) Net.send({ type: "reject", to: p.pid, msg: "ครูปิดห้องนี้แล้ว" }); }); newRoom(); }
+};
+document.addEventListener("click", function (e) {
+  var b = e.target.closest("[data-h]"); if (!b || !H || b.disabled) return;
+  if (HACT[b.dataset.h]) HACT[b.dataset.h](b);
+});
+
+/* ---------- host screens ---------- */
+var PHASE_T = { lobby: "รอผู้เล่น", build: "สร้างกฎส่วนตัว", pick: "เลือกลูกเต๋า", reroll: "ทอยแล้ว รอตัดสินใจทอยใหม่", reveal: "เปิดผล", end: "จบเกม" };
+function joinUrl() { return location.origin + "/logic-over-luck/#join=" + H.code; }
+var QRC = { code: "", svg: "" };
+function lobbyQr() { if (QRC.code !== H.code) { QRC.code = H.code; QRC.svg = qrSvg(joinUrl()); } return QRC.svg; }
+function timerHtml() {
+  if (H.paused) return '<div class="ring pz">หยุด</div>';
+  if (!H.deadline) return "";
+  var s = secs(H.deadline - Date.now());
+  return '<div class="ring' + (s <= 5 ? " warn" : "") + '" id="hring">' + s + "</div>";
+}
+function tickHost() {
+  var el = document.getElementById("hring"); if (!el || !H.deadline) return;
+  var s = secs(H.deadline - Date.now()); if (el.textContent !== String(s)) { el.textContent = s; el.classList.toggle("warn", s <= 5); }
+}
+function hdr(title, sub) {
+  return '<div class="hdr"><div class="hl"><div class="s1">' + esc(H.cfg.room) + " รหัส " + esc(H.code) + '</div><div class="s2">Logic over Luck</div></div>' +
+    '<div class="hc"><div class="ti">' + title + '</div><div class="su">' + (sub || "") + '</div></div><div class="hr">' + timerHtml() + "</div></div>";
+}
+function controls() {
+  if (H.phase === "lobby" || H.phase === "end") return "";
+  var ask = Date.now() - HV.endAsk < 4000;
+  return '<div class="ftr"><div style="display:flex;gap:14px"><button class="gb" data-h="pause">' + (H.paused ? "▶ เดินเวลาต่อ" : "⏸ หยุดเวลา") + '</button><button class="gb" data-h="skip">⏭ จบเวลาเฟสนี้</button></div>' +
+    '<button class="gb red" data-h="end">' + (ask ? "แตะอีกครั้งเพื่อจบเกม" : "ตัดจบเกม") + "</button></div>";
+}
+function renderHost() {
+  var el = document.getElementById("stage"); if (!el || !H) return;
+  var h = "", ph = H.phase, n = H.players.length;
+  if (ph === "lobby") {
+    var cs = n > 30 ? "font-size:21px;padding:3px 6px 3px 14px" : n > 20 ? "font-size:24px" : "";
+    var chips = H.players.map(function (p) { var k = HV.kill === p.pid; return '<span class="chip' + (k ? " kill" : "") + '" style="' + cs + '">' + (p.bot ? "🤖 " : "") + esc(p.name) + '<button class="kx" data-h="kick" data-p="' + esc(p.pid) + '" aria-label="ลบ ' + esc(p.name) + '">' + (k ? "ลบ?" : "✕") + "</button></span>"; }).join("");
+    h = hdr("รอผู้เล่นเข้าห้อง", "สแกน QR หรือเปิดลิงก์แล้วใส่รหัสห้อง") +
+      '<div class="lob"><div class="card" style="display:flex;flex-direction:column;gap:20px;align-items:center;justify-content:center"><div class="s1">รหัสห้อง</div><div class="code">' + esc(H.code) + '</div><div class="qr">' + lobbyQr() + '</div><div class="url">' + esc(location.host + "/logic-over-luck/") + "</div></div>" +
+      '<div class="card" style="display:flex;flex-direction:column;gap:20px;min-height:0"><div style="display:flex;justify-content:space-between;align-items:baseline"><div class="s2">ผู้เล่น ' + n + ' คน</div><div class="s1">เวลาสร้างกฎ ' + H.cfg.tBuild + " วินาที, เลือกเต๋า " + H.cfg.tPick + " วินาที</div></div>" +
+      '<div class="chips" style="flex:1">' + (chips || '<span class="su">ยังไม่มีใครเข้าห้อง</span>') + "</div></div></div>" +
+      '<div class="ftr"><div style="display:flex;gap:14px"><button class="gb" data-h="cfg">⚙ ตั้งค่า</button>' + (TEST ? '<button class="gb" data-h="bots">+ บอท 5 ตัว (ทดสอบ)</button>' : "") + '<button class="gb" data-h="newroom">สร้างห้องใหม่</button><a class="gb" href="/games/" style="display:inline-flex;align-items:center;text-decoration:none">← กลับเว็บชมรม</a></div>' +
+      '<button class="pb" data-h="start"' + (n < 2 ? " disabled" : "") + ">เริ่มเกม</button></div>";
+  } else if (ph === "build") {
+    var done = H.players.filter(function (p) { return p.built; }).length;
+    h = hdr("สร้างกฎส่วนตัว", "เลือกเงื่อนไข 1 ข้อ + ผล 1 ข้อ รวมไม่เกิน 5 เหรียญ บนมือถือ") +
+      '<div class="main" style="flex-direction:column;align-items:center;justify-content:center;gap:30px"><div class="big2">' + done + " / " + n + '</div><div class="su">คนที่สร้างกฎแล้ว ไม่ทันเวลา ระบบสุ่มกฎให้</div>' +
+      '<div class="chips" style="justify-content:center;max-width:1600px">' + H.players.map(function (p) { return '<span class="chip' + (p.built ? " done" : "") + '" style="padding-right:20px">' + (p.built ? "✓ " : "") + esc(p.name) + "</span>"; }).join("") + "</div></div>" + controls();
+  } else if (ph === "pick" || ph === "reroll") {
+    var picked = H.players.filter(function (p) { return p.die; }).length;
+    var sub = ph === "pick" ? "เลือกแล้ว " + picked + " / " + n + " คน" : "ใครยังมีสิทธิ์ทอยใหม่ ตัดสินใจบนมือถือ";
+    h = hdr("รอบที่ " + H.round + " / 12" + (H.round === 12 ? " <span style=\"color:#FFD84D\">คะแนน ×2</span>" : ""), PHASE_T[ph] + " " + sub) +
+      '<div class="main" style="flex-direction:column;justify-content:center"><div class="dref">' + LOL.DIE_IDS.map(function (d) { return '<div class="d"><div class="n">' + DIE_T[d] + '</div><div class="f">' + facesOf(d) + "</div></div>"; }).join("") + "</div>" +
+      '<div class="su" style="text-align:center;margin-top:30px">' + (ph === "pick" ? "เลือกลูกเต๋าบนมือถือ ไม่มีใครเห็นว่าคุณเลือกลูกไหนจนกว่าจะเปิดผล" : "ทุกคนเห็นเลขของตัวเองแล้ว คนที่ยังมีสิทธิ์ทอยใหม่ (1 ครั้งต่อเกม) ตัดสินใจตอนนี้") + "</div></div>" + controls();
+  } else if (ph === "reveal") {
+    h = hdr("ผลรอบที่ " + H.round + " / 12" + (H.round === 12 ? " (คะแนน ×2)" : ""), H.round < 12 ? "รอบถัดไปเริ่มเองเมื่อหมดเวลา" : "หมดเวลาแล้วไปหน้าสรุปผล") + revealHtml() + controls();
+  } else if (ph === "end") {
+    h = hdr("จบเกม", "คะแนนสะสมเท่ากัน ตัดสินด้วยคะแนนรอบ 12, 11, ... ตามลำดับ") + endHtml() +
+      '<div class="ftr"><div></div><div style="display:flex;gap:14px"><button class="gb" data-h="again">กลับล็อบบี้ (เล่นอีกเกม)</button></div></div>';
+  }
+  if (HV.cfgOpen) h += cfgHtml();
+  el.innerHTML = h;
+}
+function revealHtml() {
+  var order = H.players.map(function (p, i) { return i; }).sort(function (a, b) { return H.players[b].acc - H.players[a].acc || a - b; });
+  var rk = rankOf(H.players.map(function (p) { return p.acc; })), n = order.length;
+  /* the table fits the 700 px between the header and the buttons: 1 column up to 10 players, 2 up to 24, then 3 (no die name in 3 columns) */
+  var cols = n <= 10 ? 1 : n <= 24 ? 2 : 3, rows = Math.ceil(n / cols), rh = Math.max(30, Math.min(76, Math.floor(700 / rows) - 10)), fs = Math.max(19, Math.min(34, rh - 22));
+  var tpl = cols === 1 ? "56px 1fr 230px 90px 120px 120px" : cols === 2 ? "48px 1fr 170px 60px 90px 100px" : "44px 1fr 0px 48px 76px 84px";
+  var rowsH = order.map(function (i) {
+    var p = H.players[i], mv = p.rkBefore - rk[i];
+    return '<div class="rr" style="height:' + rh + "px;font-size:" + fs + "px;grid-template-columns:" + tpl + ";padding:0 " + (cols === 3 ? 10 : 16) + 'px"><span class="rk">' + rk[i] + '</span><span class="nm">' + (p.bot ? "🤖 " : "") + esc(p.name) +
+      (mv > 0 ? ' <span class="mv up">▲' + mv + "</span>" : mv < 0 ? ' <span class="mv dn">▼' + (-mv) + "</span>" : "") + '</span><span class="dn">' + DIE_T[p.prevDie].replace("เต๋า", "") +
+      '</span><span class="x">' + p.prevX + '</span><span class="pt' + (p.rp ? "" : " z") + '">' + sign(p.rp) + '</span><span class="ac">' + num(p.acc) + "</span></div>";
+  }).join("");
+  var s = H.room || {};
+  return '<div class="main" style="flex-direction:column;gap:16px"><div class="stats"><span>ค่าเฉลี่ย <b>' + (Math.round(s.mean * 100) / 100) + "</b></span><span>ฐานนิยม <b>" + (s.mode && s.mode.length ? s.mode.join(", ") : "ไม่มี") +
+    "</b></span><span>มัธยฐาน <b>" + (s.median || []).join(" และ ") + "</b></span><span>" + (s.rr ? "<b>รอบนี้มีคนทอยใหม่</b>" : "รอบนี้ไม่มีใครทอยใหม่") + "</span></div>" +
+    '<div class="rv" style="grid-template-rows:repeat(' + rows + ', auto);grid-template-columns:repeat(' + cols + ',minmax(0,1fr))">' + rowsH + "</div></div>";
+}
+function endHtml() {
+  var pl = H.places || [], n = H.players.length, idx = H.players.map(function (p, i) { return i; }).sort(function (a, b) { return pl[a] - pl[b] || a - b; });
+  function at(place) { return idx.filter(function (i) { return pl[i] === place; }); }
+  var podium = [2, 1, 3].map(function (place) {
+    var who = at(place); if (!who.length) return '<div class="col"></div>';
+    var hgt = place === 1 ? 300 : place === 2 ? 220 : 160, col = place === 1 ? "#FFD84D" : place === 2 ? "#C9D0E6" : "#E8A66A";
+    return '<div class="col"><div class="who">' + who.slice(0, 3).map(function (i) { return esc(H.players[i].name); }).join("<br>") + (who.length > 3 ? "<br>และอีก " + (who.length - 3) + " คน" : "") +
+      '</div><div class="sc">' + num(H.players[who[0]].acc) + ' คะแนน</div><div class="blk" style="height:' + hgt + "px;background:" + col + '">' + place + "</div></div>";
+  }).join("");
+  var rest = idx.filter(function (i) { return pl[i] > 3; }).map(function (i) { return "<span>" + pl[i] + ". " + esc(H.players[i].name) + " (" + num(H.players[i].acc) + ")</span>"; }).join("");
+  return '<div class="main" style="flex-direction:column;justify-content:center;gap:30px"><div class="pod">' + podium + '</div><div class="rest">' + rest + "</div></div>";
+}
+function cfgHtml() {
+  var c = H.cfg;
+  function row(k, label, small) { return "<label>" + label + '<input id="cf_' + k + '" class="' + (small ? "sm" : "") + '" value="' + esc(c[k]) + '"' + (small ? ' inputmode="numeric"' : "") + "></label>"; }
+  return '<div class="ov"><div class="ovb"><div class="s2">ตั้งค่าห้อง</div>' + row("room", "ชื่อห้อง") + row("tBuild", "เวลาสร้างกฎก่อนเกม (วินาที)", 1) + row("tPick", "เวลาเลือกลูกเต๋า (วินาที)", 1) +
+    row("tRr", "เวลาตัดสินใจทอยใหม่ (วินาที)", 1) + row("tRev", "เวลาดูผลแต่ละรอบ (วินาที)", 1) +
+    '<div class="s1">ค่าอื่นของกติกา (กลุ่มโหวต, เพดานการเสียคะแนน, ค่า x ของภาษีสังคม, กฎพิเศษรอบสุดท้าย) จะเพิ่มในขั้นถัดไป</div>' +
+    '<div style="display:flex;gap:16px;justify-content:flex-end"><button class="gb" data-h="cfgClose">ยกเลิก</button><button class="pb" data-h="cfgSave">บันทึก</button></div></div></div>';
+}
+
+/* =====================================================================
+   PLAYER (phone)
+   ===================================================================== */
+var P = { code: "", pid: "", name: "", kp: null, key: null, hpub: "", st: null, priv: null, pv: 0, pend: null, joined: false, err: "", sel: { cond: null, eff: null }, view: "", recvAt: 0, needAt: 0, joinT: null };
+function playerBoot(code) {
+  document.body.className = "ph";
+  P.code = code || ss("lol-code") || ""; P.pid = ss("lol-pid") || ""; P.name = ss("lol-name") || "";
+  if (!Sec.ok()) { P.err = "เบราว์เซอร์นี้เข้ารหัสข้อมูลไม่ได้ ใช้ Chrome หรือ Safari รุ่นใหม่ และเปิดผ่าน https"; }
+  var kp = null; try { kp = JSON.parse(ss("lol-kp") || "null"); } catch (e) {}
+  if (kp) { P.kp = kp; if (P.code && P.pid && ss("lol-joined") === P.code) connect(); else renderPlayer(); }
+  else if (Sec.ok()) Sec.gen().then(function (k) { P.kp = k; ss("lol-kp", JSON.stringify(k)); renderPlayer(); });
+  else renderPlayer();
+  setInterval(tickPlayer, 250);
+  setInterval(resendPend, 2000);
+}
+function connect() {
+  if (!P.pid) { P.pid = newId(); ss("lol-pid", P.pid); }
+  ss("lol-code", P.code); ss("lol-name", P.name);
+  P.joined = false; P.err = ""; P.st = null; P.priv = null; P.pv = 0; P.key = null; P.hpub = "";
+  Net.open(P.code, "p", onPlayerMsg);
+  var tries = 0;
+  function send() { if (P.joined) return; Net.send({ type: "join", pid: P.pid, name: P.name, v: LOL_V, pub: P.kp.pub }); }
+  send(); clearInterval(P.joinT);
+  P.joinT = setInterval(function () {
+    if (P.joined) { clearInterval(P.joinT); return; }
+    if (++tries >= 5) { clearInterval(P.joinT); Net.close(); ss("lol-joined", null); P.err = "ไม่พบห้องนี้ ตรวจรหัสห้องอีกครั้ง"; renderPlayer(); return; }
+    send();
+  }, 2000);
+  renderPlayer();
+}
+function onPlayerMsg(m) {
+  if (!m) return;
+  if (m.type === "reject" && m.to === P.pid) { Net.close(); clearInterval(P.joinT); ss("lol-joined", null); P.joined = false; P.st = null; P.err = m.msg; renderPlayer(); return; }
+  if (m.type === "adopt" && m.to === P.pid) { P.pid = m.pid; ss("lol-pid", P.pid); Net.send({ type: "join", pid: P.pid, name: P.name, v: LOL_V, pub: P.kp.pub }); return; }
+  if (m.type !== "state") return;
+  var me = (m.players || []).filter(function (p) { return p.pid === P.pid; })[0];
+  if (!me) { if (P.joined) { P.joined = false; P.st = null; renderPlayer(); } return; }
+  if (!P.joined) { P.joined = true; ss("lol-joined", P.code); clearInterval(P.joinT); }
+  P.st = m; P.recvAt = Date.now();
+  var hp = JSON.stringify(m.hpub);
+  var ready = P.key && P.hpub === hp ? Promise.resolve() : Sec.derive(P.kp.priv, m.hpub).then(function (k) { P.key = k; P.hpub = hp; });
+  ready.then(function () {
+    var e = m.sec && m.sec[P.pid];
+    if (e) return Sec.dec(P.key, e).then(function (pr) { if (pr.pv >= P.pv) { P.priv = pr; P.pv = pr.pv; } });
+  }).then(function () {
+    if ((m.pv && m.pv[P.pid] || 0) > P.pv && Date.now() - P.needAt > 1500) { P.needAt = Date.now(); Net.send({ type: "need", pid: P.pid }); }
+    renderPlayer();
+  }, function () { renderPlayer(); });
+}
+/* secret actions: encrypted, re-sent every 2 s until the Host's reply shows them */
+function sendSec(a) {
+  P.pend = a; if (!P.key) return;
+  Sec.enc(P.key, a).then(function (e) { Net.send({ type: "sec", pid: P.pid, iv: e.iv, ct: e.ct }); });
+}
+function pendDone() {
+  var a = P.pend, pr = P.priv; if (!a || !pr || !P.st) return false;
+  if (a.a === "build") return P.st.phase !== "build" || (pr.cond === a.cond && pr.eff === a.eff);
+  if (a.a === "pick") return P.st.phase !== "pick" || pr.die === a.die;
+  if (a.a === "rr") return P.st.phase !== "reroll" || pr.rrDone || pr.rerolled;
+  return true;
+}
+function resendPend() { if (P.pend && !pendDone()) sendSec(P.pend); else P.pend = null; }
+function leftMs() { var st = P.st; if (!st || !st.left || st.paused) return 0; return st.left - (Date.now() - P.recvAt); }
+function tickPlayer() {
+  var el = document.getElementById("ptm"); if (!el) return;
+  var s = secs(leftMs()); if (el.textContent !== String(s)) { el.textContent = s; el.classList.toggle("warn", s <= 5); }
+}
+
+var PACT = {
+  join: function () {
+    var c = (document.getElementById("jc").value || "").replace(/\D/g, "").slice(0, 4), nm = (document.getElementById("jn").value || "").trim().slice(0, 20);
+    P.code = c; P.name = nm;
+    if (c.length !== 4) { P.err = "ใส่รหัสห้อง 4 หลัก"; renderPlayer(true); return; }
+    if (!nm) { P.err = "ใส่ชื่อเล่น"; renderPlayer(true); return; }
+    if (!P.kp) return;
+    connect();
+  },
+  leave: function () { Net.close(); clearInterval(P.joinT); ss("lol-joined", null); P.joined = false; P.st = null; P.priv = null; P.err = ""; renderPlayer(true); },
+  cond: function (b) { P.sel.cond = b.dataset.v; if (P.sel.eff && LOL.buildCost(P.sel.cond, P.sel.eff) > 5) P.sel.eff = null; renderPlayer(true); },
+  eff: function (b) { P.sel.eff = b.dataset.v; if (P.sel.cond && LOL.buildCost(P.sel.cond, P.sel.eff) > 5) P.sel.cond = null; renderPlayer(true); },
+  build: function () { if (P.sel.cond && P.sel.eff && LOL.buildOk(P.sel.cond, P.sel.eff, { when: "start" })) { sendSec({ a: "build", cond: P.sel.cond, eff: P.sel.eff }); renderPlayer(true); } },
+  die: function (b) { sendSec({ a: "pick", die: b.dataset.v }); P.myPick = b.dataset.v; renderPlayer(true); },
+  rr: function (b) { sendSec({ a: "rr", use: b.dataset.v === "1" }); P.myRr = b.dataset.v; renderPlayer(true); },
+  reload: function () { location.reload(); }
+};
+document.addEventListener("click", function (e) {
+  var b = e.target.closest("[data-p]"); if (!b || b.disabled || document.body.className !== "ph") return;
+  if (PACT[b.dataset.p]) PACT[b.dataset.p](b);
+});
+document.addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target && (e.target.id === "jc" || e.target.id === "jn")) PACT.join(); });
+
+function renderPlayer(force) {
+  var app = document.getElementById("app"); if (!app) return;
+  var html = playerHtml();
+  if (!force && html === P.view) return;   /* nothing changed: keep the page (taps and scrolling are not disturbed) */
+  P.view = html;
+  var y = window.scrollY, keepJ = document.getElementById("jc") ? [document.getElementById("jc").value, document.getElementById("jn").value] : null;
+  app.innerHTML = '<div id="pw">' + html + "</div>";
+  if (keepJ && document.getElementById("jc")) { document.getElementById("jc").value = keepJ[0]; document.getElementById("jn").value = keepJ[1]; }
+  window.scrollTo(0, y);
+  tickPlayer();
+}
+function pTop(title, sub, timer) {
+  return '<div class="ptop"><div><div class="t">' + title + '</div><div class="s">' + (sub || "") + "</div></div>" + (timer ? (P.st && P.st.paused ? '<div class="tm" style="font-size:.9rem">หยุด</div>' : '<div class="tm" id="ptm">' + secs(leftMs()) + "</div>") : "") + "</div>";
+}
+function statusBar() {
+  var st = P.st, me = myPub(); if (!me) return "";
+  return '<div class="sbar"><span>' + esc(me.name) + "</span><span>คะแนนสะสม <b>" + num(me.acc) + "</b></span><span>อันดับ <b>" + me.rank + "</b>/" + st.n + "</span><span>ทอยใหม่ <b>" + (P.priv && P.priv.rrLeft ? "1" : "0") + "</b></span></div>";
+}
+function myPub() { var st = P.st; if (!st) return null; return st.players.filter(function (p) { return p.pid === P.pid; })[0] || null; }
+function ruleBox(pr) {
+  if (!pr || !pr.cond) return "";
+  var h = '<div class="rule"><b>กฎของคุณ:</b> ถ้า ' + esc(condName(pr.cond)) + " → " + esc(effName(pr.eff));
+  if (pr.eff === "random" && pr.reff) h += '<br><b>รอบนี้สุ่มได้:</b> ' + esc(effName(pr.reff));
+  if (pr.leaders && pr.leaders.length) h += "<br><b>ผู้นำของคุณ:</b> " + esc(pr.leaders.join(", "));
+  return h + "</div>";
+}
+function playerHtml() {
+  var st = P.st, pr = P.priv;
+  if (!P.joined) {
+    var c0 = P.code || "", connecting = P.joinT && !P.err && Net.ch;
+    return '<div class="ptop"><div><div class="t" style="font-size:1.8rem">Logic over Luck</div><div class="s">ชมรมคณิตศาสตร์ เล่นร่วมกันบนจอใหญ่</div></div></div>' +
+      '<div class="pc" style="display:flex;flex-direction:column;gap:12px"><label><span class="lbl">รหัสห้อง (4 หลัก)</span><input id="jc" class="inp" inputmode="numeric" maxlength="4" autocomplete="off" value="' + esc(c0) + '"></label>' +
+      '<label><span class="lbl">ชื่อเล่น</span><input id="jn" class="inp" maxlength="20" autocomplete="nickname" value="' + esc(P.name) + '"></label>' +
+      (P.err ? '<div class="err" role="alert">' + esc(P.err) + "</div>" : "") +
+      '<button class="btn" data-p="join"' + (connecting ? " disabled" : "") + ">" + (connecting ? "กำลังเข้าห้อง…" : "เข้าร่วม") + "</button></div>" +
+      '<a href="/games/" class="muted">← กลับเว็บชมรม</a>';
+  }
+  if (st.v > LOL_V) return '<div class="verw">มีเวอร์ชันใหม่ของเกม กดรีเฟรชเพื่อเล่นต่อ (คะแนนไม่หาย)</div><button class="btn" data-p="reload">รีเฟรชหน้า</button>';
+  var warnOld = st.v < LOL_V ? '<div class="verw">จอใหญ่ใช้เกมเวอร์ชันเก่า บอกครูให้รีเฟรชจอใหญ่</div>' : "";
+  var ph = st.phase, me = myPub(), h = warnOld;
+  if (!pr && ph !== "lobby") return h + pTop("กำลังรับข้อมูล…", "รอสักครู่") + '<div class="muted">ถ้าค้างนาน ลองรีเฟรชหน้า</div>';
+  if (ph === "lobby") {
+    P.sel = { cond: null, eff: null };
+    return h + pTop("เข้าห้องแล้ว", "ห้อง " + esc(st.code) + " " + esc(st.room)) + '<div class="pc"><div style="font-size:1.3rem;font-weight:700">' + esc(me.name) + '</div><div class="muted">รอครูกดเริ่มเกม ระหว่างนี้ศึกษากฎส่วนรวมและกฎส่วนตัวไว้ก่อน เพราะเวลาสร้างกฎสั้น</div><div class="muted">ผู้เล่นในห้อง ' + st.n + " คน</div></div>" +
+      '<button class="btn alt" data-p="leave">ออกจากห้อง</button>';
+  }
+  h += statusBar();
+  if (ph === "build") {
+    if (!P.sel.cond && !P.sel.eff && pr.built) { P.sel.cond = pr.cond; P.sel.eff = pr.eff; }
+    var sel = P.sel, used = (sel.cond ? LOL.COND[sel.cond] : 0) + (sel.eff ? LOL.EFF[sel.eff] : 0);
+    var sent = pr.built ? '<div class="ok">✓ ส่งกฎแล้ว: ถ้า ' + esc(condName(pr.cond)) + " → " + esc(effName(pr.eff)) + " (เปลี่ยนได้จนหมดเวลา)</div>" : '<div class="muted">ยังไม่ได้ส่งกฎ ถ้าหมดเวลา ระบบสุ่มกฎให้</div>';
+    function optList(kind, table, prices) {
+      return Object.keys(prices).map(function (k) {
+        var other = kind === "cond" ? sel.eff : sel.cond, cost = prices[k] + (other ? (kind === "cond" ? LOL.EFF[other] : LOL.COND[other]) : 0);
+        var on = sel[kind] === k;
+        return '<button class="opt' + (on ? " on" : "") + '" data-p="' + kind + '" data-v="' + esc(k) + '"' + (cost > 5 && !on ? " disabled" : "") + '><span class="pr">' + prices[k] + '</span><span><span class="nm">' + esc(table[k][0]) + '</span><br><span class="ds">' + esc(table[k][1]) + "</span></span></button>";
+      }).join("");
+    }
+    return h + pTop("สร้างกฎส่วนตัว", "เงื่อนไข 1 ข้อ + ผล 1 ข้อ ไม่เกิน 5 เหรียญ", true) +
+      '<div class="pc budget"><div style="display:flex;justify-content:space-between;font-weight:700"><span>ใช้ไป ' + used + ' / 5 เหรียญ</span><span>' + (sel.cond && sel.eff ? "ครบแล้ว" : "เลือกให้ครบ") + "</span></div>" +
+      '<div class="muted">ถ้า ' + (sel.cond ? esc(condName(sel.cond)) : "…") + " → " + (sel.eff ? esc(effName(sel.eff)) : "…") + "</div>" +
+      '<button class="btn" data-p="build" style="width:100%;margin-top:8px"' + (sel.cond && sel.eff ? "" : " disabled") + ">ส่งกฎนี้</button></div>" + sent +
+      '<div class="pc"><div class="lbl">1. เงื่อนไข</div><div class="opts">' + optList("cond", COND_T, LOL.COND) + "</div></div>" +
+      '<div class="pc"><div class="lbl">2. ผล</div><div class="opts">' + optList("eff", EFF_T, LOL.EFF) + "</div></div>";
+  }
+  var rt = "รอบที่ " + st.round + " / 12" + (st.round === 12 ? " คะแนน ×2" : "");
+  if (ph === "pick") {
+    var mine = P.pend && P.pend.a === "pick" ? P.pend.die : pr.die;
+    return h + pTop(rt, "เลือกลูกเต๋า (เปลี่ยนได้จนหมดเวลา)", true) + ruleBox(pr) +
+      '<div class="dice">' + LOL.DIE_IDS.map(function (d) { return '<button class="die' + (mine === d ? " on" : "") + '" data-p="die" data-v="' + d + '"><div class="n">' + DIE_T[d] + '</div><div class="f">' + facesOf(d) + "</div></button>"; }).join("") + "</div>" +
+      (mine ? '<div class="ok">✓ เลือก ' + DIE_T[mine] + " แล้ว</div>" : P.pend && P.pend.a === "pick" ? '<div class="muted">กำลังส่ง…</div>' : '<div class="muted">ไม่เลือกภายในเวลา ระบบใช้ลูกเดิมจากรอบก่อน (รอบแรกสุ่มให้)</div>') +
+      '<div class="muted">เลือกแล้ว ' + st.cnt.picked + " / " + st.n + " คน</div>";
+  }
+  if (ph === "reroll") {
+    var canRr = pr.rrLeft && !pr.rrDone && !pr.rerolled;
+    return h + pTop(rt, "ผลทอยของคุณ (คนอื่นยังไม่เห็น)", true) + ruleBox(pr) +
+      '<div class="pc"><div class="muted" style="text-align:center">' + DIE_T[pr.die] + '</div><div class="roll">' + pr.x + "</div>" +
+      (pr.rerolled ? '<div class="ok" style="text-align:center">ทอยใหม่แล้ว ผลนี้คือผลจริงของรอบนี้</div>' : "") + "</div>" +
+      (canRr ? '<div class="muted">คุณมีสิทธิ์ทอยใหม่ 1 ครั้งต่อเกม ทอยใหม่แล้วต้องใช้ผลใหม่</div><div class="dice"><button class="btn" data-p="rr" data-v="1">ทอยใหม่</button><button class="btn alt" data-p="rr" data-v="0">ใช้ผลนี้</button></div>' + (P.pend && P.pend.a === "rr" ? '<div class="muted">กำลังส่ง…</div>' : "")
+        : '<div class="muted">' + (pr.rrLeft ? "ใช้ผลนี้แล้ว" : "ใช้สิทธิ์ทอยใหม่ไปแล้ว") + " รอคนอื่นตัดสินใจ</div>");
+  }
+  if (ph === "reveal") {
+    var d = pr.det || {}, rv = st.rev || [], mi = me.idx, my = rv[mi] || {};
+    return h + pTop("ผลรอบที่ " + st.round, st.round < 12 ? "รอบถัดไปเริ่มเอง" : "รอดูผลสุดท้าย", true) + ruleBox(pr) +
+      '<div class="pc"><div style="display:flex;justify-content:space-between;align-items:center"><span>' + DIE_T[my.die] + " ทอยได้ <b style=\"font-size:1.6rem\">" + my.x + '</b></span><span style="font-family:Prompt,sans-serif;font-weight:700;font-size:1.8rem">' + sign(d.rp || 0) + "</span></div>" +
+      '<div class="steps" style="margin-top:8px">' + stepsHtml(d) + "</div>" +
+      '<div style="margin-top:10px;font-weight:700">คะแนนสะสม ' + num(d.acc0) + " → " + num(d.acc) + " อันดับ " + me.rank + " จาก " + st.n + "</div></div>" +
+      '<div class="muted">' + (st.stat && st.stat.rr ? "รอบนี้มีคนทอยใหม่" : "รอบนี้ไม่มีใครทอยใหม่") + "</div>";
+  }
+  if (ph === "end") {
+    var pl = st.places ? st.places[me.idx] : me.rank;
+    return h + pTop("จบเกม", "Logic over Luck") + '<div class="pc" style="text-align:center"><div class="muted">อันดับของคุณ</div><div class="roll">' + pl + '</div><div style="font-weight:700">จาก ' + st.n + " คน คะแนนสะสม " + num(me.acc) + "</div></div>" +
+      '<div class="muted">คะแนนสะสมเท่ากัน ตัดสินด้วยคะแนนรอบ 12, 11, ... ตามลำดับ</div><button class="btn alt" data-p="leave">ออกจากห้อง</button>';
+  }
+  return h;
+}
+function stepsHtml(d) {
+  var out = [];
+  function row(label, v) { out.push("<div><span>" + label + "</span><b class=\"" + (v > 0 ? "p" : v < 0 ? "m" : "") + "\">" + (typeof v === "number" ? sign(v) : v) + "</b></div>"); }
+  (d.steps || []).forEach(function (s) {
+    if (s.k === "face") row("แต้มหน้าลูกเต๋า" + (s.cursed ? " (โดนพากันลงเหว)" : ""), String(s.v));
+    else if (s.k === "personal") { if (s.fired) row("กฎส่วนตัวผ่าน: " + esc(effName(s.eff)), s.d); else row("เงื่อนไขของกฎส่วนตัวไม่ผ่าน", "–"); }
+    else if (s.k === "next6") row("+6 จากรอบที่แล้ว", 6);
+    else if (s.k === "common") row(esc(RULE_T[s.id] || s.id), s.d);
+    else if (s.k === "floor") row("ติดลบ ปัดเป็น 0", s.d);
+    else if (s.k === "bust") row("เกิน 10 แตก", s.d);
+    else if (s.k === "gain") row("ได้จาก " + esc(effName(d.eff)), s.d);
+    else if (s.k === "double") row("รอบสุดท้าย คูณ 2", s.d);
+  });
+  if (d.stolen) row("ถูกหักจากคะแนนสะสม (ขโมย/ตัดหน้า)", -d.stolen);
+  if (d.delulu) row("ทายผิด", d.delulu);
+  if (d.crowded) row(esc(RULE_T.crowded), d.crowded);
+  if (d.robin) row(esc(RULE_T.robin), d.robin);
+  return out.join("");
+}
+
+/* =====================================================================
+   start: #host = big screen, #join=CODE or #player = phone, nothing = choose
+   ===================================================================== */
+(function boot() {
+  var hs = location.hash || "";
+  if (hs === "#host") return hostBoot();
+  var mj = hs.match(/^#join=(\d{4})/);
+  if (mj || hs === "#player") return playerBoot(mj ? mj[1] : "");
+  if (ss("lol-joined")) return playerBoot("");
+  document.getElementById("app").innerHTML = '<div class="role"><h1>Logic over Luck</h1><p>เกมลูกเต๋าที่ตรรกะชนะดวง สร้างกฎส่วนตัว เลือกลูกเต๋า แล้วแข่งกัน 12 รอบ</p>' +
+    '<button class="rbtn pri" onclick="location.hash=\'#player\';location.reload()">เข้าห้อง<small>ผู้เล่น ใส่รหัสห้องจากจอใหญ่</small></button>' +
+    '<button class="rbtn" onclick="location.hash=\'#host\';location.reload()">เปิดจอใหญ่<small>ครู ใช้จอคอมหรือโปรเจกเตอร์</small></button><a href="/games/">← กลับเว็บชมรม</a></div>';
+})();
+</script>
+</body>
+</html>

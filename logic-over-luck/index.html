@@ -84,7 +84,7 @@ body.ph #netb.ok { background: #2E9E6B; } body.ph #netb.local { background: #D9A
 .stats { display: flex; gap: 28px; font-size: 28px; color: #B4BEDA; }
 .stats b { color: #EEF1FA; }
 /* end */
-.pod { display: flex; align-items: flex-end; justify-content: center; gap: 28px; height: 470px; }
+.pod { display: flex; align-items: flex-end; justify-content: center; gap: 28px; height: 600px; }
 .pod .col { width: 380px; text-align: center; }
 .pod .blk { border-radius: 22px 22px 0 0; display: flex; align-items: flex-start; justify-content: center; padding-top: 18px; font-family: Prompt, sans-serif; font-weight: 700; font-size: 70px; color: #0E1326; }
 .pod .who { font-family: Prompt, sans-serif; font-weight: 700; font-size: 38px; line-height: 1.2; margin-bottom: 12px; word-break: break-word; }
@@ -386,7 +386,19 @@ body.ani .a-kg { animation-name: kgd; animation-duration: .5s; animation-timing-
 .dmini.a-squash { transform: scaleY(.72); }
 body.ani .a-squash { animation-name: sqs; animation-duration: .5s; }
 @keyframes sqs { 0% { transform: none; } 50% { transform: scaleY(.6) scaleX(1.06); } 100% { transform: scaleY(.72); } }
-.deja { font-family: Prompt, sans-serif; font-weight: 700; font-size: 120px; color: #C9B8FF; text-shadow: 12px 0 0 rgba(201, 184, 255, .3), 24px 0 0 rgba(201, 184, 255, .15); }
+.palm { position: relative; width: 230px; height: 230px; border-radius: 50%; border: 14px solid #FF3D3D; box-shadow: 0 0 40px rgba(255, 61, 61, .6); display: flex; align-items: center; justify-content: center; margin-bottom: 30px; }
+.palm span { font-size: 140px; line-height: 1; }
+body.ani .a-palm { animation-name: palm; animation-duration: .9s; animation-timing-function: cubic-bezier(.3, 1.3, .5, 1); }
+@keyframes palm { 0% { opacity: 0; transform: scale(.2) rotate(-25deg); } 45% { opacity: 1; transform: scale(1.25) rotate(6deg); } 60% { transform: scale(.94) rotate(-3deg); } 75% { transform: scale(1.06); } 100% { opacity: 1; transform: none; } }
+/* median: the rolls in a row, arrows walk in from both ends */
+.mrow { position: relative; height: 250px; margin-bottom: 20px; }
+.mt { position: absolute; top: 90px; display: flex; align-items: center; justify-content: center; border-radius: 12px; border: 3px solid #2B3560; background: #232C50; font-family: Prompt, sans-serif; }
+.mt.dz-std { background: #F4F1E8; color: #14213D; border-color: #D9C48A; } .mt.dz-con { background: #1E7A4C; border-color: #5BD98F; } .mt.dz-risk { background: #4A0D12; border-color: #FF4D3D; } .mt.dz-prime { background: #6A3BD1; border-color: #E2D3FF; }
+.marr { position: absolute; top: 20px; width: 44px; text-align: center; font-style: normal; font-size: 50px; line-height: 1; color: #FF5AA8; text-shadow: 0 0 12px rgba(255, 90, 168, .8); transform: translateX(var(--dx, 0)); }
+body.ani .a-step { animation-name: mstep; animation-duration: 1.2s; animation-timing-function: steps(var(--n, 1), end); }
+@keyframes mstep { from { transform: none; } to { transform: translateX(var(--dx, 0)); } }
+.mbox { position: absolute; top: 76px; height: 124px; border: 6px solid #FFD84D; border-radius: 18px; box-shadow: 0 0 30px rgba(255, 216, 77, .7); }
+.mval { position: absolute; top: 212px; width: 400px; text-align: center; font-family: Prompt, sans-serif; font-weight: 700; font-size: 40px; color: #FFD84D; }
 .rkt { font-size: 150px; line-height: 1; }
 body.ani .a-rkt { animation-name: rkt; animation-duration: 1.2s; animation-timing-function: cubic-bezier(.5, 0, .3, 1); }
 @keyframes rkt { 0% { transform: translateY(240px) rotate(-45deg); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(0) rotate(-45deg); } }
@@ -425,6 +437,19 @@ body.ani .a-draw { animation-name: drw; animation-duration: .6s; animation-timin
   color: transparent; height: 30px; overflow: hidden; box-shadow: 0 3px 8px rgba(0, 0, 0, .4); }
 .die.bn::before { height: 16px; top: 6px; transform: rotate(-4deg); }
 .oldx { text-align: center; color: #8A93B0; font-weight: 700; }
+/* avatars (batch 3) */
+svg.av { display: inline-block; vertical-align: middle; flex: none; }
+.chip svg.av { margin: -4px 8px -4px -10px; }
+.rr .nm svg.av { margin: -6px 8px -4px 0; }
+svg.avc { margin: -8px 8px -6px -8px; }
+.pav { display: flex; justify-content: center; gap: 6px; margin-bottom: 6px; }
+.sbn { display: inline-flex; align-items: center; gap: 6px; min-width: 0; } .sbn svg { background: #fff; border-radius: 50%; }
+.avb .avtop { display: flex; gap: 14px; align-items: center; }
+.avb .avtop > svg { background: #E9E4FF; border-radius: 22px; border: 3px solid #14213D; padding: 4px; }
+.avbt { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; } .avbt .btn { min-height: 42px; font-size: 1rem; padding: 4px 12px; }
+.avos { display: flex; flex-wrap: wrap; gap: 6px; }
+.avo { border: 2px solid #C9D0E6; border-radius: 12px; background: #fff; padding: 3px; line-height: 0; }
+.avo.on { border: 3px solid #14213D; background: #FFF3BF; }
 .oldx s { font-family: Prompt, sans-serif; font-size: 1.6rem; }
 body.ani .a-old { animation-name: oldx; animation-duration: .6s; }
 @keyframes oldx { 0% { opacity: 1; transform: translateY(80px) scale(2.2); color: #14213D; } 60% { opacity: .7; transform: translate(60px, -10px) rotate(25deg) scale(1.1); } 100% { opacity: 1; transform: none; } }
@@ -434,7 +459,7 @@ body.ani .a-old { animation-name: oldx; animation-duration: .6s; }
 <div id="app"></div>
 <div id="netb" aria-hidden="true"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/logic-over-luck/engine.js?v=2026112811"></script>
+<script src="/logic-over-luck/engine.js?v=2026112812"></script>
 <script>
 "use strict";
 /* Logic over Luck (Rules Race: Math Club Edition v5). Big screen (#host) + phones (#join=CODE).
@@ -444,7 +469,7 @@ body.ani .a-old { animation-name: oldx; animation-duration: .6s; }
    each phone and the Host make an ECDH P-256 key pair, the shared AES-GCM key is never sent. */
 
 /* page version: RAISE THIS NUMBER (and the ?v= of engine.js above) EVERY TIME THIS FOLDER CHANGES (YYYYMMDD + 2 digits) */
-var LOL_V = 2026112811;
+var LOL_V = 2026112812;
 
 /* ---------- animation and sound (step 8; ideas: claude/logic-over-luck-animation-ideas.md) ----------
    An animated element carries data-t0 = when its scene started (ms). After every redraw aniSync() sets --el = the time already
@@ -482,6 +507,64 @@ var DIE_CLS = { std: "dz-std", con: "dz-con", risk: "dz-risk", prime: "dz-prime"
 function isPrime(v) { return v === 2 || v === 3 || v === 5 || v === 7; }
 /* the faces of a die; on the Prime die the prime faces glow */
 function facesHtml(d) { return LOL.DICE[d].map(function (v) { return d !== "prime" ? String(v) : isPrime(v) ? '<span class="pf">' + v + "</span>" : '<span class="np">' + v + "</span>"; }).join(" "); }
+
+/* ---------- avatars (step 8, batch 3; user 28 Nov 15:14/15:16): original cartoon characters, made from 5 choices,
+   kept in the phone's browser (localStorage lol-av) and sent in the join message (public, not secret).
+   Code "shape-colour-eyes-mouth-extra", e.g. "2-5-1-0-3". Drawn as SVG in a 100 x 100 box; the head top is about y = 20,
+   the eyes at y = 50 (Sigma Lord glasses and crown, NPC mask and the like attach there in batch 4). */
+var AV_N = [6, 10, 6, 6, 8];
+var AV_K = ["รูปร่าง", "สี", "ตา", "ปาก", "ของแต่งตัว"];
+var AV_COL = ["#FF6B6B", "#FFA94D", "#FFD43B", "#69DB7C", "#38D9A9", "#4DABF7", "#748FFC", "#B197FC", "#F783AC", "#C9CED8"];
+var AV_TOP = [22, 22, 16, 15, 16, 24];   /* head top per shape */
+function avParse(s) {
+  var m = /^(\d)-(\d)-(\d)-(\d)-(\d)$/.exec(String(s || "")); if (!m) return null;
+  var a = m.slice(1).map(Number); return a.every(function (v, i) { return v < AV_N[i]; }) ? a : null;
+}
+function avRandom() { return AV_N.map(function (n) { return Math.floor(rnd() * n); }).join("-"); }
+function avHash(seed) { var h = 7; String(seed || "").split("").forEach(function (c) { h = (h * 31 + c.charCodeAt(0)) >>> 0; }); return AV_N.map(function (n) { var v = h % n; h = Math.floor(h / n) + 13; return v; }).join("-"); }
+function avOfP(p) { return (p && avParse(p.av) && p.av) || avHash(p && p.pid); }
+var AVC = {};
+function avInner(s) {
+  if (AVC[s]) return AVC[s];
+  var a = avParse(s) || [0, 4, 0, 0, 0], c = AV_COL[a[1]], o = ' stroke="#14213D" stroke-width="4" stroke-linejoin="round"', k = "#14213D", t = AV_TOP[a[0]], g = "";
+  /* body */
+  if (a[0] === 0) g += '<ellipse cx="50" cy="58" rx="38" ry="36" fill="' + c + '"' + o + "/>";
+  else if (a[0] === 1) g += '<line x1="50" y1="22" x2="50" y2="9"' + o + '/><circle cx="50" cy="8" r="5" fill="#FF6B6B"' + o + '/><rect x="14" y="22" width="72" height="70" rx="16" fill="' + c + '"' + o + "/>";
+  else if (a[0] === 2) g += '<path d="M14 92 V52 A36 36 0 0 1 86 52 V92 L74 84 L62 92 L50 84 L38 92 L26 84 Z" fill="' + c + '"' + o + "/>";
+  else if (a[0] === 3) g += '<ellipse cx="50" cy="55" rx="29" ry="40" fill="' + c + '"' + o + "/>";
+  else if (a[0] === 4) g += '<path d="M50 16 C58 16 92 76 88 86 C85 94 15 94 12 86 C8 76 42 16 50 16 Z" fill="' + c + '"' + o + '/><rect x="36" y="74" width="28" height="18" rx="3" fill="#14213D"/>';
+  else g += '<path d="M18 40 L22 12 L42 28 Z M82 40 L78 12 L58 28 Z" fill="' + c + '"' + o + '/><circle cx="50" cy="58" r="36" fill="' + c + '"' + o + "/>";
+  /* cheeks */
+  g += '<ellipse cx="28" cy="64" rx="7" ry="4.5" fill="#FF8FAB" opacity=".55"/><ellipse cx="72" cy="64" rx="7" ry="4.5" fill="#FF8FAB" opacity=".55"/>';
+  /* eyes */
+  var E = [["38", "50"], ["62", "50"]];
+  if (a[2] === 0) g += E.map(function (e) { return '<circle cx="' + e[0] + '" cy="' + e[1] + '" r="5" fill="' + k + '"/>'; }).join("");
+  else if (a[2] === 1) g += E.map(function (e) { return '<circle cx="' + e[0] + '" cy="50" r="10" fill="#fff" stroke="' + k + '" stroke-width="3"/><circle cx="' + (Number(e[0]) + 2) + '" cy="52" r="5" fill="' + k + '"/><circle cx="' + (Number(e[0]) + 4) + '" cy="49" r="1.8" fill="#fff"/>'; }).join("");
+  else if (a[2] === 2) g += '<path d="M31 51 Q38 46 45 51 M55 51 Q62 46 69 51" fill="none" stroke="' + k + '" stroke-width="3.5" stroke-linecap="round"/>';
+  else if (a[2] === 3) g += E.map(function (e) { var x = Number(e[0]); return '<path d="M' + x + ' 42 L' + (x + 2.6) + ' 47.5 L' + (x + 8) + ' 48 L' + (x + 3.8) + ' 51.6 L' + (x + 5) + ' 57 L' + x + ' 54 L' + (x - 5) + ' 57 L' + (x - 3.8) + ' 51.6 L' + (x - 8) + ' 48 L' + (x - 2.6) + ' 47.5 Z" fill="' + k + '"/>'; }).join("");
+  else if (a[2] === 4) g += '<circle cx="38" cy="50" r="5" fill="' + k + '"/><path d="M56 51 Q62 45 68 51" fill="none" stroke="' + k + '" stroke-width="3.5" stroke-linecap="round"/>';
+  else g += '<circle cx="38" cy="52" r="4.5" fill="' + k + '"/><circle cx="62" cy="52" r="4.5" fill="' + k + '"/><path d="M30 41 L45 46 M70 41 L55 46" stroke="' + k + '" stroke-width="4" stroke-linecap="round"/>';
+  /* mouth */
+  if (a[3] === 0) g += '<path d="M41 68 Q50 76 59 68" fill="none" stroke="' + k + '" stroke-width="3.5" stroke-linecap="round"/>';
+  else if (a[3] === 1) g += '<ellipse cx="50" cy="71" rx="5.5" ry="7" fill="' + k + '"/>';
+  else if (a[3] === 2) g += '<rect x="38" y="65" width="24" height="12" rx="5" fill="#fff" stroke="' + k + '" stroke-width="3"/><line x1="38" y1="71" x2="62" y2="71" stroke="' + k + '" stroke-width="2"/>';
+  else if (a[3] === 3) g += '<path d="M40 67 Q50 75 60 67" fill="none" stroke="' + k + '" stroke-width="3.5" stroke-linecap="round"/><path d="M46 71 Q46 80 51 80 Q56 80 55 71 Z" fill="#FF6B8A" stroke="' + k + '" stroke-width="2.5"/>';
+  else if (a[3] === 4) g += '<line x1="42" y1="70" x2="58" y2="70" stroke="' + k + '" stroke-width="3.5" stroke-linecap="round"/>';
+  else g += '<path d="M42 71 Q52 72 59 64" fill="none" stroke="' + k + '" stroke-width="3.5" stroke-linecap="round"/>';
+  /* extra */
+  if (a[4] === 1) g += '<path d="M28 ' + (t + 8) + ' Q50 ' + (t - 14) + " 72 " + (t + 8) + ' Z" fill="#FF6B6B"' + o + '/><path d="M64 ' + (t + 6) + " L90 " + (t + 10) + " L66 " + (t + 12) + ' Z" fill="#FF6B6B"' + o + "/>";
+  else if (a[4] === 2) g += '<path d="M14 54 Q14 ' + (t - 10) + " 50 " + (t - 10) + " Q86 " + (t - 10) + ' 86 54" fill="none" stroke="#14213D" stroke-width="6"/><rect x="6" y="46" width="14" height="22" rx="5" fill="#4DABF7"' + o + '/><rect x="80" y="46" width="14" height="22" rx="5" fill="#4DABF7"' + o + "/>";
+  else if (a[4] === 3) g += '<path d="M60 ' + (t + 2) + " L74 " + (t - 8) + " L74 " + (t + 12) + " Z M60 " + (t + 2) + " L46 " + (t - 8) + " L46 " + (t + 12) + ' Z" fill="#F783AC"' + o + '/><circle cx="60" cy="' + (t + 2) + '" r="4" fill="#F783AC"' + o + "/>";
+  else if (a[4] === 4) g += '<path d="M50 ' + (t + 2) + " V" + (t - 10) + '" stroke="#2B8A3E" stroke-width="4"/><path d="M50 ' + (t - 8) + " Q38 " + (t - 20) + " 34 " + (t - 8) + " Q44 " + (t - 4) + " 50 " + (t - 8) + " Z M50 " + (t - 8) + " Q62 " + (t - 20) + " 66 " + (t - 8) + " Q56 " + (t - 4) + " 50 " + (t - 8) + ' Z" fill="#69DB7C" stroke="#2B8A3E" stroke-width="2.5"/>';
+  else if (a[4] === 5) g += '<ellipse cx="50" cy="' + (t - 7) + '" rx="22" ry="6" fill="none" stroke="#FFD43B" stroke-width="5"/>';
+  else if (a[4] === 6) g += '<path d="M36 ' + (t + 6) + " L50 " + (t - 18) + " L64 " + (t + 6) + ' Z" fill="#B197FC"' + o + '/><circle cx="50" cy="' + (t - 18) + '" r="4.5" fill="#FFD43B"' + o + "/>";
+  else if (a[4] === 7) g += '<circle cx="38" cy="50" r="12" fill="none" stroke="#14213D" stroke-width="3.5"/><circle cx="62" cy="50" r="12" fill="none" stroke="#14213D" stroke-width="3.5"/><line x1="50" y1="50" x2="50" y2="50" stroke="#14213D" stroke-width="3.5"/><path d="M48 49 Q50 46 52 49" fill="none" stroke="#14213D" stroke-width="3"/>';
+  return (AVC[s] = g);
+}
+function avSvg(s, px, cls) {
+  return '<svg class="av' + (cls ? " " + cls : "") + '" viewBox="0 0 100 100" width="' + px + '" height="' + px + '" aria-hidden="true">' + avInner(s) + "</svg>";
+}
+function avP(p, px, cls) { return avSvg(avOfP(p), px, cls); }
 
 /* sound: big screen only (user 28 Nov), made with WebAudio (no files); the browser lets it play only after a click on the page */
 var SND = {
@@ -865,7 +948,7 @@ function deriveFor(p) {
 }
 function byPid(pid) { for (var i = 0; i < H.players.length; i++) if (H.players[i].pid === pid) return H.players[i]; return null; }
 function newPlayer(pid, name, bot) {
-  return { pid: pid, name: name, idx: H.players.length, bot: !!bot, pub: null, built: false, cond: null, eff: null, die: null, prevDie: null,
+  return { pid: pid, name: name, idx: H.players.length, bot: !!bot, av: bot ? avRandom() : null, pub: null, built: false, cond: null, eff: null, die: null, prevDie: null,
     x: null, rerolled: false, rrLeft: 1, rrDone: false, reff: null, acc: 0, hist: [], prevX: null, next6: false, det: null, rp: 0, acc0: 0,
     lord: false, aura: false, god: 0, guess: null };
 }
@@ -898,6 +981,7 @@ function hostJoin(m) {
   if (!p) { if (H.players.length >= 60) { Net.send({ type: "reject", to: m.pid, msg: "ห้องเต็มแล้ว" }); return; } p = newPlayer(m.pid, uniqueName(m.name, m.pid)); H.players.push(p); }
   else if (H.phase === "lobby" && m.name) p.name = uniqueName(m.name, p.pid);
   p.v = m.v || 0;
+  if (avParse(m.av) && (H.phase === "lobby" || !p.av)) p.av = m.av;   /* the avatar can change in the lobby */
   if (JSON.stringify(p.pub) !== JSON.stringify(m.pub)) { p.pub = m.pub; delete KEYS[p.pid]; deriveFor(p); }
   else DIRTY[p.pid] = true;
   saveHost(); renderHost(); bcast();
@@ -1312,7 +1396,7 @@ function publicState() {
   var st = { type: "state", v: LOL_V, code: H.code, room: H.cfg.room, phase: H.phase, round: H.round, n: H.players.length,
     left: H.deadline ? Math.max(0, H.deadline - Date.now()) : 0, paused: H.paused ? 1 : 0, hpub: HOSTKEY.pub, ts: Date.now(),
     dur: H.dur || 0, el: H.phaseAt ? Date.now() - H.phaseAt : 1e7, anim: Number(H.cfg.anim) === 0 ? 0 : 1,   /* phones: timer ring and where their animations are */
-    players: H.players.map(function (p, i) { return { pid: p.pid, name: p.name, idx: i, bot: p.bot, acc: p.acc, rank: rk[i] }; }),
+    players: H.players.map(function (p, i) { return { pid: p.pid, name: p.name, idx: i, bot: p.bot, acc: p.acc, rank: rk[i], av: avOfP(p) }; }),
     cnt: { built: H.players.filter(function (p) { return p.built; }).length, picked: H.players.filter(function (p) { return p.die; }).length } };
   if (H.phase === "reveal" || H.phase === "end") {
     st.rev = H.players.map(function (p) { return { die: p.prevDie, x: p.prevX, rp: p.rp, rk0: p.rkBefore }; });
@@ -1468,7 +1552,7 @@ function renderHost() {
   var h = "", ph = H.phase, n = H.players.length;
   if (ph === "lobby") {
     var cs = n > 30 ? "font-size:21px;padding:3px 6px 3px 14px" : n > 20 ? "font-size:24px" : "";
-    var chips = H.players.map(function (p) { var k = HV.kill === p.pid; return '<span class="chip' + (k ? " kill" : "") + '" style="' + cs + '">' + (p.bot ? "🤖 " : "") + esc(p.name) + (p.sid ? ' <span style="color:#5BD98F" title="นับคะแนนชมรม">✓</span>' : "") + '<button class="kx" data-h="kick" data-p="' + esc(p.pid) + '" aria-label="ลบ ' + esc(p.name) + '">' + (k ? "ลบ?" : "✕") + "</button></span>"; }).join("");
+    var chips = H.players.map(function (p) { var k = HV.kill === p.pid; return '<span class="chip' + (k ? " kill" : "") + '" style="' + cs + '">' + avP(p, n > 30 ? 30 : n > 20 ? 36 : 44) + (p.bot ? "🤖 " : "") + esc(p.name) + (p.sid ? ' <span style="color:#5BD98F" title="นับคะแนนชมรม">✓</span>' : "") + '<button class="kx" data-h="kick" data-p="' + esc(p.pid) + '" aria-label="ลบ ' + esc(p.name) + '">' + (k ? "ลบ?" : "✕") + "</button></span>"; }).join("");
     h = hdr("รอผู้เล่นเข้าห้อง", "สแกน QR หรือเปิดลิงก์แล้วใส่รหัสห้อง") +
       '<div class="lob"><div class="card" style="display:flex;flex-direction:column;gap:20px;align-items:center;justify-content:center"><div class="s1">รหัสห้อง</div><div class="code">' + esc(H.code) + '</div><div class="qr">' + lobbyQr() + '</div><div class="url">' + esc(location.host + "/logic-over-luck/") + "</div></div>" +
       '<div class="card" style="display:flex;flex-direction:column;gap:20px;min-height:0"><div style="display:flex;justify-content:space-between;align-items:baseline"><div class="s2">ผู้เล่น ' + n + ' คน</div><div class="s1">เริ่มคนละ ' + esc(H.cfg.start) + " คะแนน, เวลาสร้างกฎ " + H.cfg.tBuild + " วินาที, เลือกเต๋า " + H.cfg.tPick + " วินาที</div></div>" +
@@ -1479,7 +1563,7 @@ function renderHost() {
     var done = H.players.filter(function (p) { return p.built; }).length;
     h = hdr("สร้างกฎส่วนตัว", "เลือกเงื่อนไข 1 ข้อ + ผล 1 ข้อ รวมไม่เกิน 5 เหรียญ บนมือถือ") +
       '<div class="main" style="flex-direction:column;align-items:center;justify-content:center;gap:30px"><div class="big2">' + bumpN("build", done) + " / " + n + '</div><div class="su">คนที่สร้างกฎแล้ว ไม่ทันเวลา ระบบสุ่มกฎให้</div>' +
-      '<div class="chips" style="justify-content:center;max-width:1600px">' + H.players.map(function (p) { return '<span class="chip' + (p.built ? " done" : "") + '" style="padding-right:20px">' + (p.built ? "✓ " : "") + esc(p.name) + "</span>"; }).join("") + "</div></div>" + controls();
+      '<div class="chips" style="justify-content:center;max-width:1600px">' + H.players.map(function (p) { return '<span class="chip' + (p.built ? " done" : "") + '" style="padding-right:20px">' + avP(p, 34) + (p.built ? "✓ " : "") + esc(p.name) + "</span>"; }).join("") + "</div></div>" + controls();
   } else if (ph === "vote" || ph === "voted") {
     h = hdr(ph === "vote" ? "โหวตกฎส่วนรวม ก่อนรอบที่ " + H.vote.round : "กฎส่วนรวมรอบที่ " + H.vote.round + "–" + (H.vote.round + 2), ph === "vote" ? (H.vote.kind === "top1" ? "อันดับ 1 เลือกกฎบนมือถือ" : "เฉพาะกลุ่มโหวตโหวตบนมือถือ คนละ 1 เสียง") : "ใช้ตั้งแต่รอบถัดไป") + voteHtml() + controls();
   } else if (ph === "break") {
@@ -1517,7 +1601,7 @@ function renderHost() {
 /* the reveal's sounds, timed with its pictures (cancelled by "ข้ามภาพ" or the next screen) */
 function sndClear() { (ANI.snd || []).forEach(clearTimeout); ANI.snd = []; }
 function sndAt(ms, k) { ANI.snd.push(setTimeout(function () { SND.play(k); }, Math.max(0, ms))); }
-var SCN_SND = { curse: [[700, "bolt"]], prime: [[900, "ding"]], median: [[500, "laser"], [1350, "ding"]], outlier: [[550, "ping"], [1450, "ding"]], minority: [[700, "ding"]],
+var SCN_SND = { curse: [[700, "bolt"]], prime: [[900, "ding"]], median: [[900, "ping"], [2150, "ding"]], outlier: [[550, "ping"], [1450, "ding"]], minority: [[700, "ding"]],
   norepeat: [[200, "buzz"]], bubble: [[300, "grow"]], underdog: [[300, "rocket"]], lucky: [[150, "slot"], [1550, "ding"]], bust: [[1250, "boom"]], hit: [[300, "whoosh"], [1350, "boom"]],
   crowded: [[400, "thud"], [700, "thud"]], robin: [[600, "whoosh"], [1300, "ding"]] };
 function sndReveal(R, t0) {
@@ -1635,7 +1719,7 @@ function voteHtml() {
   var note = res ? (res.how === "random" ? "ไม่มีใครโหวต ระบบสุ่มจาก 3 ข้อ" : res.how === "tie" ? "คะแนนเท่ากัน ข้อที่ได้รับโหวตก่อนชนะ" : "") :
     (V.kind === "top1" ? "อันดับ 1 เป็นคนเลือก" + (voters.length > 1 ? " (เสมอกัน " + voters.length + " คน โหวตกัน)" : "") : "กลุ่มโหวต " + voters.length + " คน (อันดับครึ่งล่าง)") + " โหวตแล้ว " + bumpN("vote", Object.keys(V.votes).length) + " คน";
   return '<div class="main" style="flex-direction:column;justify-content:center;gap:34px"><div class="rcards">' + cards + '</div><div class="su" style="text-align:center">' + note + "</div>" +
-    (res ? "" : '<div class="chips" style="justify-content:center">' + voters.map(function (p) { return '<span class="chip' + (V.votes[p.pid] ? " done" : "") + '" style="padding-right:20px;font-size:24px">' + (V.votes[p.pid] ? "✓ " : "") + esc(p.name) + "</span>"; }).join("") + "</div>") +
+    (res ? "" : '<div class="chips" style="justify-content:center">' + voters.map(function (p) { return '<span class="chip' + (V.votes[p.pid] ? " done" : "") + '" style="padding-right:20px;font-size:24px">' + avP(p, 30) + (V.votes[p.pid] ? "✓ " : "") + esc(p.name) + "</span>"; }).join("") + "</div>") +
     (!res && (H.rules || []).length ? '<div class="su" style="text-align:center">' + (H.rules.length >= 2 ? "กฎที่ชนะจะเพิ่มเข้ามา และ " + esc(RULE_T[H.rules[0]]) + " จะหลุดออก (ใช้ 2 ข้อล่าสุด)" : "กฎที่ชนะจะใช้คู่กับ " + esc(RULE_T[H.rules[0]])) + "</div>" : "") +
     (res && V.drop ? '<div class="su" style="text-align:center">' + esc(RULE_T[V.drop]) + " หลุดออก ใช้ 2 ข้อล่าสุด</div>" : "") + "</div>";
 }
@@ -1657,7 +1741,7 @@ var RV_ORDER = ["curse", "prime", "median", "outlier", "minority", "norepeat", "
 var RV_SLOT = 156, RV_W = 1248;   /* histogram: values 0..7, 156 px each */
 function rvUsed() { var u = (H.curRules || []).slice(); if (H.cookNow && u.indexOf(H.cookNow.id) < 0) u.push(H.cookNow.id); return u; }
 function rvCommon(p, id) { var d = 0; ((p.det && p.det.steps) || []).forEach(function (s) { if (s.k === "common" && s.id === id) d = s.d; }); return d; }
-function rvChip(p, v, c, x) { return { n: p.name, v: v, c: c || "", x: x }; }
+function rvChip(p, v, c, x) { return { n: p.name, v: v, c: c || "", x: x, av: avOfP(p) }; }
 function revealPlan(res) {
   var P = H.players, n = P.length, step = n > 1 ? Math.min(110, 2000 / (n - 1)) : 0, t = Math.round((n - 1) * step) + 700;
   var used = rvUsed(), scenes = [], X = P.map(function (p) { return p.x; }), hist = [0, 0, 0, 0, 0, 0, 0, 0];
@@ -1679,6 +1763,9 @@ function revealPlan(res) {
       P.forEach(function (p) { if (on(p) && !isPrime(p.x) && p.det.sh) sc.chips.push(rvChip(p, "กันได้", "sh")); });
     } else if (id === "median") {
       sc.mh = room.median || [];
+      /* user 28 Nov 17:45: the rolls in a row from low to high, arrows walk in from both ends to the middle, a frame round the median */
+      sc.row = P.map(function (p) { return [p.x, p.die]; }).sort(function (a, b) { return a[0] - b[0]; });
+      var nn = sc.row.length; sc.mval = nn % 2 ? sc.row[(nn - 1) / 2][0] : (sc.row[nn / 2 - 1][0] + sc.row[nn / 2][0]) / 2;
       P.forEach(function (p) { if (rvCommon(p, "median")) sc.chips.push(rvChip(p, "+4", "pl", p.x)); });
     } else if (id === "outlier") {
       sc.mean = room.mean;
@@ -1725,8 +1812,8 @@ function revealPlan(res) {
       var st = {}, sp = {}, bl = {};
       P.forEach(function (p) { if (!p.rvHit) return; p.rvHit.t.forEach(function (i) { (p.rvHit.k === "steal2" ? st : sp)[i] = 1; }); p.rvHit.b.forEach(function (i) { bl[i] = 1; }); });
       P.forEach(function (p, i) {
-        if (st[i] || sp[i]) sc.chips.push({ n: p.name, v: p.det.stolen ? "−" + p.det.stolen : "0", c: "mi", st: !!st[i], sp: !!sp[i] });
-        else if (bl[i]) sc.chips.push({ n: p.name, v: "กันได้", c: "sh" });
+        if (st[i] || sp[i]) sc.chips.push({ n: p.name, av: avOfP(p), v: p.det.stolen ? "−" + p.det.stolen : "0", c: "mi", st: !!st[i], sp: !!sp[i] });
+        else if (bl[i]) sc.chips.push({ n: p.name, av: avOfP(p), v: "กันได้", c: "sh" });
       });
       if (!sc.chips.length) return;
     } else if (id === "robin") {
@@ -1741,7 +1828,7 @@ function revealPlan(res) {
     }
     if (id === "curse" || id === "prime" || id === "median" || id === "outlier") sc.hist = hist;
     if (H.cookNow && H.cookNow.id === id && H.cookNow.scope) sc.cook = cookScopeT();
-    sc.dur = sc.empty ? 1700 : 3000;
+    sc.dur = sc.empty ? 1700 : id === "median" ? 3800 : 3000;
     scenes.push(sc);
   });
   var plan = { step: step, scenes: scenes, ovAt: 0, ovEnd: 0, x2At: -1 };
@@ -1783,7 +1870,7 @@ function cntRun() {
 function rvDieDots() { return ""; }
 function rvChips(sc, S, at) {
   var list = sc.chips, cap = 16, out = list.slice(0, cap).map(function (c, k) {
-    var d = S + at + k * 70, inner = esc(c.n);
+    var d = S + at + k * 70, inner = (c.av ? avSvg(c.av, 40, "avc") : "") + esc(c.n);
     if (c.c === "zero" && c.x != null) inner += ' <b><span class="ovv a-out" style="--d:' + (S + 1500) + 'ms">' + c.x + '</span><span class="nvv a-show" style="--d:' + (S + 1550) + 'ms">0</span></b>';
     else if (c.c === "sh") inner = "🛡 " + inner + " <b>กันได้</b>";
     else if (c.v) inner += " <b>" + esc(c.v) + "</b>";
@@ -1833,11 +1920,19 @@ function sceneHtml(sc) {
       return sc.hist[v] ? '<span class="htag a-pop ' + (isPrime(v) ? "pl" : "mi") + '" style="left:' + (xAt(v) - 40) + "px;top:" + (290 - 44 - histH(sc.hist, v) - 84) + "px;--d:" + (S + 900 + v * 60) + 'ms">' + (isPrime(v) ? "+2" : "−1") + "</span>" : ""; }).join(""));
     note = "จำนวนเฉพาะ: 2, 3, 5, 7";
   } else if (sc.id === "median") {
-    var mxp = sc.mh.length ? sc.mh.reduce(function (a, v) { return a + xAt(v); }, 0) / sc.mh.length : RV_W / 2;
-    body = histHtml(sc, S, function (v) { return sc.mh.indexOf(v) >= 0 ? "hg" : ""; },
-      '<div class="lz a-lz" style="left:' + mxp + "px;--from:" + (-mxp) + "px;--d:" + (S + 500) + 'ms"></div><div class="lz a-lz" style="left:' + mxp + "px;--from:" + (RV_W - mxp) + "px;--d:" + (S + 500) + 'ms"></div>' +
-      '<div class="lzhit a-pop" style="left:' + (mxp - 40) + "px;--d:" + (S + 1350) + 'ms"></div>' + sprinkle(sc.mh, S + 200, "+4"));
-    note = "มัธยฐาน = " + sc.mh.join(" และ ");
+    var row = sc.row, nn = row.length, gp = 8, tw = Math.max(28, Math.min(96, Math.floor((1600 - gp * (nn - 1)) / nn))), stp = tw + gp, RW = nn * stp - gp, th = Math.min(96, tw + 10);
+    var mi = nn % 2 ? [(nn - 1) / 2, (nn - 1) / 2] : [nn / 2 - 1, nn / 2], lo = -1, hi = -1;
+    row.forEach(function (r, k) { if (sc.mh.indexOf(r[0]) >= 0) { if (lo < 0) lo = k; hi = k; } });
+    if (lo < 0) { lo = mi[0]; hi = mi[1]; }
+    var cx = function (k) { return k * stp + tw / 2; }, nl = Math.max(1, mi[0]), nr = Math.max(1, nn - 1 - mi[1]);
+    body = '<div class="mrow" style="width:' + RW + "px;font-size:" + Math.max(16, Math.round(tw * .55)) + 'px">' +
+      row.map(function (r, k) { return '<b class="mt ' + DIE_CLS[r[1]] + ' a-pop" style="left:' + k * stp + "px;width:" + tw + "px;height:" + th + "px;--d:" + (S + 100 + k * Math.min(40, 700 / nn)) + 'ms">' + r[0] + "</b>"; }).join("") +
+      '<i class="marr a-step" style="left:' + (cx(0) - 22) + "px;--dx:" + (cx(mi[0]) - cx(0)) + "px;--n:" + nl + ";--d:" + (S + 900) + 'ms">▼</i>' +
+      '<i class="marr a-step" style="left:' + (cx(nn - 1) - 22) + "px;--dx:" + (cx(mi[1]) - cx(nn - 1)) + "px;--n:" + nr + ";--d:" + (S + 900) + 'ms">▼</i>' +
+      '<div class="mbox a-pop" style="left:' + (lo * stp - 8) + "px;width:" + ((hi - lo + 1) * stp - gp + 16) + "px;height:" + (th + 28) + "px;--d:" + (S + 2150) + 'ms"></div>' +
+      '<div class="mval a-pop" style="left:' + ((lo + hi) / 2 * stp + tw / 2 - 200) + "px;top:" + (90 + th + 26) + "px;--d:" + (S + 2300) + 'ms">มัธยฐาน = ' + sc.mval + "</div></div>";
+    note = sc.mh.length > 1 ? "มัธยฐาน " + sc.mval + " ลงท้าย .5 คนที่ทอยได้ " + sc.mh.join(" และ ") + " ได้ทั้งคู่" : sc.mh.length ? "" : "ไม่มีใครทอยได้เลขที่เป็นมัธยฐาน";
+    chipsAt = 2450;
   } else if (sc.id === "outlier") {
     var mxv = 65 + sc.mean * RV_SLOT, tg = uniq(sc.chips.map(function (c) { return c.x; }));
     body = histHtml(sc, S, function (v) { return tg.indexOf(v) >= 0 ? "hg" : ""; },
@@ -1866,7 +1961,7 @@ function sceneHtml(sc) {
     });
     note = "ทุก " + sc.cx + " คนที่ใช้ลูกเดียวกัน เสีย 1 คะแนนสะสม";
   } else if (sc.id === "norepeat") {
-    body = '<div class="deja a-pop" style="--d:' + (S + 200) + 'ms">เดจาวู…</div>';
+    body = '<div class="palm a-palm" style="--d:' + (S + 200) + 'ms"><span>✋</span></div>';   /* user 28 Nov 17:45: an open hand = not allowed */
     sc.chips.forEach(function (c) { if (c.c === "mi") c.v = c.x + " ซ้ำ! −2"; });
   } else if (sc.id === "underdog") {
     body = '<div class="rkt a-rkt" style="--d:' + (S + 300) + 'ms">🚀</div>';
@@ -1879,7 +1974,7 @@ function sceneHtml(sc) {
     body = '<div class="gauges">' + sc.chips.slice(0, 8).map(function (c, k) {
       var pre = c.x, hgt = 212, fill = Math.min(1, pre / Math.max(pre, 14)), d0 = S + 200 + k * 100;
       return '<div class="gauge a-shake" style="--d:' + (S + 1250) + 'ms"><div class="gl" style="bottom:' + Math.round(10 / Math.max(pre, 14) * hgt) + 'px"></div><div class="gf a-gfill" style="height:' + Math.round(fill * hgt) + "px;--d:" + d0 + 'ms"></div>' +
-        '<div class="gv"><span class="ovv a-out" style="--d:' + (S + 1550) + 'ms">' + pre + '</span><span class="nvv a-show" style="--d:' + (S + 1600) + 'ms">0</span></div><i class="fx fx0 a-fx" style="--d:' + (S + 1500) + 'ms"></i><div class="gn">' + esc(c.n) + "</div></div>";
+        '<div class="gv"><span class="ovv a-out" style="--d:' + (S + 1550) + 'ms">' + pre + '</span><span class="nvv a-show" style="--d:' + (S + 1600) + 'ms">0</span></div><i class="fx fx0 a-fx" style="--d:' + (S + 1500) + 'ms"></i><div class="gn">' + (c.av ? avSvg(c.av, 30, "avc") : "") + esc(c.n) + "</div></div>";
     }).join("") + "</div>";
     if (sc.empty) note = "ไม่มีใครเกิน 10";
     sc = Object.assign({}, sc, { chips: [] });
@@ -1897,7 +1992,8 @@ function sceneHtml(sc) {
     '<div class="scb">' + body + "</div>" + (note ? '<div class="scn2">' + note + "</div>" : "") + (sc.chips.length ? rvChips(sc, S, chipsAt) : "") + "</div>";
 }
 function rvOne(c, d) {
-  return '<span class="cx ' + c.c + ' a-pop" style="--d:' + d + 'ms">' + (c.c === "sh" ? '<i class="dome a-dome" style="--d:' + (d + 200) + 'ms"></i>🛡 ' + esc(c.n) + " <b>กันได้</b>" : esc(c.n) + " <b>" + esc(c.v) + "</b>") + "</span>";
+  var nm = (c.av ? avSvg(c.av, 40, "avc") : "") + esc(c.n);
+  return '<span class="cx ' + c.c + ' a-pop" style="--d:' + d + 'ms">' + (c.c === "sh" ? '<i class="dome a-dome" style="--d:' + (d + 200) + 'ms"></i>🛡 ' + nm + " <b>กันได้</b>" : nm + " <b>" + esc(c.v) + "</b>") + "</span>";
 }
 function revealHtml() {
   var P = H.players, n = P.length, R = H.rv || { step: 0, scenes: [], cntAt: 0, sortAt: 0, x2At: -1 }, t0 = H.phaseAt || 0;
@@ -1914,7 +2010,7 @@ function revealHtml() {
     var dx = (Math.floor(j / rows) - Math.floor(k / rows)) * (cw + 24), dy = (j % rows - k % rows) * (rh + 10);
     var fl = Math.round(p.idx * R.step), up = p.acc - p.acc0, xc = p.prevDie === "risk" && (p.prevX === 0 || p.prevX === 7) ? " x" + p.prevX : p.prevDie === "prime" && isPrime(p.prevX) ? " pf" : "";
     return '<div class="rr a-move' + (up > 0 ? " fup" : up < 0 ? " fdn" : "") + '" style="height:' + rh + "px;font-size:" + fs + "px;grid-template-columns:" + tpl + ";padding:0 " + (cols === 3 ? 10 : 16) + "px;--dx:" + dx + "px;--dy:" + dy + "px;--d:" + R.sortAt + "ms;--d2:" + (R.cntAt + 500) + 'ms">' +
-      '<span class="rk"' + seqAttr(t0, [[0, p.rkBefore], [R.sortAt, rk[i]]]) + ">" + rk[i] + '</span><span class="nm">' + (p.bot ? "🤖 " : "") + (p.lord ? '<span class="lord">👑 </span>' : "") + esc(p.name) +
+      '<span class="rk"' + seqAttr(t0, [[0, p.rkBefore], [R.sortAt, rk[i]]]) + ">" + rk[i] + '</span><span class="nm">' + avP(p, Math.round(fs * 1.2), "avr") + (p.bot ? "🤖 " : "") + (p.lord ? '<span class="lord">👑 </span>' : "") + esc(p.name) +
       (mv > 0 ? ' <span class="mv up a-pop" style="--d:' + (R.sortAt + 600) + 'ms">▲' + mv + "</span>" : mv < 0 ? ' <span class="mv dn a-pop" style="--d:' + (R.sortAt + 600) + 'ms">▼' + (-mv) + "</span>" : "") +
       '</span><span class="dn a-flip" style="--d:' + fl + 'ms"><i class="ddot ' + DIE_CLS[p.prevDie] + '"></i>' + DIE_T[p.prevDie].replace("เต๋า", "") +
       '</span><span class="x"><b class="a-flip' + xc + '" style="--d:' + fl + 'ms">' + p.prevX + '</b><i class="qb a-back" style="--dur:' + Math.max(1, fl) + 'ms">?</i></span>' +
@@ -1935,10 +2031,10 @@ function endHtml() {
   var podium = [2, 1, 3].map(function (place) {
     var who = at(place); if (!who.length) return '<div class="col"></div>';
     var hgt = place === 1 ? 300 : place === 2 ? 220 : 160, col = place === 1 ? "#FFD84D" : place === 2 ? "#C9D0E6" : "#E8A66A";
-    return '<div class="col"><div class="who">' + who.slice(0, 3).map(function (i) { return esc(H.players[i].name); }).join("<br>") + (who.length > 3 ? "<br>และอีก " + (who.length - 3) + " คน" : "") +
+    return '<div class="col"><div class="who"><div class="pav">' + who.slice(0, 3).map(function (i) { return avP(H.players[i], who.length > 1 ? 64 : 110); }).join("") + "</div>" + who.slice(0, 3).map(function (i) { return esc(H.players[i].name); }).join("<br>") + (who.length > 3 ? "<br>และอีก " + (who.length - 3) + " คน" : "") +
       '</div><div class="sc">' + num(H.players[who[0]].acc) + ' คะแนน</div><div class="blk" style="height:' + hgt + "px;background:" + col + '">' + place + "</div></div>";
   }).join("");
-  var rest = idx.filter(function (i) { return pl[i] > 3; }).map(function (i) { return "<span>" + pl[i] + ". " + esc(H.players[i].name) + " (" + num(H.players[i].acc) + ")</span>"; }).join("");
+  var rest = idx.filter(function (i) { return pl[i] > 3; }).map(function (i) { return "<span>" + pl[i] + ". " + avP(H.players[i], 30, "avc") + esc(H.players[i].name) + " (" + num(H.players[i].acc) + ")</span>"; }).join("");
   return '<div class="main" style="flex-direction:column;justify-content:center;gap:30px"><div class="pod">' + podium + '</div><div class="rest">' + rest + "</div></div>";
 }
 function cfgHtml() {
@@ -2052,17 +2148,17 @@ function simAdd(k) {
   if (!SIM.iv) SIM.iv = setInterval(simPanel, 1000);
 }
 function simPhone(no) {
-  var sp = { no: no, pid: "sim" + newId(), name: "จำลอง " + no, key: null, hpub: "", pv: 0, st: null, priv: null, pend: null, pendAt: 0, did: {}, joined: false,
+  var sp = { no: no, pid: "sim" + newId(), name: "จำลอง " + no, av: avRandom(), key: null, hpub: "", pv: 0, st: null, priv: null, pend: null, pendAt: 0, did: {}, joined: false,
     n: 0, bytes: 0, maxB: 0, lat: [], need: 0, sent: 0, resend: 0, miss: 0, gens: 0, rejected: "" };
   sp.net = Object.create(Net);   /* own fields: never touch the Host's connection */
   ["up", "ch", "client", "timer", "retryT", "onReady", "onmsg", "me", "code"].forEach(function (f) { sp.net[f] = null; });
   sp.net.mode = ""; sp.net.ready = false; sp.net.q = []; sp.net.gen = 0; sp.net.retries = 0; sp.net.opened = false; sp.net.quiet = true; sp.net.lastRecv = 0;
-  sp.net.onReady = function () { sp.gens++; if (!sp.joined) Net.send.call(sp.net, { type: "join", pid: sp.pid, name: sp.name, v: LOL_V, pub: sp.kp.pub }); else sp.net.send({ type: "need", pid: sp.pid }); };
+  sp.net.onReady = function () { sp.gens++; if (!sp.joined) Net.send.call(sp.net, { type: "join", pid: sp.pid, name: sp.name, v: LOL_V, pub: sp.kp.pub, av: sp.av }); else sp.net.send({ type: "need", pid: sp.pid }); };
   SIM.list.push(sp);
   Sec.gen().then(function (kp) {
     sp.kp = kp;
     sp.net.open(H.code, "p", function (m) { simMsg(sp, m); });
-    sp.joinIv = setInterval(function () { if (sp.joined || !sp.net.ready) return; sp.net.send({ type: "join", pid: sp.pid, name: sp.name, v: LOL_V, pub: kp.pub }); }, 2500);
+    sp.joinIv = setInterval(function () { if (sp.joined || !sp.net.ready) return; sp.net.send({ type: "join", pid: sp.pid, name: sp.name, v: LOL_V, pub: kp.pub, av: sp.av }); }, 2500);
     sp.resIv = setInterval(function () {
       if (!sp.pend) return;
       if (pendDoneFor(sp.pend, sp.st, sp.priv)) { sp.pend = null; return; }
@@ -2136,6 +2232,7 @@ function simPanel() {
 var P = { phKey: "", phaseStart: 0, rollKey: "", rollAt: 0, firstX: null, spin: false, sid: "", sidInfo: null, ckOpen: false, code: "", pid: "", name: "", kp: null, key: null, hpub: "", st: null, priv: null, pv: 0, pend: null, joined: false, err: "", sel: { cond: null, eff: null }, view: "", recvAt: 0, needAt: 0, joinT: null };
 function playerBoot(code) {
   document.body.className = "ph";
+  P.av = avParse(ls("lol-av")) ? ls("lol-av") : avRandom(); ls("lol-av", P.av);   /* the avatar stays in this phone's browser (user 28 Nov 15:16) */
   P.code = code || ss("lol-code") || ""; P.pid = ss("lol-pid") || ""; P.name = ss("lol-name") || ""; P.sid = ss("lol-sid") || ""; P.ckOpen = !!ss("lol-sidok");
   ckPoll(); setInterval(ckPoll, 8000);
   document.getElementById("app").addEventListener("input", function (e) {   /* student ID box: digits only, look it up once all 5 are typed */
@@ -2161,7 +2258,7 @@ function connect() {
   Net.onReady = function () { if (!P.joined) send(); else if (P.pid) Net.send({ type: "need", pid: P.pid }); };   /* reconnected: ask for the secret part again */
   Net.open(P.code, "p", onPlayerMsg);
   var tries = 0;
-  function send() { if (P.joined) return; Net.send({ type: "join", pid: P.pid, name: P.name, v: LOL_V, pub: P.kp.pub }); }
+  function send() { if (P.joined) return; Net.send({ type: "join", pid: P.pid, name: P.name, v: LOL_V, pub: P.kp.pub, av: P.av }); }
   send(); clearInterval(P.joinT);
   P.joinT = setInterval(function () {
     if (P.joined) { clearInterval(P.joinT); return; }
@@ -2174,7 +2271,7 @@ function connect() {
 function onPlayerMsg(m) {
   if (!m) return;
   if (m.type === "reject" && m.to === P.pid) { Net.close(); clearInterval(P.joinT); ss("lol-joined", null); P.joined = false; P.st = null; P.err = m.msg; renderPlayer(); return; }
-  if (m.type === "adopt" && m.to === P.pid) { P.pid = m.pid; ss("lol-pid", P.pid); Net.send({ type: "join", pid: P.pid, name: P.name, v: LOL_V, pub: P.kp.pub }); return; }
+  if (m.type === "adopt" && m.to === P.pid) { P.pid = m.pid; ss("lol-pid", P.pid); Net.send({ type: "join", pid: P.pid, name: P.name, v: LOL_V, pub: P.kp.pub, av: P.av }); return; }
   if (m.type !== "state") return;
   var me = (m.players || []).filter(function (p) { return p.pid === P.pid; })[0];
   if (!me) { if (P.joined) { P.joined = false; P.st = null; renderPlayer(); } return; }
@@ -2303,8 +2400,27 @@ var PACT = {
   npcsel: function (b) { P.npcsel = b.dataset.v; renderPlayer(true); },
   npcgo: function () { if (P.npcsel) { sendSec({ a: "npc", die: P.npcsel }); renderPlayer(true); } },
   rr: function (b) { sendSec({ a: "rr", use: b.dataset.v === "1" }); P.myRr = b.dataset.v; renderPlayer(true); },
-  reload: function () { location.reload(); }
+  reload: function () { location.reload(); },
+  /* avatar: random, or pick each part; in the lobby the Host gets the new one at once */
+  avedit: function () { P.avEdit = !P.avEdit; renderPlayer(true); },
+  avrnd: function () { avSave(avRandom()); },
+  avset: function (b) { var a = avParse(P.av) || [0, 0, 0, 0, 0]; a[Number(b.dataset.k)] = Number(b.dataset.v); avSave(a.join("-")); }
 };
+function avSave(s) {
+  P.av = s; ls("lol-av", s);
+  if (P.joined && P.st && P.st.phase === "lobby") Net.send({ type: "join", pid: P.pid, name: P.name, v: LOL_V, pub: P.kp.pub, av: P.av });
+  renderPlayer(true);
+}
+/* the avatar box: the character, a random button, and (open) a row of choices for each part */
+function avBlock() {
+  var a = avParse(P.av) || [0, 0, 0, 0, 0], h = '<div class="pc avb"><div class="avtop">' + avSvg(P.av, 96) + '<div><div class="lbl">ตัวละครของคุณ</div><div class="muted">ขึ้นบนจอใหญ่ข้างชื่อ จำไว้ในเครื่องนี้</div>' +
+    '<div class="avbt"><button class="btn alt" data-p="avrnd">🎲 สุ่ม</button><button class="btn alt" data-p="avedit">' + (P.avEdit ? "✓ เสร็จ" : "✏️ แต่งเอง") + "</button></div></div></div>";
+  if (P.avEdit) h += AV_N.map(function (n, k) {
+    var opts = ""; for (var v = 0; v < n; v++) { var b = a.slice(); b[k] = v; opts += '<button class="avo' + (a[k] === v ? " on" : "") + '" data-p="avset" data-k="' + k + '" data-v="' + v + '" aria-label="' + AV_K[k] + " " + (v + 1) + '">' + avSvg(b.join("-"), 48) + "</button>"; }
+    return '<div class="lbl" style="margin-top:8px">' + AV_K[k] + '</div><div class="avos">' + opts + "</div>";
+  }).join("");
+  return h + "</div>";
+}
 document.addEventListener("click", function (e) {
   var b = e.target.closest("[data-p]"); if (!b || b.disabled || !document.body.classList.contains("ph")) return;
   if (PACT[b.dataset.p]) PACT[b.dataset.p](b);
@@ -2345,7 +2461,7 @@ function pTop(title, sub, timer) {
 }
 function statusBar() {
   var st = P.st, me = myPub(); if (!me) return "";
-  return '<div class="sbar"><span>' + esc(me.name) + "</span><span>คะแนนสะสม <b>" + num(me.acc) + "</b></span><span>อันดับ <b>" + me.rank + "</b>/" + st.n + "</span><span>ทอยใหม่ <b>" + (P.priv ? Number(P.priv.rrLeft) || 0 : 0) + "</b></span></div>";
+  return '<div class="sbar"><span class="sbn">' + avSvg(me.av || P.av, 26) + esc(me.name) + "</span><span>คะแนนสะสม <b>" + num(me.acc) + "</b></span><span>อันดับ <b>" + me.rank + "</b>/" + st.n + "</span><span>ทอยใหม่ <b>" + (P.priv ? Number(P.priv.rrLeft) || 0 : 0) + "</b></span></div>";
 }
 /* at the break Compound Interest can only be kept, not newly picked */
 function breakOk(c, e) { var pr = P.priv || {}; return LOL.buildOk(c, e, { when: e === "interest" && pr.eff === "interest" ? "start" : "break" }); }
@@ -2480,7 +2596,7 @@ function playerHtml() {
       '<label><span class="lbl">ชื่อเล่น</span><input id="jn" class="inp" maxlength="20" autocomplete="nickname" value="' + esc(P.name) + '"></label>' +
       '<div id="sidbox"' + (P.ckOpen ? "" : ' style="display:none"') + '><label><span class="lbl">เลขประจำตัวนักเรียน 5 หลัก (ไม่บังคับ)</span><input id="jsid" class="inp" inputmode="numeric" maxlength="5" autocomplete="off" value="' + esc(P.sid) + '"></label>' +
       '<div id="sidmsg" class="muted" style="margin-top:6px">' + sidMsg() + "</div></div>" +
-      (P.err ? '<div class="err" role="alert">' + esc(P.err) + "</div>" : "") +
+      (P.err ? '<div class="err" role="alert">' + esc(P.err) + "</div>" : "") + avBlock() +
       '<button class="btn" data-p="join"' + (connecting || P.sidWait ? " disabled" : "") + ">" + (connecting || P.sidWait ? "กำลังเข้าห้อง…" : "เข้าร่วม") + "</button></div>" +
       '<a href="/games/" class="muted">← กลับเว็บชมรม</a>';
   }
@@ -2491,8 +2607,8 @@ function playerHtml() {
   if (ph === "lobby") {
     P.sel = { cond: null, eff: null };
     var sidT = pr && pr.sid ? '<div class="ok">✓ นับคะแนนชมรม' + (P.sidInfo && P.sidInfo.state === "ok" && P.sidInfo.text ? " " + esc(P.sidInfo.text) : "") + "</div>" : P.sid ? '<div class="muted">กำลังส่งเลขประจำตัว…</div>' : "";
-    return h + pTop("เข้าห้องแล้ว", "ห้อง " + esc(st.code) + " " + esc(st.room)) + '<div class="pc"><div style="font-size:1.3rem;font-weight:700">' + esc(me.name) + "</div>" + sidT + '<div class="muted">รอครูกดเริ่มเกม ระหว่างนี้ศึกษากฎส่วนรวมและกฎส่วนตัวไว้ก่อน เพราะเวลาสร้างกฎสั้น</div><div class="muted">ผู้เล่นในห้อง ' + st.n + " คน</div></div>" +
-      '<button class="btn alt" data-p="leave">ออกจากห้อง</button>';
+    return h + pTop("เข้าห้องแล้ว", "ห้อง " + esc(st.code) + " " + esc(st.room)) + '<div class="pc"><div style="font-size:1.3rem;font-weight:700;display:flex;align-items:center;gap:10px">' + avSvg(P.av, 44) + esc(me.name) + "</div>" + sidT + '<div class="muted">รอครูกดเริ่มเกม ระหว่างนี้ศึกษากฎส่วนรวมและกฎส่วนตัวไว้ก่อน เพราะเวลาสร้างกฎสั้น</div><div class="muted">ผู้เล่นในห้อง ' + st.n + " คน</div></div>" +
+      avBlock() + '<button class="btn alt" data-p="leave">ออกจากห้อง</button>';
   }
   h += statusBar();
   if (ph === "build") {

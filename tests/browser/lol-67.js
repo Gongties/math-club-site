@@ -114,10 +114,12 @@ async function runOne(browser, ev) {
       await waitPh("pick", 3);
       ok(/Brainrot, No Cap/.test(await host.locator("#stage").innerText()), "กฎที่เปิดเผยค้างบนจอใหญ่ในรอบถัดไป");
       await host.screenshot({ path: "/tmp/lol67_brain_pick.png" });
+      await host.evaluate(() => { if (!H.paused) HACT.pause(); });   /* hold the clock: the round must not move on to the reveal between the 2 clicks */
       await host.click("[data-h=brain]");
       ok(!/Brainrot, No Cap \(กฎที่เปิดเผย/.test(await host.locator("#stage").innerText()), "กดซ่อนแล้วกฎที่เปิดเผยหายจากจอ");
       await host.click("[data-h=brain]");
       ok(/Brainrot, No Cap \(กฎที่เปิดเผย/.test(await host.locator("#stage").innerText()), "กดแสดงแล้วกลับมา");
+      await host.evaluate(() => { if (H.paused) HACT.pause(); });
     }
     /* ---- the reveal: score the round again from the Host's data ---- */
     await waitPh("reveal", t, 90000);

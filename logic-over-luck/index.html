@@ -186,7 +186,7 @@ body.ph { background: #F3F6FF; color: #14213D; }
 <div id="app"></div>
 <div id="netb" aria-hidden="true"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/logic-over-luck/engine.js?v=2026112805"></script>
+<script src="/logic-over-luck/engine.js?v=2026112806"></script>
 <script>
 "use strict";
 /* Logic over Luck (Rules Race: Math Club Edition v5). Big screen (#host) + phones (#join=CODE).
@@ -196,7 +196,7 @@ body.ph { background: #F3F6FF; color: #14213D; }
    each phone and the Host make an ECDH P-256 key pair, the shared AES-GCM key is never sent. */
 
 /* page version: RAISE THIS NUMBER (and the ?v= of engine.js above) EVERY TIME THIS FOLDER CHANGES (YYYYMMDD + 2 digits) */
-var LOL_V = 2026112805;
+var LOL_V = 2026112806;
 
 /* ---------- small helpers ---------- */
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -954,7 +954,7 @@ function privOf(p, i) {
 function publicState() {
   var accs = H.players.map(function (p) { return p.acc; }), rk = rankOf(accs);
   var st = { type: "state", v: LOL_V, code: H.code, room: H.cfg.room, phase: H.phase, round: H.round, n: H.players.length,
-    left: H.deadline ? Math.max(0, H.deadline - Date.now()) : 0, paused: H.paused ? 1 : 0, hpub: HOSTKEY.pub,
+    left: H.deadline ? Math.max(0, H.deadline - Date.now()) : 0, paused: H.paused ? 1 : 0, hpub: HOSTKEY.pub, ts: Date.now(),
     players: H.players.map(function (p, i) { return { pid: p.pid, name: p.name, idx: i, bot: p.bot, acc: p.acc, rank: rk[i] }; }),
     cnt: { built: H.players.filter(function (p) { return p.built; }).length, picked: H.players.filter(function (p) { return p.die; }).length } };
   if (H.phase === "reveal" || H.phase === "end") {
@@ -1013,7 +1013,7 @@ function sendState() {
   });
   Promise.all(jobs).then(function () {
     st.left = H.deadline ? Math.max(0, H.deadline - Date.now()) : 0;
-    Net.send(st);
+    Net.send(st); simCount(1 + H.players.filter(function (p) { return !p.bot; }).length);
   }).then(function () { BC.busy = false; if (BC.again) { BC.again = false; bcast(); } }, function () { BC.busy = false; });
 }
 
@@ -1021,6 +1021,7 @@ function sendState() {
 var HACT = {
   start: function () { hostStart(); },
   bots: function () { addBots(5); },
+  sims: function () { simAdd(10); },
   kick: function (b) {
     var pid = b.dataset.p;
     if (HV.kill !== pid) { HV.kill = pid; clearTimeout(HV.killT); HV.killT = setTimeout(function () { HV.kill = null; renderHost(); }, 3000); renderHost(); return; }
@@ -1099,7 +1100,7 @@ function renderHost() {
       '<div class="lob"><div class="card" style="display:flex;flex-direction:column;gap:20px;align-items:center;justify-content:center"><div class="s1">รหัสห้อง</div><div class="code">' + esc(H.code) + '</div><div class="qr">' + lobbyQr() + '</div><div class="url">' + esc(location.host + "/logic-over-luck/") + "</div></div>" +
       '<div class="card" style="display:flex;flex-direction:column;gap:20px;min-height:0"><div style="display:flex;justify-content:space-between;align-items:baseline"><div class="s2">ผู้เล่น ' + n + ' คน</div><div class="s1">เวลาสร้างกฎ ' + H.cfg.tBuild + " วินาที, เลือกเต๋า " + H.cfg.tPick + " วินาที</div></div>" +
       '<div class="chips" style="flex:1">' + (chips || '<span class="su">ยังไม่มีใครเข้าห้อง</span>') + "</div></div></div>" +
-      '<div class="ftr"><div style="display:flex;gap:14px"><button class="gb" data-h="cfg">⚙ ตั้งค่า</button>' + (TEST ? '<button class="gb" data-h="bots">+ บอท 5 ตัว (ทดสอบ)</button>' : "") + '<button class="gb" data-h="newroom">สร้างห้องใหม่</button><a class="gb" href="/games/" style="display:inline-flex;align-items:center;text-decoration:none">← กลับเว็บชมรม</a></div>' +
+      '<div class="ftr"><div style="display:flex;gap:14px"><button class="gb" data-h="cfg">⚙ ตั้งค่า</button>' + (TEST ? '<button class="gb" data-h="bots">+ บอท 5 ตัว (ทดสอบ)</button><button class="gb" data-h="sims">+ มือถือจำลอง 10 เครื่อง</button>' : "") + '<button class="gb" data-h="newroom">สร้างห้องใหม่</button><a class="gb" href="/games/" style="display:inline-flex;align-items:center;text-decoration:none">← กลับเว็บชมรม</a></div>' +
       '<button class="pb" data-h="start"' + (n < 2 ? " disabled" : "") + ">เริ่มเกม</button></div>";
   } else if (ph === "build") {
     var done = H.players.filter(function (p) { return p.built; }).length;
@@ -1352,6 +1353,97 @@ function subDraw() {
   var nw = document.getElementById("subpw"); if (nw) { nw.value = keep; if (had || SUB.st === "ready") nw.focus(); }
 }
 
+/* ---------- test phones (only with ?test): virtual phones inside the Host page that go through the real Realtime ----------
+   Each one has its own Supabase connection, its own key pair and encrypted messages, exactly like a real phone, and acts after
+   a random 0.3–4 s delay, re-sending until the Host shows the action. A panel shows message sizes, delays and problems. */
+var SIM = { list: [], t0: 0, panel: null, iv: null, b: {} };
+/* Supabase counts a broadcast as 1 sent + 1 per device that receives it (free plan: 100 per second); count per second */
+function simCount(k) { if (!SIM.list.length) return; var t = Math.floor(Date.now() / 1000); SIM.b[t] = (SIM.b[t] || 0) + k; }
+function simAdd(k) {
+  if (!TEST || H.phase !== "lobby") return;
+  if (!SIM.t0) SIM.t0 = Date.now();
+  for (var i = 0; i < k; i++) simPhone(SIM.list.length + 1);
+  if (!SIM.iv) SIM.iv = setInterval(simPanel, 1000);
+}
+function simPhone(no) {
+  var sp = { no: no, pid: "sim" + newId(), name: "จำลอง " + no, key: null, hpub: "", pv: 0, st: null, priv: null, pend: null, pendAt: 0, did: {}, joined: false,
+    n: 0, bytes: 0, maxB: 0, lat: [], need: 0, sent: 0, resend: 0, miss: 0, gens: 0, rejected: "" };
+  sp.net = Object.create(Net);   /* own fields: never touch the Host's connection */
+  ["up", "ch", "client", "timer", "retryT", "onReady", "onmsg", "me", "code"].forEach(function (f) { sp.net[f] = null; });
+  sp.net.mode = ""; sp.net.ready = false; sp.net.q = []; sp.net.gen = 0; sp.net.retries = 0; sp.net.opened = false; sp.net.quiet = true; sp.net.lastRecv = 0;
+  sp.net.onReady = function () { sp.gens++; if (!sp.joined) Net.send.call(sp.net, { type: "join", pid: sp.pid, name: sp.name, v: LOL_V, pub: sp.kp.pub }); else sp.net.send({ type: "need", pid: sp.pid }); };
+  SIM.list.push(sp);
+  Sec.gen().then(function (kp) {
+    sp.kp = kp;
+    sp.net.open(H.code, "p", function (m) { simMsg(sp, m); });
+    sp.joinIv = setInterval(function () { if (sp.joined || !sp.net.ready) return; sp.net.send({ type: "join", pid: sp.pid, name: sp.name, v: LOL_V, pub: kp.pub }); }, 2500);
+    sp.resIv = setInterval(function () {
+      if (!sp.pend) return;
+      if (pendDoneFor(sp.pend, sp.st, sp.priv)) { sp.pend = null; return; }
+      if (Date.now() - sp.pendAt > 2400) { sp.resend++; simSend(sp, sp.pend); }
+    }, 1000);
+  });
+}
+function simSend(sp, a) { sp.pend = a; sp.pendAt = Date.now(); if (!sp.key) return; sp.sent++; simCount(2); Sec.enc(sp.key, a).then(function (e) { sp.net.send({ type: "sec", pid: sp.pid, iv: e.iv, ct: e.ct }); }); }
+function simMsg(sp, m) {
+  if (!m) return;
+  if (m.type === "reject" && m.to === sp.pid) { sp.rejected = m.msg; return; }
+  if (m.type !== "state") return;
+  var len = JSON.stringify(m).length; sp.n++; sp.bytes += len; if (len > sp.maxB) sp.maxB = len;
+  if (m.ts) { sp.lat.push(Date.now() - m.ts); if (sp.lat.length > 400) sp.lat.shift(); }
+  var me = (m.players || []).filter(function (p) { return p.pid === sp.pid; })[0]; if (!me) return;
+  sp.joined = true; sp.st = m; sp.me = me;
+  var hp = JSON.stringify(m.hpub);
+  (sp.key && sp.hpub === hp ? Promise.resolve() : Sec.derive(sp.kp.priv, m.hpub).then(function (k) { sp.key = k; sp.hpub = hp; })).then(function () {
+    var e = m.sec && m.sec[sp.pid];
+    if (e) return Sec.dec(sp.key, e).then(function (pr) { if (pr.pv >= sp.pv) { sp.priv = pr; sp.pv = pr.pv; } });
+  }).then(function () {
+    if ((m.pv && m.pv[sp.pid] || 0) > sp.pv && Date.now() - (sp.needAt || 0) > 1500) { sp.needAt = Date.now(); sp.need++; sp.net.send({ type: "need", pid: sp.pid }); }
+    simAct(sp);
+  }, function () {});
+}
+/* what a player does in each phase (random but legal) */
+function simAct(sp) {
+  var st = sp.st, pr = sp.priv; if (!st || !pr) return;
+  var ph = st.phase, k = ph + ":" + st.round, lord = (st.lords || []).indexOf(sp.pid) >= 0;
+  if (ph === "reveal" && pr.det && st.rev) { var r = st.rev[sp.me.idx]; if (!sp.did["chk" + k]) { sp.did["chk" + k] = 1; if (!r || r.x !== pr.x || pr.det.acc !== sp.me.acc) sp.miss++; } }
+  if (sp.did[k]) return;
+  var a = null;
+  if (ph === "build") { var b = pick(LOL.allBuilds({ when: "start" })); a = { a: "build", cond: b[0], eff: b[1] }; }
+  else if (ph === "pick" && !pr.forced) { var ban = pr.ban || [], al = LOL.DIE_IDS.filter(function (d) { return ban.indexOf(d) < 0; }); a = { a: "pick", die: pick(al), god: pr.god === 1 && rnd() < .3 }; }
+  else if (ph === "reroll" && pr.rrLeft && !pr.rrDone && !pr.rerolled && !pr.rrBlock) a = { a: "rr", use: rnd() < .2 };
+  else if (ph === "vote" && st.vote && st.vote.voters.indexOf(sp.pid) >= 0) a = { a: "vote", opt: pick(st.vote.opts) };
+  else if (ph === "break") { if (rnd() < .7) a = { a: "brk", keep: true }; else { var nb = pick(LOL.allBuilds({ when: "break" })); a = { a: "brk", cond: nb[0], eff: nb[1] }; } }
+  else if (ph === "ev" && lord) a = { a: "ev", ev: pick(st.ev.opts) };
+  else if (ph === "aura" && lord && pr.auraOpts) a = { a: "aura", i: rnd() < .5 ? 0 : 1 };
+  else if (ph === "cook" && lord) a = { a: "cook", id: pick(st.ev.cook.opts), scope: pick(Object.keys(SCOPE_T)) };
+  else if (ph === "god" && pr.godNow) a = { a: "face", x: Math.max.apply(null, LOL.DICE[pr.die]) };
+  else if (ph === "locked" && pr.lockOld) { var lb = pick(LOL.allBuilds({ when: "locked", old: pr.lockOld, budget: lord ? 6 : 5 })); a = { a: "lock", cond: lb[0], eff: lb[1] }; }
+  else if (ph === "guess" && !lord && pr.die) a = { a: "guess", x: pick(LOL.DICE[pr.die]) };
+  else if (ph === "npc" && lord && pr.npcAl) a = { a: "npc", die: pick(pr.npcAl) };
+  sp.did[k] = 1;
+  if (a) setTimeout(function () { if (sp.st && sp.st.phase === ph) simSend(sp, a); }, 300 + rnd() * 3700);
+}
+function pct(arr, q) { if (!arr.length) return 0; var s = arr.slice().sort(function (x, y) { return x - y; }); return s[Math.min(s.length - 1, Math.floor(q * s.length))]; }
+function simPanel() {
+  var L = SIM.list; if (!L.length) return;
+  var el = SIM.panel || (SIM.panel = document.body.appendChild(document.createElement("div")));
+  el.id = "simp"; el.style.cssText = "position:fixed;left:8px;top:8px;z-index:90;background:rgba(10,14,30,.92);color:#EEF1FA;font:13px/1.45 monospace;padding:8px 10px;border:1px solid #5A6785;border-radius:8px;max-width:560px;pointer-events:none";
+  var lat = [], n = 0, by = 0, mx = 0, need = 0, sent = 0, res = 0, miss = 0, gens = 0, rej = 0, joined = 0, ready = 0;
+  L.forEach(function (sp) { lat = lat.concat(sp.lat); n += sp.n; by += sp.bytes; if (sp.maxB > mx) mx = sp.maxB; need += sp.need; sent += sp.sent; res += sp.resend; miss += sp.miss; gens += Math.max(0, sp.gens - 1); if (sp.rejected) rej++; if (sp.joined) joined++; if (sp.net.ready) ready++; });
+  var sec = Math.max(1, (Date.now() - SIM.t0) / 1000);
+  SIM.stats = { phones: L.length, ready: ready, joined: joined, msgs: n, perSec: +(n / sec).toFixed(1), avgB: n ? Math.round(by / n) : 0, maxB: mx, p50: pct(lat, .5), p95: pct(lat, .95), max: lat.length ? Math.max.apply(null, lat) : 0,
+    need: need, sent: sent, resend: res, miss: miss, reconnect: gens, rejected: rej, phase: H.phase + " " + H.round };
+  var now = Math.floor(Date.now() / 1000), pk = 0, sum = 0, w = 0;
+  Object.keys(SIM.b).forEach(function (t) { t = Number(t); if (t < now) { if (SIM.b[t] > pk) pk = SIM.b[t]; if (t >= now - 60) { sum += SIM.b[t]; w++; } } });
+  SIM.stats.rtPeak = pk; SIM.stats.rtAvg = w ? Math.round(sum / 60) : 0;
+  var S = SIM.stats;
+  el.innerHTML = "มือถือจำลอง " + S.phones + " เครื่อง ต่ออยู่ " + S.ready + " เข้าห้อง " + S.joined + "<br>ได้สถานะรวม " + S.msgs + " ข้อความ (" + S.perSec + "/วินาที) ขนาดเฉลี่ย " + S.avgB + " ไบต์ ใหญ่สุด " + S.maxB +
+    "<br>ความหน่วง กลาง " + S.p50 + " ms, 95% " + S.p95 + " ms, มากสุด " + S.max + " ms<br>ส่งการกระทำ " + S.sent + " ครั้ง ส่งซ้ำ " + S.resend + " ขอข้อมูลลับใหม่ " + S.need +
+    "<br>ข้อมูลลับไม่ตรงตอนเปิดผล " + S.miss + " ต่อใหม่ " + S.reconnect + " ถูกปฏิเสธ " + S.rejected +
+    "<br>ข้อความ Supabase โดยประมาณ: สูงสุด " + S.rtPeak + "/วินาที เฉลี่ย 1 นาทีล่าสุด " + S.rtAvg + "/วินาที (แผนฟรีจำกัด 100/วินาที)";
+}
+
 /* =====================================================================
    PLAYER (phone)
    ===================================================================== */
@@ -1450,21 +1542,23 @@ function sendSec(a) {
   P.pend = a; if (!P.key) return;
   Sec.enc(P.key, a).then(function (e) { Net.send({ type: "sec", pid: P.pid, iv: e.iv, ct: e.ct }); });
 }
-function pendDone() {
-  var a = P.pend, pr = P.priv; if (!a || !pr || !P.st) return false;
-  if (a.a === "sid") return P.st.phase !== "lobby" || pr.sid === a.sid;
-  if (a.a === "build") return P.st.phase !== "build" || (pr.cond === a.cond && pr.eff === a.eff);
-  if (a.a === "pick") return P.st.phase !== "pick" || (pr.die === a.die && !!pr.godNow === !!a.god);
-  if (a.a === "rr") return P.st.phase !== "reroll" || pr.rrDone || pr.rerolled;
-  if (a.a === "vote") return P.st.phase !== "vote" || !!pr.myVote;
-  if (a.a === "brk") return P.st.phase !== "break" || !!pr.brkDone;
-  if (a.a === "ev") return P.st.phase !== "ev" || !!pr.myEv;
-  if (a.a === "aura") return P.st.phase !== "aura" || pr.auraPick != null;
-  if (a.a === "cook") return P.st.phase !== "cook" || !!pr.cookDone;
-  if (a.a === "face") return P.st.phase !== "god" || pr.godX != null;
-  if (a.a === "lock") return P.st.phase !== "locked" || !!pr.lockDone;
-  if (a.a === "guess") return P.st.phase !== "guess" || pr.guess === a.x;
-  if (a.a === "npc") return P.st.phase !== "npc" || !!pr.myNpc;
+function pendDone() { return pendDoneFor(P.pend, P.st, P.priv); }
+/* has the Host taken this action? (also used by the test phones) */
+function pendDoneFor(a, st, pr) {
+  if (!a || !pr || !st) return false;
+  if (a.a === "sid") return st.phase !== "lobby" || pr.sid === a.sid;
+  if (a.a === "build") return st.phase !== "build" || (pr.cond === a.cond && pr.eff === a.eff);
+  if (a.a === "pick") return st.phase !== "pick" || (pr.die === a.die && !!pr.godNow === !!a.god);
+  if (a.a === "rr") return st.phase !== "reroll" || pr.rrDone || pr.rerolled;
+  if (a.a === "vote") return st.phase !== "vote" || !!pr.myVote;
+  if (a.a === "brk") return st.phase !== "break" || !!pr.brkDone;
+  if (a.a === "ev") return st.phase !== "ev" || !!pr.myEv;
+  if (a.a === "aura") return st.phase !== "aura" || pr.auraPick != null;
+  if (a.a === "cook") return st.phase !== "cook" || !!pr.cookDone;
+  if (a.a === "face") return st.phase !== "god" || pr.godX != null;
+  if (a.a === "lock") return st.phase !== "locked" || !!pr.lockDone;
+  if (a.a === "guess") return st.phase !== "guess" || pr.guess === a.x;
+  if (a.a === "npc") return st.phase !== "npc" || !!pr.myNpc;
   return true;
 }
 function resendPend() { if (P.pend && !pendDone()) sendSec(P.pend); else P.pend = null; }

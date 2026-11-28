@@ -27,7 +27,7 @@
   var RULES = ["ban", "curse", "prime", "median", "outlier", "minority", "norepeat", "underdog", "bust", "robin", "crowded", "bubble", "lucky"];
   var RANDOM_POOL = Object.keys(EFF).filter(function (e) { return e !== "random"; });   /* Random draws from every other effect, equal chance */
   var DEFAULTS = { cap: 3, crowdX: null, voteFrac: 0.5, voteCount: null, underdogNeedsCond: true,
-    stealGain: 4, stealLoss: 2, spoilGain: 5, spoilLoss: 3, deluluLoss: 6, fanumPts: 2, fanumTie: "all" };
+    stealGain: 4, stealLoss: 2, spoilGain: 5, spoilLoss: 3, deluluLoss: 6, fanumPts: 2, fanumTie: "order" };
 
   function cfgOf(c) { var o = {}, k; for (k in DEFAULTS) o[k] = DEFAULTS[k]; if (c) for (k in c) if (c[k] !== undefined) o[k] = c[k]; return o; }
   function has(arr, v) { return arr.indexOf(v) >= 0; }
@@ -254,15 +254,32 @@
   /* ---------- after step 8 ---------- */
   /* the Sigma Lords: players whose running total is exactly 67 (the caller checks "once per game" and "not after round 12") */
   function sigmaLords(acc) { var o = []; acc.forEach(function (v, i) { if (v === 67) o.push(i); }); return o; }
+  /* ranking with the end-of-game tie-break: higher running total, then more round points in the latest round, the round
+     before, ... round 1, then tie[i] (a random number the caller draws; lower first), then seat.
+     hist[i] = round points of the rounds played so far. Returns the player indexes, highest first. */
+  function rankOrder(acc, hist, tie, only) {
+    var idx = [];
+    for (var i = 0; i < acc.length; i++) if (!only || has(only, i)) idx.push(i);
+    hist = hist || []; tie = tie || [];
+    idx.sort(function (a, b) {
+      if (acc[a] !== acc[b]) return acc[b] - acc[a];
+      var ha = hist[a] || [], hb = hist[b] || [];
+      for (var t = Math.max(ha.length, hb.length) - 1; t >= 0; t--) { var d = (hb[t] || 0) - (ha[t] || 0); if (d) return d; }
+      return (tie[a] || 0) - (tie[b] || 0) || a - b;
+    });
+    return idx;
+  }
   /* Fanum Tax: for each Sigma Lord, players ranked 1–5 among those over 67 (no active Shield this round) give pts.
-     tie "all": everyone tied with the 5th pays; "index": the first 5 by seat (the simulator's way). Sequential per lord, like the simulator. */
-  function applyFanum(acc, lords, shield, c) {
+     tie "order" (user, 28 Nov): exactly 5 pay, picked by rankOrder (hist, tie needed); "all": everyone tied with the 5th pays;
+     "index": the first 5 by seat (the simulator's way). Sequential per lord, like the simulator. */
+  function applyFanum(acc, lords, shield, c, hist, tie) {
     c = cfgOf(c); acc = acc.slice();
     var paid = acc.map(function () { return 0; });
     lords.forEach(function (h) {
       var above = [];
       acc.forEach(function (v, i) { if (v > 67 && !shield[i]) above.push(i); });
-      above.sort(function (a, b) { return acc[b] - acc[a] || a - b; });
+      if (c.fanumTie === "order") above = rankOrder(acc, hist, tie, above);
+      else above.sort(function (a, b) { return acc[b] - acc[a] || a - b; });
       var pay = above.slice(0, 5);
       if (c.fanumTie === "all" && above.length > 5) { var v5 = acc[above[4]]; pay = above.filter(function (i) { return acc[i] >= v5; }); }
       pay.forEach(function (v) { acc[v] -= c.fanumPts; acc[h] += c.fanumPts; paid[v] -= c.fanumPts; paid[h] += c.fanumPts; });
@@ -306,9 +323,42 @@
   function drawRandomEffect(rnd) { return RANDOM_POOL[Math.floor((rnd || Math.random)() * RANDOM_POOL.length)]; }
   function drawLucky(rnd) { return 1 + Math.floor((rnd || Math.random)() * 7); }
 
+  /* ---------- The 67 Event ---------- */
+  var EV_SELF = ["fanum", "aura", "cook", "god"], EV_ROOM = ["locked", "delulu", "brainrot", "npc"];
+  /* 1 event from each pile; Let Him Cook is not drawn when there are several Sigma Lords */
+  function eventDraw(several, rnd) {
+    rnd = rnd || Math.random;
+    var self = EV_SELF.filter(function (e) { return !(several && e === "cook"); });
+    return [self[Math.floor(rnd() * self.length)], EV_ROOM[Math.floor(rnd() * EV_ROOM.length)]];
+  }
+  /* every legal rule for a situation (see buildOk) as [cond, eff] pairs */
+  function allBuilds(o) {
+    var out = [];
+    Object.keys(COND).forEach(function (c) { Object.keys(EFF).forEach(function (e) { if (buildOk(c, e, o)) out.push([c, e]); }); });
+    return out;
+  }
+  /* Aura Farming: 2 different rules costing 6–7 coins (no Compound Interest, no Shield) */
+  function auraOptions(rnd) {
+    rnd = rnd || Math.random;
+    var pool = allBuilds({ when: "aura" }), a = pool.splice(Math.floor(rnd() * pool.length), 1)[0];
+    return [a, pool[Math.floor(rnd() * pool.length)]];
+  }
+  /* Brainrot: a shuffle of 0..k-1 where nobody keeps their own place (k >= 2); k < 2 gives no change */
+  function derange(k, rnd) {
+    rnd = rnd || Math.random;
+    var p = [];
+    for (var i = 0; i < k; i++) p.push(i);
+    if (k < 2) return p;
+    for (;;) {
+      for (var j = k - 1; j > 0; j--) { var r = Math.floor(rnd() * (j + 1)), t = p[j]; p[j] = p[r]; p[r] = t; }
+      if (p.every(function (v, q) { return v !== q; })) return p;
+    }
+  }
+
   var api = { DICE: DICE, DIE_IDS: DIE_IDS, COND: COND, EFF: EFF, RULES: RULES, RANDOM_POOL: RANDOM_POOL, DEFAULTS: DEFAULTS,
     modeOf: modeOf, medianHits: medianHits, votingGroup: votingGroup, bannedDice: bannedDice, leadersFor: leadersFor,
     buildCost: buildCost, buildOk: buildOk, scoreRound: scoreRound, sigmaLords: sigmaLords, applyFanum: applyFanum,
-    finalPlaces: finalPlaces, voteOptions: voteOptions, voteWinner: voteWinner, drawRandomEffect: drawRandomEffect, drawLucky: drawLucky };
+    finalPlaces: finalPlaces, voteOptions: voteOptions, voteWinner: voteWinner, drawRandomEffect: drawRandomEffect, drawLucky: drawLucky,
+    rankOrder: rankOrder, EV_SELF: EV_SELF, EV_ROOM: EV_ROOM, eventDraw: eventDraw, allBuilds: allBuilds, auraOptions: auraOptions, derange: derange };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.LOL = api;
 })(this);

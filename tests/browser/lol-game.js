@@ -57,6 +57,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await host.screenshot({ path: "/tmp/lol_h_lobby.png" });
   await host.click("[data-h=start]");
   await host.waitForFunction(() => H.phase === "build");
+  await host.evaluate(() => { H.evDone = true; });   /* this test plays without The 67 Event (tests/browser/lol-67.js tests the events) */
 
   /* build: phone 0 and 1 build, phone 2 lets the timer run out */
   const builds = [["gtmean", "random"], ["notrep", "+2"]];

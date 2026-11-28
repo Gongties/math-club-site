@@ -99,8 +99,24 @@ eq("delulu before robin", run([pl("risk", 0, "deja", "+2", 20, { guess: 1 }), pl
 
 /* ---- Fanum Tax ---- */
 eq("fanum top 5 over 67 pay 2, shield exempt", L.applyFanum([67, 90, 80, 70, 69, 68, 68, 50], [0], [false, false, true, false, false, false, false, false], {}).acc, [77, 88, 80, 68, 67, 66, 66, 50]);
-eq("fanum tie at 5th: all pay (option all)", L.applyFanum([67, 90, 80, 70, 69, 68, 68, 68], [0], [], {}).acc, [81, 88, 78, 68, 67, 66, 66, 66]);
+eq("fanum tie at 5th: all pay (option all)", L.applyFanum([67, 90, 80, 70, 69, 68, 68, 68], [0], [], { fanumTie: "all" }).acc, [81, 88, 78, 68, 67, 66, 66, 66]);
 eq("fanum tie at 5th: index", L.applyFanum([67, 90, 80, 70, 69, 68, 68, 68], [0], [], { fanumTie: "index" }).acc, [77, 88, 78, 68, 67, 66, 68, 68]);
+/* user (28 Nov): tie at 5th -> exactly 5 pay, by the end-of-game tie-break (latest round first), then random */
+eq("fanum tie at 5th: tie-break by round points", L.applyFanum([67, 90, 80, 70, 69, 68, 68, 68], [0], [], {}, [[], [], [], [], [], [1, 2], [3, 1], [0, 2]]).acc, [77, 88, 78, 68, 67, 66, 68, 68]);
+eq("fanum tie at 5th: tied in every round -> random number", L.applyFanum([67, 90, 80, 70, 69, 68, 68, 68], [0], [], {}, [], [0, 0, 0, 0, 0, .9, .1, .5]).acc, [77, 88, 78, 68, 67, 68, 66, 68]);
+eq("fanum shield skips, 6th steps in (order)", L.applyFanum([67, 90, 80, 70, 69, 68, 68, 50], [0], [false, false, true, false, false, false, false, false], {}).acc, [77, 88, 80, 68, 67, 66, 66, 50]);
+eq("rankOrder: total, then latest round, earlier round, random", L.rankOrder([5, 7, 5, 5], [[1, 2], [0, 0], [3, 1], [2, 1]], [.5, 0, .2, .1]), [1, 0, 2, 3]);
+eq("rankOrder only some players", L.rankOrder([5, 7, 5, 9], [], [.3, 0, .1, 0], [0, 1, 2]), [1, 2, 0]);
+eq("derange 2 swaps", L.derange(2), [1, 0]);
+eq("derange 1 keeps", L.derange(1), [0]);
+var okD = true; for (var dd = 0; dd < 300; dd++) { var k = 2 + dd % 9, d = L.derange(k); if (d.slice().sort(function (a, b) { return a - b; }).join() !== Array.from({ length: k }, function (_, q) { return q; }).join() || d.some(function (v, q) { return v === q; })) okD = false; }
+eq("derange: a shuffle where nobody keeps their own (300 draws)", okD, true);
+var okE = true, seenE = {}; for (var de = 0; de < 400; de++) { var e2 = L.eventDraw(de % 2 === 1); seenE[e2[0]] = seenE[e2[1]] = 1; if (L.EV_SELF.indexOf(e2[0]) < 0 || L.EV_ROOM.indexOf(e2[1]) < 0 || (de % 2 === 1 && e2[0] === "cook")) okE = false; }
+eq("eventDraw: 1 from each pile, no Let Him Cook with several lords, all 8 seen", [okE, Object.keys(seenE).length], [true, 8]);
+var okA = true; for (var da = 0; da < 300; da++) { var a2 = L.auraOptions(); var c0 = L.buildCost(a2[0][0], a2[0][1]), c1 = L.buildCost(a2[1][0], a2[1][1]);
+  if (a2[0].join() === a2[1].join() || c0 < 6 || c0 > 7 || c1 < 6 || c1 > 7 || a2.some(function (b) { return b[1] === "shield" || b[1] === "interest"; })) okA = false; }
+eq("auraOptions: 2 different rules, 6-7 coins, no Shield or Compound Interest", okA, true);
+eq("locked in: both must change, budget 6 for the lord", [L.buildOk("even", "+5", { when: "locked", old: { cond: "odd", eff: "+2" }, budget: 6 }), L.buildOk("even", "+2", { when: "locked", old: { cond: "odd", eff: "+2" }, budget: 6 }), L.buildOk("fib", "+5", { when: "locked", old: { cond: "odd", eff: "+2" } }), L.buildOk("even", "interest", { when: "locked", old: { cond: "odd", eff: "+2" } })], [true, false, false, false]);
 eq("sigma lords", L.sigmaLords([67, 3, 67]), [0, 2]);
 
 /* ---- final places: total, then round points 12, 11, ... ---- */

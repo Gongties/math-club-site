@@ -105,6 +105,22 @@ body.ph #netb.ok { background: #2E9E6B; } body.ph #netb.local { background: #D9A
 .lucky b { font-size: 64px; line-height: 1; }
 .dref .d .bt { font-size: 26px; color: #FF8A80; font-weight: 700; margin-top: 6px; }
 .ovb .ck { width: 34px; height: 34px; }
+/* The 67 Event */
+.ecard { flex: 1; max-width: 700px; background: #2A2140; border: 4px solid #FFD84D; border-radius: 26px; padding: 28px 32px; }
+.ecard .pile { font-size: 24px; color: #FFD84D; font-weight: 700; }
+.ecard .en { font-family: Prompt, sans-serif; font-weight: 700; font-size: 52px; line-height: 1.15; }
+.ecard .et { font-size: 30px; color: #C9B8FF; }
+.ecard .ed { font-size: 28px; line-height: 1.45; margin-top: 12px; }
+.ecard.win { background: #3A3520; } .ecard.lose { opacity: .4; }
+.ecard .vt { font-family: Prompt, sans-serif; font-weight: 700; font-size: 44px; color: #FFD84D; margin-top: 10px; }
+.lordb { font-family: Prompt, sans-serif; font-weight: 700; font-size: 44px; color: #FFD84D; text-align: center; }
+.evlist { display: flex; flex-wrap: wrap; gap: 14px 34px; justify-content: center; font-size: 30px; max-width: 1700px; }
+.evlist b { color: #FFD84D; }
+.brain { background: #2A2140; border: 3px solid #FF8A80; border-radius: 18px; padding: 10px 18px; font-size: 22px; line-height: 1.45; flex: none; }
+.brain b { color: #FF8A80; }
+.dref .d.npc { border-color: #FFD84D; background: #3A3520; }
+.dref .d .nt { font-size: 24px; color: #FFD84D; font-weight: 700; margin-top: 6px; }
+.lord { color: #FFD84D; }
 /* overlays */
 .ov { position: absolute; inset: 0; z-index: 20; background: rgba(5, 8, 20, .85); display: flex; align-items: center; justify-content: center; }
 .ovb { width: 1100px; max-height: 960px; overflow: auto; padding: 48px; border-radius: 30px; background: #171E38; border: 3px solid #2B3560; display: flex; flex-direction: column; gap: 22px; font-size: 30px; }
@@ -155,6 +171,14 @@ body.ph { background: #F3F6FF; color: #14213D; }
 .vopt { display: block; width: 100%; text-align: left; border: 3px solid #14213D; border-radius: 14px; background: #fff; color: #14213D; padding: 12px 14px; }
 .vopt.on { background: #FFD84D; box-shadow: 3px 3px 0 #14213D; }
 .vopt .nm { font-weight: 700; font-size: 1.1rem; } .vopt .ds { font-size: .9rem; color: #4A5578; }
+.evc { display: block; width: 100%; text-align: left; border: 3px solid #14213D; border-radius: 14px; background: #2A2140; color: #fff; padding: 12px 14px; }
+.evc .pile { font-size: .8rem; color: #FFD84D; font-weight: 700; } .evc .nm { font-weight: 700; font-size: 1.2rem; } .evc .th { color: #C9B8FF; font-size: .95rem; } .evc .ds { font-size: .92rem; line-height: 1.45; margin-top: 4px; }
+.evc.on { border-color: #FFD84D; box-shadow: 3px 3px 0 #14213D; background: #3A2F5C; }
+.evc[disabled] { opacity: .5; }
+.faces { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.faces .btn { font-family: Prompt, sans-serif; font-size: 1.8rem; }
+.faces .btn.on { background: #14213D; color: #FFD84D; }
+.sig { background: #2A2140; color: #FFD84D; border-radius: 12px; padding: 8px 12px; font-weight: 700; line-height: 1.45; }
 .verw { background: #FFE9A8; border: 3px solid #14213D; border-radius: 14px; padding: 12px; font-weight: 700; }
 </style>
 </head>
@@ -162,7 +186,7 @@ body.ph { background: #F3F6FF; color: #14213D; }
 <div id="app"></div>
 <div id="netb" aria-hidden="true"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/logic-over-luck/engine.js?v=2026112802"></script>
+<script src="/logic-over-luck/engine.js?v=2026112803"></script>
 <script>
 "use strict";
 /* Logic over Luck (Rules Race: Math Club Edition v5). Big screen (#host) + phones (#join=CODE).
@@ -172,7 +196,7 @@ body.ph { background: #F3F6FF; color: #14213D; }
    each phone and the Host make an ECDH P-256 key pair, the shared AES-GCM key is never sent. */
 
 /* page version: RAISE THIS NUMBER (and the ?v= of engine.js above) EVERY TIME THIS FOLDER CHANGES (YYYYMMDD + 2 digits) */
-var LOL_V = 2026112802;
+var LOL_V = 2026112803;
 
 /* ---------- small helpers ---------- */
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -238,6 +262,20 @@ var RULE_D = { ban: "ลูกเต๋าที่มีผู้เลือ�
   crowded: "ถูกหักคะแนนสะสม 1 คะแนน ต่อทุก ๆ x คนที่ใช้ลูกเต๋าลูกเดียวกับคุณ (รวมตัวเองด้วย)", bubble: "หากใช้ลูกเต๋าที่คนเลือกมากที่สุดและไม่เกินครึ่งห้อง จะได้ 3 คะแนน",
   lucky: "ต้นรอบสุ่มเลข 1–7 ใครทอยได้เลขนั้น +4" };
 /* card text; Crowded Dice shows the real x of this room */
+/* The 67 Event (claude/logic-over-luck-terms.md section 6): [English name, Thai tag, card text] */
+var EV_T = {
+  fanum: ["Fanum Tax", "แบ่งบ้างสิ", "5 อันดับแรกที่ได้คะแนนเกิน 67 คะแนน โดนหัก 2 คะแนนเพื่อมอบให้ Sigma Lord"],
+  aura: ["Aura Farming", "ฟาร์มออร่า", "Sigma Lord ได้รับโล่จบเกม และได้สิทธิ์เลือก 1 จาก 2 กฎส่วนตัวใหม่ในราคา 6–7 เหรียญ"],
+  cook: ["Let Him Cook", "ปล่อยพี่โชว์", "เพิ่มกฎส่วนรวม 1 ข้อ 2 รอบ และเลือกได้ว่ากฎจะมีผลต่อทุกคน คนอื่น หรือแค่ Sigma Lord เอง"],
+  god: ["GOD MODE", "ร่างทอง", "Sigma Lord ได้สิทธิ์เลือกได้ว่าจะให้ลูกเต๋าออกเลขอะไร 1 ครั้ง"],
+  locked: ["Locked In", "เบิกเนตร", "ทุกคนต้องเปลี่ยนกฎส่วนตัวทั้งเงื่อนไขและผลลัพธ์ภายใน 30 วินาที ส่วน Sigma Lord สามารถสร้างกฎในราคา 6 เหรียญได้"],
+  delulu: ["Delulu", "กาวพารวย", "รอบหน้าผู้เล่นคนอื่นจะต้องทายว่าตัวเองจะทอยลูกเต๋าได้เลขอะไร ทายถูกรอด ทายผิดหัก 6 แต้ม"],
+  brainrot: ["Brainrot, No Cap", "สมองไหล ไร้ความลับ", "ทุกคนยกเว้น Sigma Lord ต้องสลับกฎส่วนตัวของตนเองกับผู้อื่น และผู้เล่นคนอื่น 3 อันดับแรกต้องเปิดเผยกฎส่วนตัวของตนเอง"],
+  npc: ["NPC Mode", "เกิดใหม่อีกทีเป็น NPC ซะแล้ว", "Sigma Lord จะเลือกลูกเต๋าที่คนอื่นต้องใช้เป็นเวลา 2 รอบ"]
+};
+/* the card text with the room's real Locked In time */
+function evDesc(id, cfgT) { var d = EV_T[id][2]; return id === "locked" && cfgT ? d.replace("30 วินาที", cfgT + " วินาที") : d; }
+var SCOPE_T = { all: "ทุกคน", others: "ทุกคนยกเว้น Sigma Lord", me: "เฉพาะ Sigma Lord" };
 function ruleDesc(id, cx) { var d = RULE_D[id] || ""; return id === "crowded" && cx ? d + " ห้องนี้ x = " + cx : d; }
 function condName(c) { return COND_T[c] ? COND_T[c][0] : c; }
 function effName(e) { return EFF_T[e] ? EFF_T[e][0] : e; }
@@ -404,7 +442,8 @@ function qrSvg(text) {
    HOST (big screen). Runs the whole game; the phones only show what it sends.
    ===================================================================== */
 var DEF_CFG = { room: "ห้องเรียน", tBuild: 60, tPick: 15, tRr: 10, tRev: 12, tVote: 20, tBreak: 180,
-  special: 1, votePct: 50, voteCount: 0, cap: 3, crowdX: 0 };   /* voteCount 0 = use votePct; crowdX 0 = number of players / 5 rounded up */
+  special: 1, votePct: 50, voteCount: 0, cap: 3, crowdX: 0,
+  tEv: 20, tEvVote: 15, tCook: 30, tAura: 20, tGod: 10, tGuess: 10, tNpc: 10, tLocked: 30 };   /* The 67 Event time limits (rules section 12) */   /* voteCount 0 = use votePct; crowdX 0 = number of players / 5 rounded up */
 var PVC = Date.now();   /* version numbers of secret data keep growing across a reload of the Host (phones drop anything older) */
 var H = null, KEYS = {}, LASTPRIV = {}, DIRTY = {}, HOSTKEY = null, HV = { kill: null, killT: 0, cfgOpen: false, endAsk: 0 };
 var TEST = /[?&]test\b/.test(location.search);
@@ -462,7 +501,8 @@ function deriveFor(p) {
 function byPid(pid) { for (var i = 0; i < H.players.length; i++) if (H.players[i].pid === pid) return H.players[i]; return null; }
 function newPlayer(pid, name, bot) {
   return { pid: pid, name: name, idx: H.players.length, bot: !!bot, pub: null, built: false, cond: null, eff: null, die: null, prevDie: null,
-    x: null, rerolled: false, rrLeft: true, rrDone: false, reff: null, acc: 0, hist: [], prevX: null, next6: false, det: null, rp: 0, acc0: 0 };
+    x: null, rerolled: false, rrLeft: true, rrDone: false, reff: null, acc: 0, hist: [], prevX: null, next6: false, det: null, rp: 0, acc0: 0,
+    lord: false, aura: false, god: 0, guess: null };
 }
 function uniqueName(name, pid) {
   name = String(name || "").trim().slice(0, 20) || "ผู้เล่น";
@@ -504,8 +544,9 @@ function hostAct(p, a) {
     p.cond = a.cond; p.eff = a.eff; p.built = true;
     if (H.players.every(function (q) { return q.built; })) H.deadline = Date.now() + 1500;
   } else if (a.a === "pick" && H.phase === "pick") {
-    if (!LOL.DICE[a.die] || (H.banned || []).indexOf(a.die) >= 0) return;
+    if (!LOL.DICE[a.die] || bannedFor(p).indexOf(a.die) >= 0 || p.npcForced) return;
     p.die = a.die;
+    p.godNow = !!a.god && p.lord && p.god === 1;   /* GOD MODE: choose the face after the pick */
     if (H.players.every(function (q) { return q.die; })) H.deadline = Date.now() + 800;
   } else if (a.a === "vote" && H.phase === "vote") {
     var V = H.vote;
@@ -522,15 +563,45 @@ function hostAct(p, a) {
     }
     p.brkDone = true; p.brkChanged = !a.keep;
     if (H.players.every(function (q) { return q.brkDone; })) H.deadline = Date.now() + 1500;
+  } else if (a.a === "ev" && H.phase === "ev") {   /* the Sigma Lord picks (several Sigma Lords vote) 1 of the 2 events */
+    var E = H.ev;
+    if (!p.lord || E.votes[p.pid] || E.opts.indexOf(a.ev) < 0) return;
+    E.votes[p.pid] = [a.ev, Date.now()];
+    if (lordsP().every(function (q) { return E.votes[q.pid]; })) H.deadline = Date.now() + 800;
+  } else if (a.a === "aura" && H.phase === "aura") {
+    if (!p.lord || !p.auraOpts || p.auraPick != null || (a.i !== 0 && a.i !== 1)) return;
+    p.auraPick = a.i;
+    if (lordsP().every(function (q) { return q.auraPick != null; })) H.deadline = Date.now() + 800;
+  } else if (a.a === "cook" && H.phase === "cook") {
+    var C = H.ev.cook;
+    if (!p.lord || C.id || C.opts.indexOf(a.id) < 0 || !SCOPE_T[a.scope]) return;
+    C.id = a.id; C.scope = a.scope; H.deadline = Date.now() + 800;
+  } else if (a.a === "face" && H.phase === "god") {
+    if (!p.godNow || p.godX != null || LOL.DICE[p.die].indexOf(a.x) < 0) return;
+    p.godX = a.x;
+    if (H.players.every(function (q) { return !q.godNow || q.godX != null; })) H.deadline = Date.now() + 800;
+  } else if (a.a === "lock" && H.phase === "locked") {
+    if (p.lockDone || !LOL.buildOk(a.cond, a.eff, { when: "locked", old: p.lockOld, budget: p.lord ? 6 : 5 })) return;
+    p.cond = a.cond; p.eff = a.eff; p.lockDone = true;
+    if (H.players.every(function (q) { return q.lockDone; })) H.deadline = Date.now() + 1500;
+  } else if (a.a === "guess" && H.phase === "guess") {   /* Delulu: a face of your own die; can change until time runs out */
+    if (p.lord || LOL.DICE[p.die].indexOf(a.x) < 0) return;
+    p.guess = a.x;
+    if (H.players.every(function (q) { return q.lord || q.guess != null; })) H.deadline = Date.now() + 1500;
+  } else if (a.a === "npc" && H.phase === "npc") {
+    var NV = H.ev.npcVotes;
+    if (!p.lord || NV[p.pid] || npcAllowed().indexOf(a.die) < 0) return;
+    NV[p.pid] = [a.die, Date.now()];
+    if (lordsP().every(function (q) { return NV[q.pid]; })) H.deadline = Date.now() + 800;
   } else if (a.a === "rr" && H.phase === "reroll") {
-    if (!p.rrLeft || p.rrDone) return;
+    if (!p.rrLeft || p.rrDone || p.rrBlock) return;
     p.rrDone = true;
     if (a.use) { p.x = pick(LOL.DICE[p.die]); p.rerolled = true; p.rrLeft = false; }
     if (rrAllDone()) H.deadline = Date.now() + 800;
   } else return;
   saveHost(); renderHost(); bcast();
 }
-function rrAllDone() { return H.players.every(function (q) { return !q.rrLeft || q.rrDone || q.rerolled; }); }
+function rrAllDone() { return H.players.every(function (q) { return !q.rrLeft || q.rrDone || q.rerolled || q.rrBlock; }); }
 
 /* ---------- game flow ---------- */
 function setPhase(ph, sec) { H.phase = ph; H.paused = 0; H.deadline = sec ? Date.now() + sec * 1000 : 0; H.phaseAt = Date.now(); }
@@ -538,8 +609,10 @@ function hostStart() {
   if (H.players.length < 2) return;
   H.runId = "lol-" + H.code + "-" + Date.now().toString(36);
   H.n = H.players.length;
-  H.players.forEach(function (p) { p.built = false; p.cond = p.eff = null; p.acc = 0; p.hist = []; p.prevX = null; p.prevDie = null; p.next6 = false; p.rrLeft = true; p.det = null; p.rp = 0; });
+  H.players.forEach(function (p) { p.built = false; p.cond = p.eff = null; p.acc = 0; p.hist = []; p.prevX = null; p.prevDie = null; p.next6 = false; p.rrLeft = true; p.det = null; p.rp = 0;
+    p.lord = false; p.aura = false; p.god = 0; p.guess = null; p.swapped = 0; p.revealed = false; p.shLast = false; });
   H.round = 0; H.places = null; H.room = null; H.rule = null; H.special = null; H.vote = null; H.curRules = []; H.banned = []; H.lucky = null;
+  H.ev = null; H.evDone = false; H.cookNow = null; H.npcDie = null; H.delulu = false;
   setPhase("build", Number(H.cfg.tBuild) || 60);
   botsDo(); saveHost(); renderHost(); bcast();
 }
@@ -547,22 +620,28 @@ function advance() {
   if (H.phase === "build") finishBuild();
   else if (H.phase === "pick") endPick();
   else if (H.phase === "reroll") endReroll();
-  else if (H.phase === "reveal") {
-    if (H.round >= 12) endGame();
-    else if (H.round === 6) startBreak();
-    else if (H.round === 3 || H.round === 9) startVote(H.round + 1);
-    else startRound(H.round + 1);
-  }
+  else if (H.phase === "reveal") { if (H.ev && H.ev.stage === "pending") startEv(); else continueGame(); }
+  else if (H.phase === "ev") endEv();
+  else if (H.phase === "evd") evdNext();
+  else if (H.phase === "aura") endAura();
+  else if (H.phase === "cook") endCook();
+  else if (H.phase === "locked") endLocked();
+  else if (H.phase === "npc") endNpc();
+  else if (H.phase === "guess") rollAll();
+  else if (H.phase === "god") endGod();
   else if (H.phase === "vote") endVote();
   else if (H.phase === "voted") startRound(H.vote.round);
   else if (H.phase === "break") startVote(7);
   saveHost(); renderHost(); bcast();
 }
-function randomBuild(when) {
-  var opts = [];
-  Object.keys(LOL.COND).forEach(function (c) { Object.keys(LOL.EFF).forEach(function (e) { if (LOL.buildOk(c, e, { when: when })) opts.push([c, e]); }); });
-  return pick(opts);
+/* after a round's reveal (and any 67 Event): the break after round 6, a vote before rounds 4, 7, 10, or the next round */
+function continueGame() {
+  if (H.round >= 12) endGame();
+  else if (H.round === 6) startBreak();
+  else if (H.round === 3 || H.round === 9) startVote(H.round + 1);
+  else startRound(H.round + 1);
 }
+function randomBuild(when) { return pick(LOL.allBuilds({ when: when })); }
 function finishBuild() {
   H.players.forEach(function (p) { if (!p.built) { var b = randomBuild("start"); p.cond = b[0]; p.eff = b[1]; p.built = true; p.autoBuilt = true; } });
   startRound(1);
@@ -590,31 +669,75 @@ function startBreak() {
 function startRound(t) {
   H.round = t;
   H.curRules = activeRules(t);
-  H.banned = H.curRules.indexOf("ban") >= 0 ? LOL.bannedDice(H.players.map(function (p) { return p.prevDie; })) : [];
-  H.lucky = H.curRules.indexOf("lucky") >= 0 ? 1 + Math.floor(rnd() * 7) : null;   /* Lucky Number 1..7, shown before dice are picked */
+  /* Let Him Cook: the cooked rule is added for its rounds, only for the players in its scope (pids) */
+  var C = H.ev && H.ev.cook;
+  H.cookNow = C && C.id && t >= C.from && t <= C.to ? { id: C.id, scope: C.scope === "all" ? null : C.scope === "me" ? C.lords.slice() : H.players.filter(function (p) { return !p.lord; }).map(function (p) { return p.pid; }) } : null;
+  var anyOn = function (id) { return H.curRules.indexOf(id) >= 0 || !!(H.cookNow && H.cookNow.id === id); };
+  H.banned = anyOn("ban") ? LOL.bannedDice(H.players.map(function (p) { return p.prevDie; })) : [];   /* set by everyone's picks last round */
+  H.lucky = anyOn("lucky") ? 1 + Math.floor(rnd() * 7) : null;   /* Lucky Number 1..7, shown to everyone before dice are picked */
+  H.delulu = !!(H.ev && H.ev.delulu === t);
+  H.npcDie = null;
   H.players.forEach(function (p) {
     p.die = null; p.x = null; p.rerolled = false; p.rrDone = false; p.det = null;
+    p.godNow = false; p.godX = null; p.rrBlock = false; p.guess = null; p.npcForced = false;
     p.reff = p.eff === "random" ? LOL.RANDOM_POOL[Math.floor(rnd() * LOL.RANDOM_POOL.length)] : null;   /* Random: equal chance of the 14 other effects */
   });
-  setPhase("pick", Number(H.cfg.tPick) || 15);
+  if (H.ev && H.ev.npc && H.ev.npc.rounds.indexOf(t) >= 0) { H.ev.npcVotes = {}; setPhase("npc", Number(H.cfg.tNpc) || 10); }   /* NPC Mode: the Sigma Lord picks everyone's die first */
+  else beginPick();
   botsDo();
+}
+function beginPick() {
+  if (H.npcDie) H.players.forEach(function (p) { if (!p.lord) { p.die = H.npcDie; p.npcForced = true; } });
+  setPhase("pick", Number(H.cfg.tPick) || 15);
 }
 function endPick() {
   H.players.forEach(function (p) {
-    var allowed = LOL.DIE_IDS.filter(function (d) { return H.banned.indexOf(d) < 0; });
+    var ban = bannedFor(p), allowed = LOL.DIE_IDS.filter(function (d) { return ban.indexOf(d) < 0; });
     /* time ran out: keep last round's die (a random allowed die in round 1 or if it is banned) */
     if (!p.die) { p.die = p.prevDie && allowed.indexOf(p.prevDie) >= 0 ? p.prevDie : pick(allowed); p.autoDie = true; } else p.autoDie = false;
-    p.x = pick(LOL.DICE[p.die]);
   });
+  /* Delulu: everyone except the Sigma Lord(s) guesses a face of their die before rolling */
+  if (H.delulu && H.players.some(function (p) { return !p.lord; })) { setPhase("guess", Number(H.cfg.tGuess) || 10); botsDo(); return; }
+  rollAll();
+}
+function rollAll() {
+  H.players.forEach(function (p) { p.x = p.godNow ? null : pick(LOL.DICE[p.die]); });
+  if (H.players.some(function (p) { return p.godNow; })) { setPhase("god", Number(H.cfg.tGod) || 10); botsDo(); return; }
+  toReroll();
+}
+/* GOD MODE: the chosen face is the roll and no re-roll this round; time ran out = roll normally, GOD MODE stays for later */
+function endGod() {
+  H.players.forEach(function (p) {
+    if (!p.godNow) return;
+    if (p.godX != null) { p.x = p.godX; p.god = 2; p.rrBlock = true; p.godRound = H.round; }
+    else { p.x = pick(LOL.DICE[p.die]); p.godNow = false; }
+  });
+  toReroll();
+}
+function toReroll() {
   if (rrAllDone()) return endReroll();
   setPhase("reroll", Number(H.cfg.tRr) || 10);
   botsDo();
 }
+/* common rules for the engine this round: the voted/special rules for everyone, plus a Let Him Cook rule with its scope */
+function rulesFor() {
+  var r = (H.curRules || []).map(function (id) { return { id: id, scope: null }; });
+  if (H.cookNow) r.push({ id: H.cookNow.id, scope: H.cookNow.scope ? H.cookNow.scope.map(function (pid) { return byPid(pid).idx; }) : null });
+  return r;
+}
+function ruleOn(id, p) { return (H.curRules || []).indexOf(id) >= 0 || !!(H.cookNow && H.cookNow.id === id && (!H.cookNow.scope || H.cookNow.scope.indexOf(p.pid) >= 0)); }
+function bannedFor(p) { return ruleOn("ban", p) ? (H.banned || []) : []; }
+function lordsP() { return H.players.filter(function (p) { return p.lord; }); }
+/* NPC Mode: dice the forced players are allowed to use this round */
+function npcAllowed() {
+  var q = H.players.filter(function (p) { return !p.lord; })[0], ban = q ? bannedFor(q) : [];
+  return LOL.DIE_IDS.filter(function (d) { return ban.indexOf(d) < 0; });
+}
 function endReroll() {
-  var t = H.round, inp = { round: t, final: t === 12, rules: H.curRules.map(function (id) { return { id: id, scope: null }; }), banned: H.banned, lucky: H.lucky, cfg: engCfg(),
+  var t = H.round, inp = { round: t, final: t === 12, rules: rulesFor(), banned: H.banned, lucky: H.lucky, cfg: engCfg(), delulu: H.delulu,
     players: H.players.map(function (p) {
       return { die: p.die, x: p.x, rerolled: p.rerolled, cond: p.cond, eff: p.eff === "random" ? p.reff : p.eff, acc: p.acc, prevX: p.prevX,
-        next6: p.next6, aura: false, hist: p.hist.slice(), tie: (p.tie = rnd()) };
+        next6: p.next6, aura: !!p.aura, lord: !!p.lord, guess: p.guess, hist: p.hist.slice(), tie: (p.tie = rnd()) };
     }) };
   var res = LOL.scoreRound(inp), before = rankOf(H.players.map(function (p) { return p.acc; }));
   H.players.forEach(function (p, i) {
@@ -622,9 +745,111 @@ function endReroll() {
     p.acc0 = p.acc; p.acc = res.acc[i]; p.rp = res.roundPts[i]; p.hist.push(res.roundPts[i]);
     p.next6 = o.next6Next; p.prevX = p.x; p.prevDie = p.die; p.rkBefore = before[i];
     p.det = { steps: o.steps, fired: o.fired, eff: o.eff, stolen: o.stolen || 0, crowded: o.crowded || 0, robin: o.robin || 0, delulu: o.delulu || 0, rp: o.roundPts, acc0: p.acc0, acc: p.acc };
+    if (H.delulu && !p.lord) { p.det.guess = p.guess; p.det.gOk = !!o.deluluOk; p.det.shield = !!o.shield; }
+    if (p.godRound === t) p.det.god = true;
+    p.shLast = !!o.shield;   /* Fanum Tax: a Shield active in the round of the 67 */
   });
   H.room = { mean: res.room.mean, mode: res.room.mode, median: res.room.median, rr: res.room.someoneRerolled };
+  /* The 67 Event: a running total of exactly 67 at the end of a round, once per game, nothing after round 12 */
+  if (!H.evDone && t < 12) {
+    var L = LOL.sigmaLords(res.acc), F = TEST && H.force67 && H.force67.round === t ? H.force67 : null;   /* ?test only: make given players Sigma Lords */
+    if (F) L = F.idx.slice();
+    if (L.length) {
+      H.evDone = true;
+      L.forEach(function (i) { H.players[i].lord = true; });
+      var opts = LOL.eventDraw(L.length > 1, rnd);
+      if (F && F.ev) opts[LOL.EV_SELF.indexOf(F.ev) >= 0 ? 0 : 1] = F.ev;
+      H.ev = { round: t, lords: L.map(function (i) { return H.players[i].pid; }), opts: opts, votes: {}, stage: "pending" };
+    }
+  }
   setPhase("reveal", Number(H.cfg.tRev) || 12);
+}
+
+/* ---------- The 67 Event ---------- */
+function startEv() { H.ev.stage = "choose"; setPhase("ev", H.ev.lords.length > 1 ? Number(H.cfg.tEvVote) || 15 : Number(H.cfg.tEv) || 20); botsDo(); }
+/* most votes wins; tied or nobody chose in time: random */
+function endEv() {
+  var E = H.ev, cnt = {};
+  E.opts.forEach(function (o) { cnt[o] = 0; });
+  Object.keys(E.votes).forEach(function (pid) { cnt[E.votes[pid][0]]++; });
+  var mx = Math.max(cnt[E.opts[0]], cnt[E.opts[1]]), tied = E.opts.filter(function (o) { return cnt[o] === mx; });
+  E.pick = mx && tied.length === 1 ? tied[0] : pick(tied);
+  E.how = !mx ? "random" : tied.length > 1 ? "tie" : "pick"; E.tally = cnt;
+  applyEvent();
+}
+function applyEvent() {
+  var E = H.ev, ev = E.pick, L = lordsP();
+  E.stage = "apply";
+  if (ev === "fanum") {   /* immediately: players 1–5 over 67 (no Shield in that round) give 2 each to every Sigma Lord */
+    E.fTie = H.players.map(function () { return rnd(); });   /* tied in every round: random order */
+    var r = LOL.applyFanum(H.players.map(function (p) { return p.acc; }), L.map(function (p) { return p.idx; }), H.players.map(function (p) { return !!p.shLast; }), engCfg(),
+      H.players.map(function (p) { return p.hist; }), E.fTie);
+    E.fanum = {};
+    H.players.forEach(function (p, i) { if (r.delta[i]) { E.fanum[p.pid] = r.delta[i]; p.acc = r.acc[i]; } });
+  } else if (ev === "aura") {   /* immediately: Shield until the end of the game, then pick 1 of 2 new rules (6–7 coins) */
+    L.forEach(function (p) { p.aura = true; p.auraOpts = LOL.auraOptions(rnd); p.auraPick = null; });
+    E.next = "aura";
+  } else if (ev === "cook") {   /* 3 common rules not active now (and not the revealed special rule) */
+    E.cook = { opts: LOL.voteOptions([H.rule, H.special].concat(H.curRules || []).filter(Boolean), rnd), id: null, scope: null,
+      lords: L.map(function (p) { return p.pid; }), from: E.round + 1, to: Math.min(E.round + 2, 12) };
+    setPhase("cook", Number(H.cfg.tCook) || 30); botsDo(); return;
+  } else if (ev === "god") L.forEach(function (p) { p.god = 1; });
+  else if (ev === "locked") E.next = "locked";
+  else if (ev === "delulu") E.delulu = E.round + 1;
+  else if (ev === "brainrot") brainrot();
+  else if (ev === "npc") E.npc = { rounds: [E.round + 1, E.round + 2].filter(function (r) { return r <= 12; }), die: {} };
+  toEvd();
+}
+function toEvd() { var ev = H.ev.pick; setPhase("evd", ev === "fanum" || ev === "brainrot" ? Math.max(10, Number(H.cfg.tRev) || 12) : 8); }
+function evdNext() {
+  var E = H.ev, nx = E.next; E.next = null;
+  if (nx === "aura") { setPhase("aura", Number(H.cfg.tAura) || 20); botsDo(); }
+  else if (nx === "locked") {
+    H.players.forEach(function (p) { p.lockOld = { cond: p.cond, eff: p.eff }; p.lockDone = false; p.lockAuto = false; });
+    setPhase("locked", Number(H.cfg.tLocked) || 30); botsDo();
+  } else { E.stage = "done"; continueGame(); }
+}
+function endAura() {   /* time ran out: a random one of the 2 */
+  lordsP().forEach(function (p) {
+    if (p.auraPick == null) { p.auraPick = rnd() < .5 ? 0 : 1; p.auraAuto = true; }
+    var b = p.auraOpts[p.auraPick]; p.cond = b[0]; p.eff = b[1];
+  });
+  H.ev.stage = "done"; continueGame();
+}
+function endCook() {   /* time ran out: a random rule of the 3, for everyone */
+  var C = H.ev.cook;
+  if (!C.id) { C.id = pick(C.opts); C.scope = "all"; C.auto = true; }
+  toEvd();
+}
+function endLocked() {   /* time ran out: a random legal rule that changes both parts */
+  H.players.forEach(function (p) {
+    if (p.lockDone) return;
+    var b = pick(LOL.allBuilds({ when: "locked", old: p.lockOld, budget: p.lord ? 6 : 5 }));
+    p.cond = b[0]; p.eff = b[1]; p.lockDone = true; p.lockAuto = true;
+  });
+  H.ev.stage = "done"; continueGame();
+}
+function endNpc() {   /* most votes wins; tied: random; nobody chose: a random allowed die */
+  var NV = H.ev.npcVotes, cnt = {}, al = npcAllowed();
+  Object.keys(NV).forEach(function (pid) { cnt[NV[pid][0]] = (cnt[NV[pid][0]] || 0) + 1; });
+  var mx = 0; Object.keys(cnt).forEach(function (d) { if (cnt[d] > mx) mx = cnt[d]; });
+  var top = al.filter(function (d) { return mx && cnt[d] === mx; });
+  H.npcDie = top.length ? pick(top) : pick(al);
+  H.ev.npc.die[H.round] = H.npcDie;
+  beginPick(); botsDo();
+}
+/* Brainrot, No Cap: everyone except the Sigma Lord(s) gets someone else's rule (nobody keeps their own; with only 1 such
+   player nothing is swapped), then the 3 highest-ranked of them (tie-break: round points latest first, then random) are revealed */
+function brainrot() {
+  var E = H.ev, others = H.players.filter(function (p) { return !p.lord; });
+  if (others.length >= 2) {
+    var perm = LOL.derange(others.length, rnd), rules = others.map(function (p) { return [p.cond, p.eff]; });
+    others.forEach(function (p, k) { p.cond = rules[perm[k]][0]; p.eff = rules[perm[k]][1]; p.swapped = E.round; });
+  }
+  var top = LOL.rankOrder(H.players.map(function (p) { return p.acc; }), H.players.map(function (p) { return p.hist; }), H.players.map(function () { return rnd(); }),
+    others.map(function (p) { return p.idx; })).slice(0, 3);
+  top.forEach(function (i) { H.players[i].revealed = true; });
+  E.brain = { round: E.round, shown: top.map(function (i) { var p = H.players[i]; return { pid: p.pid, c: p.cond, e: p.eff }; }) };
 }
 function endGame() {
   H.places = LOL.finalPlaces(H.players.map(function (p) { return p.acc; }), H.players.map(function (p) { return p.hist; }));
@@ -643,8 +868,18 @@ function botsDo() {
     setTimeout(function () {
       if (H.phase !== ph || H.round !== t) return;
       if (ph === "build") { var b = randomBuild("start"); hostAct(p, { a: "build", cond: b[0], eff: b[1] }); }
-      else if (ph === "pick") { var al = LOL.DIE_IDS.filter(function (d) { return H.banned.indexOf(d) < 0; }); hostAct(p, { a: "pick", die: rnd() < .7 && al.indexOf(p.prevDie) >= 0 ? p.prevDie : pick(al) }); }
-      else if (ph === "reroll" && p.rrLeft) hostAct(p, { a: "rr", use: p.x <= 1 && rnd() < .5 });
+      else if (ph === "pick" && !p.npcForced) {
+        var bn = bannedFor(p), al = LOL.DIE_IDS.filter(function (d) { return bn.indexOf(d) < 0; });
+        hostAct(p, { a: "pick", die: rnd() < .7 && al.indexOf(p.prevDie) >= 0 ? p.prevDie : pick(al), god: p.god === 1 && (t === 12 || rnd() < .3) });
+      }
+      else if (ph === "reroll" && p.rrLeft && !p.rrBlock) hostAct(p, { a: "rr", use: p.x <= 1 && rnd() < .5 });
+      else if (ph === "ev" && p.lord) hostAct(p, { a: "ev", ev: pick(H.ev.opts) });
+      else if (ph === "aura" && p.lord) hostAct(p, { a: "aura", i: rnd() < .5 ? 0 : 1 });
+      else if (ph === "cook" && p.lord) hostAct(p, { a: "cook", id: pick(H.ev.cook.opts), scope: pick(Object.keys(SCOPE_T)) });
+      else if (ph === "npc" && p.lord) hostAct(p, { a: "npc", die: pick(npcAllowed()) });
+      else if (ph === "god" && p.godNow) hostAct(p, { a: "face", x: Math.max.apply(null, LOL.DICE[p.die]) });
+      else if (ph === "locked") { var lb = pick(LOL.allBuilds({ when: "locked", old: p.lockOld, budget: p.lord ? 6 : 5 })); hostAct(p, { a: "lock", cond: lb[0], eff: lb[1] }); }
+      else if (ph === "guess" && !p.lord) hostAct(p, { a: "guess", x: pick(LOL.DICE[p.die]) });
       else if (ph === "vote" && H.vote.voters.indexOf(p.pid) >= 0) hostAct(p, { a: "vote", opt: pick(H.vote.opts) });
       else if (ph === "break") { if (rnd() < .7) hostAct(p, { a: "brk", keep: true }); else { var nb = randomBuild("break"); hostAct(p, { a: "brk", cond: nb[0], eff: nb[1] }); } }
     }, 400 + rnd() * 2500);
@@ -656,12 +891,25 @@ function leaderNames(i) {
   return LOL.leadersFor(i, H.players.map(function (p) { return p.acc; })).map(function (j) { return H.players[j].name; });
 }
 function privOf(p, i) {
-  var o = { cond: p.cond, eff: p.eff, built: p.built, reff: p.reff, die: p.die, rrLeft: p.rrLeft, rrDone: p.rrDone, rerolled: p.rerolled };
-  if (H.phase === "reroll" || H.phase === "reveal") o.x = p.x;   /* your own roll, before everyone sees it */
-  if (H.phase === "reveal") o.det = p.det;
+  var ph = H.phase, o = { cond: p.cond, eff: p.eff, built: p.built, reff: p.reff, die: p.die, rrLeft: p.rrLeft, rrDone: p.rrDone, rerolled: p.rerolled };
+  if (ph === "reroll" || ph === "reveal") { o.x = p.x; o.rrBlock = !!p.rrBlock; }   /* your own roll, before everyone sees it */
+  if (ph === "reveal") o.det = p.det;
   if (p.cond === "samedie" || p.cond === "sameroll") o.leaders = leaderNames(i);
-  if ((H.phase === "vote" || H.phase === "voted") && H.vote && H.vote.votes[p.pid]) o.myVote = H.vote.votes[p.pid][0];
-  if (H.phase === "break") { o.brkDone = !!p.brkDone; o.brkChanged = !!p.brkChanged; }
+  if ((ph === "vote" || ph === "voted") && H.vote && H.vote.votes[p.pid]) o.myVote = H.vote.votes[p.pid][0];
+  if (ph === "break") { o.brkDone = !!p.brkDone; o.brkChanged = !!p.brkChanged; }
+  /* The 67 Event */
+  if (p.aura) o.aura = 1;
+  if (p.god) o.god = p.god;
+  if (ph === "pick") { o.ban = bannedFor(p); if (p.godNow) o.godNow = 1; if (p.npcForced) o.forced = 1; }
+  if (ph === "god" && p.godNow) { o.godNow = 1; o.godX = p.godX; }
+  if (ph === "ev" && H.ev.votes[p.pid]) o.myEv = H.ev.votes[p.pid][0];
+  if (ph === "aura" && p.lord) { o.auraOpts = p.auraOpts; o.auraPick = p.auraPick; }
+  if (ph === "cook" && p.lord) o.cookDone = !!H.ev.cook.id;
+  if (ph === "locked") { o.lockOld = p.lockOld; o.lockDone = !!p.lockDone; }
+  if ((ph === "guess" || ph === "reroll" || ph === "god") && H.delulu) o.guess = p.guess;
+  if (ph === "npc" && p.lord) { o.npcAl = npcAllowed(); if (H.ev.npcVotes[p.pid]) o.myNpc = H.ev.npcVotes[p.pid][0]; }
+  if (p.swapped) o.swapped = p.swapped;
+  if (p.revealed) o.revealed = 1;
   return o;
 }
 function publicState() {
@@ -681,6 +929,22 @@ function publicState() {
     st.vote = { round: V.round, opts: V.opts, voters: V.voters, nv: Object.keys(V.votes).length, res: H.phase === "voted" ? V.res : null };   /* who voted what stays secret; the tally only after the vote */
   }
   if (H.phase === "break") st.cnt.brk = H.players.filter(function (p) { return p.brkDone; }).length;
+  /* The 67 Event (public: who the Sigma Lords are, the 2 events, the choice, Fanum payments, the cooked rule, revealed rules, the NPC die) */
+  st.lords = lordsP().map(function (p) { return p.pid; });
+  if (H.ev && H.ev.stage !== "pending") {
+    var E = H.ev;
+    st.ev = { round: E.round, opts: E.opts, pick: E.pick || null, how: E.how || null, nv: Object.keys(E.votes).length, tally: H.phase === "ev" ? null : E.tally || null };
+    if (E.fanum) st.ev.fanum = E.fanum;
+    if (E.cook) st.ev.cook = { opts: E.cook.opts, id: H.phase === "cook" ? null : E.cook.id, scope: H.phase === "cook" ? null : E.cook.scope, from: E.cook.from, to: E.cook.to, auto: !!E.cook.auto };
+    if (E.brain) st.ev.brain = E.brain;
+    if (E.npc) st.ev.npc = { rounds: E.npc.rounds };
+    if (E.delulu) st.ev.delulu = E.delulu;
+  }
+  st.cook = H.cookNow; st.npcDie = H.npcDie; st.delulu = H.delulu ? 1 : 0; st.evT = H.cfg.tLocked; st.godT = H.cfg.tGod;
+  if (H.phase === "locked") st.cnt.lock = H.players.filter(function (p) { return p.lockDone; }).length;
+  if (H.phase === "guess") st.cnt.gs = H.players.filter(function (p) { return !p.lord && p.guess != null; }).length;
+  if (H.phase === "aura") st.cnt.aura = lordsP().filter(function (p) { return p.auraPick != null; }).length;
+  if (H.phase === "npc") st.cnt.npc = Object.keys(H.ev.npcVotes).length;
   return st;
 }
 var BC = { t: null, last: 0, busy: false, again: false };
@@ -726,8 +990,10 @@ var HACT = {
     delete KEYS[pid]; delete LASTPRIV[pid]; saveHost(); renderHost(); bcast();
   },
   cfg: function () { HV.cfgOpen = true; renderHost(); },
+  brain: function () { HV.brainHide = !HV.brainHide; renderHost(); },
   cfgSave: function () {
-    var LIM = { tBuild: [5, 900], tPick: [3, 300], tRr: [3, 300], tRev: [3, 300], tVote: [5, 300], tBreak: [10, 900], votePct: [1, 100], voteCount: [0, 60], cap: [1, 50], crowdX: [0, 60] };
+    var LIM = { tBuild: [5, 900], tPick: [3, 300], tRr: [3, 300], tRev: [3, 300], tVote: [5, 300], tBreak: [10, 900], votePct: [1, 100], voteCount: [0, 60], cap: [1, 50], crowdX: [0, 60],
+      tEv: [5, 300], tEvVote: [5, 300], tCook: [5, 300], tAura: [5, 300], tGod: [3, 300], tGuess: [3, 300], tNpc: [3, 300], tLocked: [5, 300] };
     Object.keys(DEF_CFG).forEach(function (k) {
       var el = document.getElementById("cf_" + k); if (!el) return;
       if (k === "room") H.cfg.room = el.value.trim().slice(0, 30) || DEF_CFG.room;
@@ -756,7 +1022,8 @@ document.addEventListener("click", function (e) {
 });
 
 /* ---------- host screens ---------- */
-var PHASE_T = { lobby: "รอผู้เล่น", build: "สร้างกฎส่วนตัว", vote: "โหวตกฎส่วนรวม", voted: "ผลโหวต", break: "พักครึ่ง", pick: "เลือกลูกเต๋า", reroll: "ทอยแล้ว รอตัดสินใจทอยใหม่", reveal: "เปิดผล", end: "จบเกม" };
+var PHASE_T = { lobby: "รอผู้เล่น", build: "สร้างกฎส่วนตัว", vote: "โหวตกฎส่วนรวม", voted: "ผลโหวต", break: "พักครึ่ง", pick: "เลือกลูกเต๋า", reroll: "ทอยแล้ว รอตัดสินใจทอยใหม่", reveal: "เปิดผล", end: "จบเกม",
+  ev: "The 67 Event", evd: "The 67 Event", aura: "Aura Farming", cook: "Let Him Cook", locked: "Locked In", npc: "NPC Mode", guess: "Delulu", god: "GOD MODE" };
 function joinUrl() { return location.origin + "/logic-over-luck/#join=" + H.code; }
 var QRC = { code: "", svg: "" };
 function lobbyQr() { if (QRC.code !== H.code) { QRC.code = H.code; QRC.svg = qrSvg(joinUrl()); } return QRC.svg; }
@@ -776,8 +1043,9 @@ function hdr(title, sub) {
 }
 function controls() {
   if (H.phase === "lobby" || H.phase === "end") return "";
-  var ask = Date.now() - HV.endAsk < 4000;
-  return '<div class="ftr"><div style="display:flex;gap:14px"><button class="gb" data-h="pause">' + (H.paused ? "▶ เดินเวลาต่อ" : "⏸ หยุดเวลา") + '</button><button class="gb" data-h="skip">⏭ จบเวลาเฟสนี้</button></div>' +
+  var ask = Date.now() - HV.endAsk < 4000, br = H.ev && H.ev.brain;
+  return '<div class="ftr"><div style="display:flex;gap:14px"><button class="gb" data-h="pause">' + (H.paused ? "▶ เดินเวลาต่อ" : "⏸ หยุดเวลา") + '</button><button class="gb" data-h="skip">⏭ จบเวลาเฟสนี้</button>' +
+    (br && H.phase !== "evd" ? '<button class="gb" data-h="brain">' + (HV.brainHide ? "แสดงกฎที่เปิดเผย" : "ซ่อนกฎที่เปิดเผย") + "</button>" : "") + "</div>" +
     '<button class="gb red" data-h="end">' + (ask ? "แตะอีกครั้งเพื่อจบเกม" : "ตัดจบเกม") + "</button></div>";
 }
 function renderHost() {
@@ -804,11 +1072,20 @@ function renderHost() {
   } else if (ph === "pick" || ph === "reroll") {
     var picked = H.players.filter(function (p) { return p.die; }).length;
     var sub = ph === "pick" ? "เลือกแล้ว " + picked + " / " + n + " คน" : "ใครยังมีสิทธิ์ทอยใหม่ ตัดสินใจบนมือถือ";
+    var banAll = H.curRules.indexOf("ban") >= 0, banNote = banAll ? "ห้ามใช้รอบนี้" : "ห้ามใช้ (เฉพาะคนที่ได้รับผล)";
     h = hdr("รอบที่ " + H.round + " / 12" + (H.round === 12 ? " <span style=\"color:#FFD84D\">คะแนน ×2</span>" : ""), PHASE_T[ph] + " " + sub) +
-      '<div class="main" style="flex-direction:column;justify-content:center;gap:28px">' + rulesStrip() + '<div class="dref">' + LOL.DIE_IDS.map(function (d) { var b = H.banned.indexOf(d) >= 0; return '<div class="d' + (b ? " ban" : "") + '"><div class="n">' + DIE_T[d] + '</div><div class="f">' + facesOf(d) + "</div>" + (b ? '<div class="bt">ห้ามใช้รอบนี้</div>' : "") + "</div>"; }).join("") + "</div>" +
-      '<div class="su" style="text-align:center;margin-top:30px">' + (ph === "pick" ? "เลือกลูกเต๋าบนมือถือ ไม่มีใครเห็นว่าคุณเลือกลูกไหนจนกว่าจะเปิดผล" : "ทุกคนเห็นเลขของตัวเองแล้ว คนที่ยังมีสิทธิ์ทอยใหม่ (1 ครั้งต่อเกม) ตัดสินใจตอนนี้") + "</div></div>" + controls();
+      '<div class="main" style="flex-direction:column;justify-content:center;gap:28px">' + rulesStrip() + '<div class="dref">' + LOL.DIE_IDS.map(function (d) {
+        var b = H.banned.indexOf(d) >= 0, nf = H.npcDie === d;
+        return '<div class="d' + (b && banAll ? " ban" : "") + (nf ? " npc" : "") + '"><div class="n">' + DIE_T[d] + '</div><div class="f">' + facesOf(d) + "</div>" + (b ? '<div class="bt">' + banNote + "</div>" : "") + (nf ? '<div class="nt">NPC Mode: ทุกคนต้องใช้ ยกเว้น Sigma Lord</div>' : "") + "</div>"; }).join("") + "</div>" +
+      '<div class="su" style="text-align:center;margin-top:10px">' + (ph === "pick" ? (H.npcDie ? "รอบนี้ Sigma Lord เลือกเต๋าให้ทุกคนแล้ว รอ Sigma Lord เลือกเต๋าของตัวเอง" : "เลือกลูกเต๋าบนมือถือ ไม่มีใครเห็นว่าคุณเลือกลูกไหนจนกว่าจะเปิดผล") : "ทุกคนเห็นเลขของตัวเองแล้ว คนที่ยังมีสิทธิ์ทอยใหม่ (1 ครั้งต่อเกม) ตัดสินใจตอนนี้") +
+      (H.delulu && ph === "pick" ? '<br><b style="color:#FFD84D">Delulu: เลือกเต๋าแล้ว ทุกคนยกเว้น Sigma Lord ต้องทายเลขที่จะทอยได้ ทายผิดเสีย 6 คะแนนสะสม</b>' : "") + "</div>" + brainPanel() + "</div>" + controls();
+  } else if (ph === "guess" || ph === "god" || ph === "npc") {
+    h = hdr("รอบที่ " + H.round + " / 12", PHASE_T[ph]) + evStepHtml(ph) + controls();
+  } else if (ph === "ev" || ph === "evd" || ph === "aura" || ph === "cook" || ph === "locked") {
+    h = hdr("The 67 Event", "Sigma Lord: " + lordNames()) + evHtml(ph) + controls();
   } else if (ph === "reveal") {
-    h = hdr("ผลรอบที่ " + H.round + " / 12" + (H.round === 12 ? " (คะแนน ×2)" : ""), H.round < 12 ? "รอบถัดไปเริ่มเองเมื่อหมดเวลา" : "หมดเวลาแล้วไปหน้าสรุปผล") + revealHtml() + controls();
+    var newLord = H.ev && H.ev.stage === "pending";
+    h = hdr("ผลรอบที่ " + H.round + " / 12" + (H.round === 12 ? " (คะแนน ×2)" : ""), newLord ? '<span class="lord">คะแนนสะสม 67 พอดี! ' + esc(lordNames()) + " คือ Sigma Lord</span>" : H.round < 12 ? "รอบถัดไปเริ่มเองเมื่อหมดเวลา" : "หมดเวลาแล้วไปหน้าสรุปผล") + revealHtml() + controls();
   } else if (ph === "end") {
     h = hdr("จบเกม", "คะแนนสะสมเท่ากัน ตัดสินด้วยคะแนนรอบ 12, 11, ... ตามลำดับ") + endHtml() +
       '<div class="ftr"><div></div><div style="display:flex;gap:14px"><button class="gb" data-h="again">กลับล็อบบี้ (เล่นอีกเกม)</button></div></div>';
@@ -821,10 +1098,73 @@ function rcard(id, cls, extra) {
 }
 /* the rules in force this round (and the lucky number) above the dice */
 function rulesStrip() {
-  var cur = H.curRules || [];
-  if (!cur.length) return '<div class="su" style="text-align:center">รอบ 1–3 ยังไม่มีกฎส่วนรวม</div>';
+  var cur = H.curRules || [], ck = H.cookNow;
+  if (!cur.length && !ck) return '<div class="su" style="text-align:center">' + (H.round <= 3 ? "รอบ 1–3 ยังไม่มีกฎส่วนรวม" : "ไม่มีกฎส่วนรวม") + "</div>";
   return '<div class="rcards">' + cur.map(function (id) { return rcard(id, "sm" + (H.round === 12 && id === H.special ? " sp" : "")); }).join("") +
+    (ck ? rcard(ck.id, "sm sp", '<div class="re" style="color:#FFD84D">Let Him Cook: ใช้กับ' + cookScopeT() + "</div>") : "") +
     (H.lucky != null ? '<div class="lucky">เลขนำโชค<b>' + H.lucky + "</b></div>" : "") + "</div>";
+}
+function cookScopeT() { var C = H.ev && H.ev.cook; return C ? SCOPE_T[C.scope] + " รอบ " + C.from + (C.to > C.from ? "–" + C.to : "") : ""; }
+function lordNames() { return lordsP().map(function (p) { return p.name; }).join(", "); }
+/* Brainrot: the 3 revealed rules stay on screen (the teacher can hide them) */
+function brainPanel() {
+  var B = H.ev && H.ev.brain; if (!B || HV.brainHide || !B.shown.length) return "";
+  return '<div class="brain"><b>Brainrot, No Cap (กฎที่เปิดเผยหลังรอบ ' + B.round + "):</b><br>" + B.shown.map(function (r) { var p = byPid(r.pid); return "<b>" + esc(p ? p.name : "?") + ":</b> ถ้า " + esc(condName(r.c)) + " → " + esc(effName(r.e)); }).join("<br>") + "</div>";
+}
+function ecard(id, cls, extra) {
+  return '<div class="ecard ' + (cls || "") + '"><div class="pile">' + (LOL.EV_SELF.indexOf(id) >= 0 ? "เพื่อตัวเอง" : "ป่วนทั้งห้อง") + '</div><div class="en">' + esc(EV_T[id][0]) + '</div><div class="et">' + esc(EV_T[id][1]) +
+    '</div><div class="ed">' + esc(evDesc(id, H.cfg.tLocked)) + "</div>" + (extra || "") + "</div>";
+}
+/* the event screens: choosing, the result, and the steps that follow (Aura Farming, Let Him Cook, Locked In) */
+function evHtml(ph) {
+  var E = H.ev, n = H.players.length, nl = E.lords.length, body = "";
+  if (ph === "ev") {
+    body = '<div class="lordb">คะแนนสะสม 67 พอดี! ' + esc(lordNames()) + " ได้เป็น Sigma Lord</div>" +
+      '<div class="rcards">' + E.opts.map(function (id) { return ecard(id); }).join("") + "</div>" +
+      '<div class="su" style="text-align:center">' + (nl > 1 ? "Sigma Lord " + nl + " คนโหวตบนมือถือ (โหวตแล้ว " + Object.keys(E.votes).length + " คน) เสมอหรือไม่มีใครโหวต ระบบสุ่ม" : "Sigma Lord เลือก 1 Event บนมือถือ ไม่ทันเวลา ระบบสุ่ม") + "</div>";
+  } else if (ph === "cook") {
+    body = '<div class="lordb">Let Him Cook: Sigma Lord กำลังเลือกกฎส่วนรวม 1 ข้อ และเลือกว่าใครได้รับผล</div><div class="rcards">' + E.cook.opts.map(function (id) { return rcard(id); }).join("") + "</div>" +
+      '<div class="su" style="text-align:center">เพิ่มเข้ามาคู่กับกฎที่ใช้อยู่ รอบ ' + E.cook.from + (E.cook.to > E.cook.from ? "–" + E.cook.to : "") + " ไม่ทันเวลา ระบบสุ่มกฎและให้มีผลกับทุกคน</div>";
+  } else if (ph === "aura") {
+    var ad = lordsP().filter(function (p) { return p.auraPick != null; }).length;
+    body = ecard("aura", "win") + '<div class="su" style="text-align:center">Sigma Lord ได้โล่จนจบเกมแล้ว ตอนนี้กำลังเลือกกฎส่วนตัวใหม่ 1 จาก 2 แบบลับ' + (nl > 1 ? " (เลือกแล้ว " + ad + " / " + nl + " คน)" : "") + "</div>";
+  } else if (ph === "locked") {
+    var dn = H.players.filter(function (p) { return p.lockDone; }).length;
+    body = ecard("locked", "win") + '<div class="big2" style="text-align:center">' + dn + " / " + n + '</div><div class="su" style="text-align:center">คนที่เปลี่ยนกฎแล้ว ต้องเปลี่ยนทั้งเงื่อนไขและผล (ห้ามดอกเบี้ยทบต้น) ไม่ทันเวลา ระบบสุ่มกฎให้</div>' +
+      '<div class="chips" style="justify-content:center;max-width:1600px;margin:0 auto">' + H.players.map(function (p) { return '<span class="chip' + (p.lockDone ? " done" : "") + '" style="padding-right:20px;font-size:24px">' + (p.lockDone ? "✓ " : "") + esc(p.name) + "</span>"; }).join("") + "</div>";
+  } else {   /* evd: what was chosen and what it did */
+    var ev = E.pick, how = E.how === "random" ? "ไม่มีใครเลือกทันเวลา ระบบสุ่ม" : E.how === "tie" ? "โหวตเสมอ ระบบสุ่ม" : nl > 1 ? "Sigma Lord โหวตเลือก" : "Sigma Lord เลือก";
+    var more = "";
+    if (ev === "fanum") {
+      var pay = H.players.filter(function (p) { return E.fanum[p.pid] < 0; });
+      more = pay.length ? '<div class="evlist">' + pay.map(function (p) { return "<span>" + esc(p.name) + " <b>" + num(E.fanum[p.pid]) + "</b></span>"; }).join("") + "</div>" +
+        '<div class="evlist">' + lordsP().map(function (p) { return "<span>" + esc(p.name) + " (Sigma Lord) <b>+" + (E.fanum[p.pid] || 0) + "</b> คะแนนสะสมตอนนี้ " + num(p.acc) + "</span>"; }).join("") + "</div>"
+        : '<div class="su" style="text-align:center">ไม่มีใครมีคะแนนสะสมเกิน 67 (ที่ไม่มีโล่) จึงไม่มีใครต้องจ่าย</div>';
+    } else if (ev === "aura") more = '<div class="su" style="text-align:center">Sigma Lord ได้โล่จนจบเกม ต่อไปเลือกกฎส่วนตัวใหม่ (ลับ)</div>';
+    else if (ev === "cook") more = '<div class="rcards">' + rcard(E.cook.id, "win", '<div class="re" style="color:#FFD84D;margin-top:8px">ใช้กับ' + cookScopeT() + (E.cook.auto ? " (ไม่ทันเวลา ระบบสุ่ม)" : "") + "</div>") + "</div>";
+    else if (ev === "god") more = '<div class="su" style="text-align:center">Sigma Lord เลือกได้ 1 รอบ (ถึงรอบ 12) ว่าจะให้ลูกเต๋าออกเลขอะไร รอบนั้นทอยใหม่ไม่ได้</div>';
+    else if (ev === "locked") more = '<div class="su" style="text-align:center">ต่อไป ทุกคนเปลี่ยนกฎส่วนตัวบนมือถือ ภายใน ' + H.cfg.tLocked + " วินาที</div>";
+    else if (ev === "delulu") more = '<div class="su" style="text-align:center">รอบ ' + E.delulu + " ทุกคนยกเว้น Sigma Lord ทายเลขที่จะทอยได้ หลังเลือกเต๋า ทายผิดหรือไม่ทายเสีย 6 คะแนนสะสม (โล่กันได้)</div>";
+    else if (ev === "npc") more = '<div class="su" style="text-align:center">ก่อนรอบ ' + E.npc.rounds.join(" และ ") + " Sigma Lord เลือกลูกเต๋าที่ทุกคนต้องใช้</div>";
+    else if (ev === "brainrot") {
+      var others = H.players.filter(function (p) { return !p.lord; }).length;
+      more = '<div class="su" style="text-align:center">' + (others >= 2 ? "ทุกคนยกเว้น Sigma Lord ได้กฎส่วนตัวของคนอื่นแล้ว (ดูกฎใหม่บนมือถือ)" : "มีผู้เล่นที่ไม่ใช่ Sigma Lord คนเดียว จึงไม่มีการสลับ") + "</div>" +
+        '<div class="s1" style="text-align:center">กฎของ 3 อันดับแรก (ไม่นับ Sigma Lord)</div><div class="evlist" style="flex-direction:column;align-items:center">' +
+        E.brain.shown.map(function (r) { var p = byPid(r.pid); return "<span><b>" + esc(p.name) + ":</b> ถ้า " + esc(condName(r.c)) + " → " + esc(effName(r.e)) + "</span>"; }).join("") + "</div>";
+    }
+    body = '<div class="rcards">' + ecard(ev, "win", '<div class="vt" style="font-size:28px">' + how + "</div>") + "</div>" + more;
+  }
+  return '<div class="main" style="flex-direction:column;justify-content:center;gap:30px">' + body + "</div>";
+}
+/* steps inside a round: NPC Mode (before the pick), Delulu guesses, GOD MODE face */
+function evStepHtml(ph) {
+  var card = "", note = "";
+  if (ph === "npc") { card = ecard("npc", "win"); note = "Sigma Lord กำลังเลือกลูกเต๋าที่ทุกคนต้องใช้รอบนี้ ไม่ทันเวลา ระบบสุ่ม"; }
+  else if (ph === "guess") {
+    var g = H.players.filter(function (p) { return !p.lord && p.guess != null; }).length, ng = H.players.filter(function (p) { return !p.lord; }).length;
+    card = ecard("delulu", "win"); note = "ทายแล้ว " + g + " / " + ng + " คน ทายเลขของลูกเต๋าที่เลือกบนมือถือ ไม่ทายถือว่าทายผิด";
+  } else { card = ecard("god", "win"); note = "Sigma Lord ใช้ GOD MODE รอบนี้ กำลังเลือกหน้าเต๋า (ทุกคนทอยแล้ว ยังไม่เปิดผล)"; }
+  return '<div class="main" style="flex-direction:column;justify-content:center;gap:30px">' + rulesStrip() + '<div class="rcards">' + card + '</div><div class="su" style="text-align:center">' + note + "</div>" + brainPanel() + "</div>";
 }
 function voteHtml() {
   var V = H.vote, res = V.res, voters = V.voters.map(byPid).filter(Boolean);
@@ -852,7 +1192,7 @@ function revealHtml() {
   var tpl = cols === 1 ? "56px 1fr 230px 90px 120px 120px" : cols === 2 ? "48px 1fr 170px 60px 90px 100px" : "44px 1fr 0px 48px 76px 84px";
   var rowsH = order.map(function (i) {
     var p = H.players[i], mv = p.rkBefore - rk[i];
-    return '<div class="rr" style="height:' + rh + "px;font-size:" + fs + "px;grid-template-columns:" + tpl + ";padding:0 " + (cols === 3 ? 10 : 16) + 'px"><span class="rk">' + rk[i] + '</span><span class="nm">' + (p.bot ? "🤖 " : "") + esc(p.name) +
+    return '<div class="rr" style="height:' + rh + "px;font-size:" + fs + "px;grid-template-columns:" + tpl + ";padding:0 " + (cols === 3 ? 10 : 16) + 'px"><span class="rk">' + rk[i] + '</span><span class="nm">' + (p.bot ? "🤖 " : "") + (p.lord ? '<span class="lord">👑 </span>' : "") + esc(p.name) +
       (mv > 0 ? ' <span class="mv up">▲' + mv + "</span>" : mv < 0 ? ' <span class="mv dn">▼' + (-mv) + "</span>" : "") + '</span><span class="dn">' + DIE_T[p.prevDie].replace("เต๋า", "") +
       '</span><span class="x">' + p.prevX + '</span><span class="pt' + (p.rp ? "" : " z") + '">' + sign(p.rp) + '</span><span class="ac">' + num(p.acc) + "</span></div>";
   }).join("");
@@ -882,6 +1222,8 @@ function cfgHtml() {
     '<label>กฎพิเศษรอบสุดท้าย (เพิ่มในรอบ 12)<input type="checkbox" class="ck" id="cf_special"' + (Number(c.special) ? " checked" : "") + "></label>" +
     row("votePct", "กลุ่มโหวตและ Never Gonna Give You Up: % ของผู้เล่น (ปัดขึ้น)", 1) + row("voteCount", "หรือระบุเป็นจำนวนคน (0 = ใช้ %)", 1) +
     row("cap", "เสียคะแนนจากขโมยและตัดหน้าได้สูงสุดต่อรอบ", 1) + row("crowdX", "ค่า x ของภาษีสังคม (0 = จำนวนผู้เล่น ÷ 5 ปัดขึ้น)", 1) +
+    '<div class="s1" style="margin-top:10px">The 67 Event (วินาที)</div>' + row("tEv", "Sigma Lord เลือก Event", 1) + row("tEvVote", "Sigma Lord หลายคนโหวต Event", 1) + row("tCook", "Let Him Cook เลือกกฎและผู้ได้รับผล", 1) +
+    row("tAura", "Aura Farming เลือกกฎใหม่", 1) + row("tGod", "GOD MODE เลือกหน้าเต๋า", 1) + row("tGuess", "Delulu ทายเลข", 1) + row("tNpc", "NPC Mode เลือกเต๋าให้ทุกคน", 1) + row("tLocked", "Locked In เปลี่ยนกฎ", 1) +
     '<div style="display:flex;gap:16px;justify-content:flex-end"><button class="gb" data-h="cfgClose">ยกเลิก</button><button class="pb" data-h="cfgSave">บันทึก</button></div></div></div>';
 }
 
@@ -942,10 +1284,17 @@ function sendSec(a) {
 function pendDone() {
   var a = P.pend, pr = P.priv; if (!a || !pr || !P.st) return false;
   if (a.a === "build") return P.st.phase !== "build" || (pr.cond === a.cond && pr.eff === a.eff);
-  if (a.a === "pick") return P.st.phase !== "pick" || pr.die === a.die;
+  if (a.a === "pick") return P.st.phase !== "pick" || (pr.die === a.die && !!pr.godNow === !!a.god);
   if (a.a === "rr") return P.st.phase !== "reroll" || pr.rrDone || pr.rerolled;
   if (a.a === "vote") return P.st.phase !== "vote" || !!pr.myVote;
   if (a.a === "brk") return P.st.phase !== "break" || !!pr.brkDone;
+  if (a.a === "ev") return P.st.phase !== "ev" || !!pr.myEv;
+  if (a.a === "aura") return P.st.phase !== "aura" || pr.auraPick != null;
+  if (a.a === "cook") return P.st.phase !== "cook" || !!pr.cookDone;
+  if (a.a === "face") return P.st.phase !== "god" || pr.godX != null;
+  if (a.a === "lock") return P.st.phase !== "locked" || !!pr.lockDone;
+  if (a.a === "guess") return P.st.phase !== "guess" || pr.guess === a.x;
+  if (a.a === "npc") return P.st.phase !== "npc" || !!pr.myNpc;
   return true;
 }
 function resendPend() { if (P.pend && !pendDone()) sendSec(P.pend); else P.pend = null; }
@@ -965,14 +1314,28 @@ var PACT = {
     connect();
   },
   leave: function () { Net.close(); clearInterval(P.joinT); ss("lol-joined", null); P.joined = false; P.st = null; P.priv = null; P.err = ""; renderPlayer(true); },
-  cond: function (b) { P.sel.cond = b.dataset.v; if (P.sel.eff && LOL.buildCost(P.sel.cond, P.sel.eff) > 5) P.sel.eff = null; renderPlayer(true); },
-  eff: function (b) { P.sel.eff = b.dataset.v; if (P.sel.cond && LOL.buildCost(P.sel.cond, P.sel.eff) > 5) P.sel.cond = null; renderPlayer(true); },
+  cond: function (b) { P.sel.cond = b.dataset.v; if (P.sel.eff && LOL.buildCost(P.sel.cond, P.sel.eff) > myBudget()) P.sel.eff = null; renderPlayer(true); },
+  eff: function (b) { P.sel.eff = b.dataset.v; if (P.sel.cond && LOL.buildCost(P.sel.cond, P.sel.eff) > myBudget()) P.sel.cond = null; renderPlayer(true); },
   build: function () { if (P.sel.cond && P.sel.eff && LOL.buildOk(P.sel.cond, P.sel.eff, { when: "start" })) { sendSec({ a: "build", cond: P.sel.cond, eff: P.sel.eff }); renderPlayer(true); } },
   vsel: function (b) { P.vsel = b.dataset.v; renderPlayer(true); },
   vote: function () { if (P.vsel) { sendSec({ a: "vote", opt: P.vsel }); renderPlayer(true); } },
   bkeep: function () { sendSec({ a: "brk", keep: true }); renderPlayer(true); },
   bsend: function () { if (P.sel.cond && P.sel.eff && breakOk(P.sel.cond, P.sel.eff)) { sendSec({ a: "brk", cond: P.sel.cond, eff: P.sel.eff }); renderPlayer(true); } },
-  die: function (b) { sendSec({ a: "pick", die: b.dataset.v }); P.myPick = b.dataset.v; renderPlayer(true); },
+  die: function (b) { P.myPick = b.dataset.v; sendSec({ a: "pick", die: P.myPick, god: !!P.godSel }); renderPlayer(true); },
+  /* The 67 Event */
+  god: function () { P.godSel = !P.godSel; var d = P.myPick || (P.priv && P.priv.die); if (d) sendSec({ a: "pick", die: d, god: P.godSel }); renderPlayer(true); },
+  evsel: function (b) { P.evsel = b.dataset.v; renderPlayer(true); },
+  evgo: function () { if (P.evsel) { sendSec({ a: "ev", ev: P.evsel }); renderPlayer(true); } },
+  ausel: function (b) { P.ausel = Number(b.dataset.v); renderPlayer(true); },
+  augo: function () { if (P.ausel === 0 || P.ausel === 1) { sendSec({ a: "aura", i: P.ausel }); renderPlayer(true); } },
+  cksel: function (b) { P.cksel = b.dataset.v; renderPlayer(true); },
+  ckscope: function (b) { P.ckscope = b.dataset.v; renderPlayer(true); },
+  ckgo: function () { if (P.cksel && P.ckscope) { sendSec({ a: "cook", id: P.cksel, scope: P.ckscope }); renderPlayer(true); } },
+  face: function (b) { sendSec({ a: "face", x: Number(b.dataset.v) }); renderPlayer(true); },
+  lock: function () { var pr = P.priv || {}; if (P.sel.cond && P.sel.eff && LOL.buildOk(P.sel.cond, P.sel.eff, { when: "locked", old: pr.lockOld, budget: myBudget() })) { sendSec({ a: "lock", cond: P.sel.cond, eff: P.sel.eff }); renderPlayer(true); } },
+  guess: function (b) { sendSec({ a: "guess", x: Number(b.dataset.v) }); renderPlayer(true); },
+  npcsel: function (b) { P.npcsel = b.dataset.v; renderPlayer(true); },
+  npcgo: function () { if (P.npcsel) { sendSec({ a: "npc", die: P.npcsel }); renderPlayer(true); } },
   rr: function (b) { sendSec({ a: "rr", use: b.dataset.v === "1" }); P.myRr = b.dataset.v; renderPlayer(true); },
   reload: function () { location.reload(); }
 };
@@ -1005,15 +1368,23 @@ function breakOk(c, e) { var pr = P.priv || {}; return LOL.buildOk(c, e, { when:
 /* common rules in force, lucky number and banned dice (public) */
 function rulesBoxP(st) {
   var out = (st.cur || []).map(function (id) { return '<div class="crule"><b>กฎส่วนรวม' + (st.round === 12 && id === st.special ? "พิเศษ" : "") + ": " + esc(RULE_T[id]) + "</b><br>" + esc(ruleDesc(id, st.cx)) + "</div>"; });
+  if (st.cook) {
+    var C = st.ev && st.ev.cook, mine = !st.cook.scope || st.cook.scope.indexOf(P.pid) >= 0;
+    out.push('<div class="crule"><b>Let Him Cook: ' + esc(RULE_T[st.cook.id]) + "</b> (ใช้กับ" + (C ? SCOPE_T[C.scope] : "") + (mine ? "" : " ไม่มีผลกับคุณ") + ")<br>" + esc(ruleDesc(st.cook.id, st.cx)) + "</div>");
+  }
   if (st.lucky != null) out.push('<div class="crule"><b>เลขนำโชครอบนี้: ' + st.lucky + "</b></div>");
   return out.join("");
 }
+function isLord() { return !!(P.st && P.st.lords && P.st.lords.indexOf(P.pid) >= 0); }
+/* coins for a personal rule: 5, or 6 for the Sigma Lord in Locked In */
+function myBudget() { return P.st && P.st.phase === "locked" && isLord() ? 6 : 5; }
 function optList(kind, table, prices, when) {
-  var sel = P.sel, pr = P.priv || {};
+  var sel = P.sel, pr = P.priv || {}, bud = myBudget();
   return Object.keys(prices).map(function (k) {
     var other = kind === "cond" ? sel.eff : sel.cond, cost = prices[k] + (other ? (kind === "cond" ? LOL.EFF[other] : LOL.COND[other]) : 0);
-    var on = sel[kind] === k, off = cost > 5 && !on;
+    var on = sel[kind] === k, off = cost > bud && !on;
     if (kind === "eff" && k === "interest" && when === "break" && pr.eff !== "interest") off = true;
+    if (when === "locked" && (k === "interest" || (pr.lockOld && pr.lockOld[kind] === k))) off = true;   /* Locked In: both parts must change, no Compound Interest */
     return '<button class="opt' + (on ? " on" : "") + '" data-p="' + kind + '" data-v="' + esc(k) + '"' + (off ? " disabled" : "") + '><span class="pr">' + prices[k] + '</span><span><span class="nm">' + esc(table[k][0]) + '</span><br><span class="ds">' + esc(table[k][1]) + "</span></span></button>";
   }).join("");
 }
@@ -1023,7 +1394,98 @@ function ruleBox(pr) {
   var h = '<div class="rule"><b>กฎของคุณ:</b> ถ้า ' + esc(condName(pr.cond)) + " → " + esc(effName(pr.eff));
   if (pr.eff === "random" && pr.reff) h += '<br><b>รอบนี้สุ่มได้:</b> ' + esc(effName(pr.reff));
   if (pr.leaders && pr.leaders.length) h += "<br><b>ผู้นำของคุณ:</b> " + esc(pr.leaders.join(", "));
-  return h + "</div>";
+  return h + "</div>" + sigBox(pr);
+}
+/* The 67 Event status of this player */
+function sigBox(pr) {
+  var st = P.st, t = [];
+  if (isLord()) t.push("👑 คุณคือ Sigma Lord");
+  if (pr.aura) t.push("มีโล่จนจบเกม (Aura Farming)");
+  if (pr.god === 1) t.push("GOD MODE ใช้ได้ 1 ครั้ง");
+  if (pr.swapped) t.push("กฎนี้ได้มาจาก Brainrot (หลังรอบ " + pr.swapped + ")" + (pr.revealed ? " และถูกเปิดเผยบนจอใหญ่" : ""));
+  return t.length ? '<div class="sig">' + t.join("<br>") + "</div>" : "";
+}
+function evcBtn(id, act, on, dis) {
+  return "<" + (act ? 'button data-p="' + act + '" data-v="' + id + '"' + (dis ? " disabled" : "") : "div") + ' class="evc' + (on ? " on" : "") + '"><div class="pile">' + (LOL.EV_SELF.indexOf(id) >= 0 ? "เพื่อตัวเอง" : "ป่วนทั้งห้อง") +
+    '</div><div class="nm">' + esc(EV_T[id][0]) + '</div><div class="th">' + esc(EV_T[id][1]) + '</div><div class="ds">' + esc(evDesc(id, P.st.evT)) + "</div></" + (act ? "button" : "div") + ">";
+}
+function lordNamesP() { var st = P.st; return st.players.filter(function (p) { return (st.lords || []).indexOf(p.pid) >= 0; }).map(function (p) { return p.name; }).join(", "); }
+function uniqFaces(d) { return LOL.DICE[d].filter(function (v, i, a) { return a.indexOf(v) === i; }); }
+/* phone screens of The 67 Event */
+function evPhone(st, pr, h) {
+  var ph = st.phase, E = st.ev || {}, lord = isLord(), nl = (st.lords || []).length;
+  if (ph === "ev") {
+    if (!lord) return h + pTop("The 67 Event", esc(lordNamesP()) + " ได้คะแนนสะสม 67 พอดี", true) + '<div class="muted">Sigma Lord กำลังเลือก 1 Event</div>' + E.opts.map(function (id) { return evcBtn(id); }).join("");
+    var mine = pr.myEv || (P.pend && P.pend.a === "ev" ? P.pend.ev : null);
+    return h + pTop("คุณคือ Sigma Lord!", nl > 1 ? "Sigma Lord " + nl + " คนโหวตเลือก 1 Event" : "เลือก 1 Event", true) + E.opts.map(function (id) { return evcBtn(id, "evsel", (mine || P.evsel) === id, !!mine); }).join("") +
+      (mine ? '<div class="ok">✓ เลือก ' + esc(EV_T[mine][0]) + " แล้ว" + (pr.myEv ? "" : " (กำลังส่ง…)") + "</div>" : '<button class="btn" data-p="evgo"' + (P.evsel ? "" : " disabled") + ">ยืนยัน</button>") +
+      '<div class="muted">ไม่เลือกภายในเวลา ระบบสุ่ม' + (nl > 1 ? " (โหวตเสมอ ระบบสุ่ม)" : "") + "</div>";
+  }
+  P.evsel = null;
+  if (ph === "evd") {
+    var ev = E.pick, more = "";
+    if (ev === "fanum") { var d = (E.fanum || {})[P.pid] || 0; more = d ? '<div class="pc" style="font-weight:700">' + (d > 0 ? "คุณได้รับ " + d : "คุณจ่าย " + (-d)) + " คะแนนสะสม</div>" : '<div class="muted">คุณไม่ต้องจ่าย</div>'; }
+    else if (ev === "brainrot") more = pr.swapped ? '<div class="muted">กฎส่วนตัวของคุณถูกสลับแล้ว ดูกฎใหม่ด้านบน</div>' + (pr.revealed ? '<div class="err">กฎใหม่ของคุณถูกเปิดเผยบนจอใหญ่</div>' : "") : lord ? "" : '<div class="muted">ไม่มีการสลับ</div>' + (pr.revealed ? '<div class="err">กฎของคุณถูกเปิดเผยบนจอใหญ่</div>' : "");
+    else if (ev === "cook" && E.cook) more = '<div class="crule"><b>เพิ่มกฎ: ' + esc(RULE_T[E.cook.id]) + "</b> ใช้กับ" + SCOPE_T[E.cook.scope] + " รอบ " + E.cook.from + (E.cook.to > E.cook.from ? "–" + E.cook.to : "") + "<br>" + esc(ruleDesc(E.cook.id, st.cx)) + "</div>";
+    else if (ev === "god") more = lord ? '<div class="muted">ตอนเลือกเต๋ารอบไหนก็ได้ กด "ใช้ GOD MODE รอบนี้" แล้วเลือกหน้าเต๋าเอง รอบนั้นทอยใหม่ไม่ได้</div>' : "";
+    else if (ev === "delulu") more = lord ? '<div class="muted">คุณไม่ต้องทาย</div>' : '<div class="muted">รอบ ' + E.delulu + " หลังเลือกเต๋า ทายเลขที่จะทอยได้ ทายผิดหรือไม่ทายเสีย 6 คะแนนสะสม (โล่กันได้)</div>";
+    else if (ev === "npc") more = '<div class="muted">ก่อนรอบ ' + E.npc.rounds.join(" และ ") + (lord ? " คุณเลือกลูกเต๋าที่ทุกคนต้องใช้" : " Sigma Lord เลือกลูกเต๋าที่คุณต้องใช้") + "</div>";
+    return h + pTop("The 67 Event", "Sigma Lord: " + esc(lordNamesP()), true) + ruleBox(pr) + evcBtn(ev, null, true) + more;
+  }
+  if (ph === "aura") {
+    if (!lord || !pr.auraOpts) return h + pTop("Aura Farming", "Sigma Lord กำลังเลือกกฎใหม่", true) + ruleBox(pr);
+    var ap = pr.auraPick != null ? pr.auraPick : (P.pend && P.pend.a === "aura" ? P.pend.i : null);
+    return h + pTop("Aura Farming", "คุณมีโล่จนจบเกม เลือกกฎส่วนตัวใหม่ 1 แบบ", true) + ruleBox(pr) + pr.auraOpts.map(function (b, k) {
+      return '<button class="vopt' + ((ap != null ? ap : P.ausel) === k ? " on" : "") + '" data-p="ausel" data-v="' + k + '"' + (ap != null ? " disabled" : "") + '><div class="nm">ถ้า ' + esc(condName(b[0])) + " → " + esc(effName(b[1])) +
+        '</div><div class="ds">' + LOL.buildCost(b[0], b[1]) + " เหรียญ: " + esc(COND_T[b[0]][1]) + " / " + esc(EFF_T[b[1]][1]) + "</div></button>";
+    }).join("") + (ap != null ? '<div class="ok">✓ เลือกแล้ว ใช้ตั้งแต่รอบหน้า</div>' : '<button class="btn" data-p="augo"' + (P.ausel === 0 || P.ausel === 1 ? "" : " disabled") + '>ใช้กฎนี้</button><div class="muted">ไม่เลือกภายในเวลา ระบบสุ่ม 1 ใน 2</div>');
+  }
+  P.ausel = null;
+  if (ph === "cook") {
+    var C = E.cook;
+    if (!lord) return h + pTop("Let Him Cook", "Sigma Lord กำลังเลือกกฎส่วนรวมเพิ่ม", true) + C.opts.map(function (id) { return '<div class="vopt"><div class="nm">' + esc(RULE_T[id]) + '</div><div class="ds">' + esc(ruleDesc(id, st.cx)) + "</div></div>"; }).join("");
+    var sent = pr.cookDone || (P.pend && P.pend.a === "cook");
+    return h + pTop("Let Him Cook", "เลือกกฎ 1 ข้อ ใช้รอบ " + C.from + (C.to > C.from ? "–" + C.to : ""), true) + C.opts.map(function (id) {
+      return '<button class="vopt' + (P.cksel === id ? " on" : "") + '" data-p="cksel" data-v="' + id + '"' + (sent ? " disabled" : "") + '><div class="nm">' + esc(RULE_T[id]) + '</div><div class="ds">' + esc(ruleDesc(id, st.cx)) + "</div></button>";
+    }).join("") + '<div class="lbl">ใครได้รับผล (เงื่อนไขยังคิดจากทั้งห้อง)</div><div class="dice" style="grid-template-columns:1fr 1fr 1fr">' + Object.keys(SCOPE_T).map(function (k) {
+      return '<button class="die' + (P.ckscope === k ? " on" : "") + '" data-p="ckscope" data-v="' + k + '"' + (sent ? " disabled" : "") + '><div class="n" style="font-size:.95rem">' + SCOPE_T[k] + "</div></button>";
+    }).join("") + "</div>" + (sent ? '<div class="ok">✓ ส่งแล้ว</div>' : '<button class="btn" data-p="ckgo"' + (P.cksel && P.ckscope ? "" : " disabled") + '>ยืนยัน</button><div class="muted">ไม่เลือกภายในเวลา ระบบสุ่มกฎและให้มีผลกับทุกคน</div>');
+  }
+  P.cksel = P.ckscope = null;
+  if (ph === "locked") {
+    if (P.lockInit !== st.round) { P.lockInit = st.round; P.sel = { cond: null, eff: null }; }
+    if (pr.lockDone || (P.pend && P.pend.a === "lock")) return h + pTop("Locked In", "รอทุกคนเปลี่ยนกฎ", true) + ruleBox(pr) + '<div class="ok">' + (pr.lockDone ? "✓ เปลี่ยนกฎแล้ว" : "กำลังส่ง…") + '</div><div class="muted">เปลี่ยนแล้ว ' + (st.cnt.lock || 0) + " / " + st.n + " คน</div>";
+    var ls2 = P.sel, bud = myBudget(), lOk = ls2.cond && ls2.eff && LOL.buildOk(ls2.cond, ls2.eff, { when: "locked", old: pr.lockOld, budget: bud });
+    return h + pTop("Locked In", "เปลี่ยนทั้งเงื่อนไขและผล ไม่เกิน " + bud + " เหรียญ", true) + '<div class="muted">กฎเดิม: ถ้า ' + esc(condName(pr.lockOld.cond)) + " → " + esc(effName(pr.lockOld.eff)) + " (ห้ามใช้ซ้ำ ห้ามดอกเบี้ยทบต้น) ไม่ทันเวลา ระบบสุ่มกฎให้</div>" +
+      '<div class="pc budget"><div style="font-weight:700">ใช้ไป ' + ((ls2.cond ? LOL.COND[ls2.cond] : 0) + (ls2.eff ? LOL.EFF[ls2.eff] : 0)) + " / " + bud + ' เหรียญ</div><div class="muted">ถ้า ' + (ls2.cond ? esc(condName(ls2.cond)) : "…") + " → " + (ls2.eff ? esc(effName(ls2.eff)) : "…") + "</div>" +
+      '<button class="btn" data-p="lock" style="width:100%;margin-top:8px"' + (lOk ? "" : " disabled") + ">ส่งกฎใหม่</button></div>" +
+      '<div class="pc"><div class="lbl">1. เงื่อนไข</div><div class="opts">' + optList("cond", COND_T, LOL.COND, "locked") + "</div></div>" +
+      '<div class="pc"><div class="lbl">2. ผล</div><div class="opts">' + optList("eff", EFF_T, LOL.EFF, "locked") + "</div></div>";
+  }
+  var rt = "รอบที่ " + st.round + " / 12";
+  if (ph === "npc") {
+    if (!lord) return h + pTop(rt, "NPC Mode", true) + ruleBox(pr) + rulesBoxP(st) + '<div class="muted">Sigma Lord กำลังเลือกลูกเต๋าที่คุณต้องใช้รอบนี้</div>';
+    var nv = pr.myNpc || (P.pend && P.pend.a === "npc" ? P.pend.die : null), al = pr.npcAl || LOL.DIE_IDS;
+    return h + pTop(rt, "NPC Mode: เลือกเต๋าที่ทุกคนต้องใช้", true) + ruleBox(pr) + rulesBoxP(st) + '<div class="dice">' + al.map(function (d) {
+      return '<button class="die' + ((nv || P.npcsel) === d ? " on" : "") + '" data-p="npcsel" data-v="' + d + '"' + (nv ? " disabled" : "") + '><div class="n">' + DIE_T[d] + '</div><div class="f">' + facesOf(d) + "</div></button>";
+    }).join("") + "</div>" + (nv ? '<div class="ok">✓ เลือก ' + DIE_T[nv] + " แล้ว</div>" : '<button class="btn" data-p="npcgo"' + (P.npcsel ? "" : " disabled") + '>ให้ทุกคนใช้เต๋านี้</button><div class="muted">คุณเลือกเต๋าของตัวเองได้อิสระในขั้นต่อไป ไม่ทันเวลา ระบบสุ่ม</div>');
+  }
+  P.npcsel = null;
+  if (ph === "guess") {
+    if (lord) return h + pTop(rt, "Delulu", true) + ruleBox(pr) + '<div class="muted">คุณเป็น Sigma Lord ไม่ต้องทาย รอคนอื่นทาย</div>';
+    var gs = P.pend && P.pend.a === "guess" ? P.pend.x : pr.guess;
+    return h + pTop(rt, "Delulu: ทายเลขที่คุณจะทอยได้", true) + ruleBox(pr) + '<div class="muted">' + DIE_T[pr.die] + " (" + facesOf(pr.die) + ") ทายผิดหรือไม่ทาย เสีย 6 คะแนนสะสม (โล่กันได้) ทอยใหม่ได้ ตรวจกับเลขสุดท้าย</div>" +
+      '<div class="faces">' + uniqFaces(pr.die).map(function (v) { return '<button class="btn' + (gs === v ? " on" : "") + '" data-p="guess" data-v="' + v + '">' + v + "</button>"; }).join("") + "</div>" +
+      (gs != null ? '<div class="ok">✓ ทาย ' + gs + (pr.guess === gs ? "" : " (กำลังส่ง…)") + " (เปลี่ยนได้จนหมดเวลา)</div>" : "");
+  }
+  if (ph === "god") {
+    if (!pr.godNow) return h + pTop(rt, "GOD MODE", true) + ruleBox(pr) + '<div class="muted">Sigma Lord กำลังเลือกหน้าเต๋า รอสักครู่</div>';
+    var gx = pr.godX != null ? pr.godX : null;
+    return h + pTop(rt, "GOD MODE: เลือกเลขที่จะได้", true) + '<div class="muted">' + DIE_T[pr.die] + " ไม่ทันเวลา ทอยตามปกติ (ยังเก็บ GOD MODE ไว้ใช้รอบอื่นได้)</div>" +
+      '<div class="faces">' + uniqFaces(pr.die).map(function (v) { return '<button class="btn' + (gx === v ? " on" : "") + '" data-p="face" data-v="' + v + '"' + (gx != null ? " disabled" : "") + ">" + v + "</button>"; }).join("") + "</div>" +
+      (gx != null ? '<div class="ok">✓ เลือก ' + gx + " แล้ว รอบนี้ทอยใหม่ไม่ได้</div>" : "");
+  }
+  return null;
 }
 function playerHtml() {
   var st = P.st, pr = P.priv;
@@ -1092,22 +1554,31 @@ function playerHtml() {
       '<div class="pc"><div class="lbl">1. เงื่อนไข</div><div class="opts">' + optList("cond", COND_T, LOL.COND, "break") + "</div></div>" +
       '<div class="pc"><div class="lbl">2. ผล</div><div class="opts">' + optList("eff", EFF_T, LOL.EFF, "break") + "</div></div>";
   }
+  var evp = evPhone(st, pr, h);
+  if (evp != null) return evp;
   var rt = "รอบที่ " + st.round + " / 12" + (st.round === 12 ? " คะแนน ×2" : "");
+  if (ph !== "pick") { P.godSel = false; P.myPick = null; }
   if (ph === "pick") {
+    if (pr.forced) return h + pTop(rt, "NPC Mode", true) + ruleBox(pr) + rulesBoxP(st) + '<div class="pc" style="text-align:center"><div class="muted">Sigma Lord เลือกให้ทุกคนใช้</div><div style="font-size:1.4rem;font-weight:700">' + DIE_T[pr.die] + '</div><div class="muted">' + facesOf(pr.die) + "</div></div>" +
+      (st.delulu ? '<div class="muted">Delulu: ขั้นต่อไปทายเลขที่จะทอยได้</div>' : "") + '<div class="muted">รอ Sigma Lord เลือกเต๋าของตัวเอง</div>';
     var mine = P.pend && P.pend.a === "pick" ? P.pend.die : pr.die;
-    var ban = st.banned || [];
+    var ban = pr.ban || st.banned || [];
+    if (P.pend && P.pend.a === "pick") P.godSel = !!P.pend.god; else if (pr.die) P.godSel = !!pr.godNow;
     return h + pTop(rt, "เลือกลูกเต๋า (เปลี่ยนได้จนหมดเวลา)", true) + ruleBox(pr) + rulesBoxP(st) +
+      (st.delulu && !isLord() ? '<div class="crule"><b>Delulu:</b> หลังเลือกเต๋า ต้องทายเลขที่จะทอยได้ ทายผิดเสีย 6 คะแนนสะสม</div>' : "") +
       '<div class="dice">' + LOL.DIE_IDS.map(function (d) { var b = ban.indexOf(d) >= 0; return '<button class="die' + (mine === d ? " on" : "") + '" data-p="die" data-v="' + d + '"' + (b ? " disabled" : "") + '><div class="n">' + DIE_T[d] + '</div><div class="f">' + (b ? "ห้ามใช้รอบนี้" : facesOf(d)) + "</div></button>"; }).join("") + "</div>" +
+      (pr.god === 1 ? '<button class="btn' + (P.godSel ? "" : " alt") + '" data-p="god">' + (P.godSel ? "✓ ใช้ GOD MODE รอบนี้ (แตะเพื่อยกเลิก)" : "ใช้ GOD MODE รอบนี้") + '</button><div class="muted">เลือกเต๋าแล้ว จะได้เลือกหน้าเต๋าเองภายใน ' + (st.godT || 10) + " วินาที รอบนั้นทอยใหม่ไม่ได้</div>" : "") +
       (mine ? '<div class="ok">✓ เลือก ' + DIE_T[mine] + " แล้ว</div>" : P.pend && P.pend.a === "pick" ? '<div class="muted">กำลังส่ง…</div>' : '<div class="muted">ไม่เลือกภายในเวลา ระบบใช้ลูกเดิมจากรอบก่อน (รอบแรกสุ่มให้)</div>') +
       '<div class="muted">เลือกแล้ว ' + st.cnt.picked + " / " + st.n + " คน</div>";
   }
   if (ph === "reroll") {
-    var canRr = pr.rrLeft && !pr.rrDone && !pr.rerolled;
+    var canRr = pr.rrLeft && !pr.rrDone && !pr.rerolled && !pr.rrBlock;
     return h + pTop(rt, "ผลทอยของคุณ (คนอื่นยังไม่เห็น)", true) + ruleBox(pr) + rulesBoxP(st) +
       '<div class="pc"><div class="muted" style="text-align:center">' + DIE_T[pr.die] + '</div><div class="roll">' + pr.x + "</div>" +
       (pr.rerolled ? '<div class="ok" style="text-align:center">ทอยใหม่แล้ว ผลนี้คือผลจริงของรอบนี้</div>' : "") + "</div>" +
       (canRr ? '<div class="muted">คุณมีสิทธิ์ทอยใหม่ 1 ครั้งต่อเกม ทอยใหม่แล้วต้องใช้ผลใหม่</div><div class="dice"><button class="btn" data-p="rr" data-v="1">ทอยใหม่</button><button class="btn alt" data-p="rr" data-v="0">ใช้ผลนี้</button></div>' + (P.pend && P.pend.a === "rr" ? '<div class="muted">กำลังส่ง…</div>' : "")
-        : '<div class="muted">' + (pr.rrLeft ? "ใช้ผลนี้แล้ว" : "ใช้สิทธิ์ทอยใหม่ไปแล้ว") + " รอคนอื่นตัดสินใจ</div>");
+        : '<div class="muted">' + (pr.rrBlock ? "รอบนี้ใช้ GOD MODE ทอยใหม่ไม่ได้" : pr.rrLeft ? "ใช้ผลนี้แล้ว" : "ใช้สิทธิ์ทอยใหม่ไปแล้ว") + " รอคนอื่นตัดสินใจ</div>") +
+      (pr.guess != null || (st.delulu && !isLord()) ? '<div class="muted">Delulu: คุณทาย ' + (pr.guess != null ? pr.guess : "ไม่ได้ทาย") + "</div>" : "");
   }
   if (ph === "reveal") {
     var d = pr.det || {}, rv = st.rev || [], mi = me.idx, my = rv[mi] || {};
@@ -1128,7 +1599,7 @@ function stepsHtml(d) {
   var out = [];
   function row(label, v) { out.push("<div><span>" + label + "</span><b class=\"" + (v > 0 ? "p" : v < 0 ? "m" : "") + "\">" + (typeof v === "number" ? sign(v) : v) + "</b></div>"); }
   (d.steps || []).forEach(function (s) {
-    if (s.k === "face") row("แต้มหน้าลูกเต๋า" + (s.cursed ? " (โดนพากันลงเหว)" : ""), String(s.v));
+    if (s.k === "face") row("แต้มหน้าลูกเต๋า" + (d.god ? " (GOD MODE)" : "") + (s.cursed ? " (โดนพากันลงเหว)" : ""), String(s.v));
     else if (s.k === "personal") { if (s.fired) row("กฎส่วนตัวผ่าน: " + esc(effName(s.eff)), s.d); else row("เงื่อนไขของกฎส่วนตัวไม่ผ่าน", "–"); }
     else if (s.k === "next6") row("+6 จากรอบที่แล้ว", 6);
     else if (s.k === "common") row(esc(RULE_T[s.id] || s.id), s.d);
@@ -1138,7 +1609,11 @@ function stepsHtml(d) {
     else if (s.k === "double") row("รอบสุดท้าย คูณ 2", s.d);
   });
   if (d.stolen) row("ถูกหักจากคะแนนสะสม (ขโมย/ตัดหน้า)", -d.stolen);
-  if (d.delulu) row("ทายผิด", d.delulu);
+  if (d.guess !== undefined) {   /* Delulu */
+    if (d.gOk) row("Delulu ทาย " + d.guess + " ถูก", "รอด");
+    else if (d.delulu) row("Delulu " + (d.guess == null ? "ไม่ได้ทาย" : "ทาย " + d.guess + " ผิด"), d.delulu);
+    else row("Delulu " + (d.guess == null ? "ไม่ได้ทาย" : "ทาย " + d.guess + " ผิด") + " แต่มีโล่", 0);
+  }
   if (d.crowded) row(esc(RULE_T.crowded), d.crowded);
   if (d.robin) row(esc(RULE_T.robin), d.robin);
   return out.join("");

@@ -59,28 +59,28 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await host.waitForFunction(() => H.players[0].die === "risk", null, { timeout: 20000 });
   ok(await ph[0].evaluate((g) => Net.gen > g && Net.ready, g0), "เน็ตกลับมา: มือถือต่อใหม่ แล้วเต๋าที่เลือกไว้ถึงจอใหญ่ (เต๋าเสี่ยงสูง)");
 
-  /* 3) dead connection without any error (phone slept): 12 s of silence -> reconnects by itself */
+  /* 3) dead connection without any error (phone slept): 15 s of silence -> reconnects by itself */
   await host.waitForFunction(() => H.phase === "reveal" && H.round === 1, null, { timeout: 40000 });
   await host.evaluate(() => HACT.pause());
   const g1 = await ph[1].evaluate(() => Net.gen);
   await ph[1].evaluate(() => FAKE_RT.setSilent(true));
-  await sleep(9000);
-  ok(await ph[1].evaluate((g) => Net.gen === g, g1), "เงียบ 9 วินาที: ยังไม่ต่อใหม่ (จอใหญ่ส่งทุก 3 วินาที รอให้แน่ใจก่อน)");
+  await sleep(11000);
+  ok(await ph[1].evaluate((g) => Net.gen === g, g1), "เงียบ 11 วินาที: ยังไม่ต่อใหม่ (จอใหญ่ส่งทุก 5 วินาที รอให้แน่ใจก่อน)");
   await ph[1].evaluate(() => FAKE_RT.setSilent(false));
   await ph[1].evaluate(() => { FAKE_RT.setSilent(true); });
-  await sleep(8000);
+  await sleep(9000);
   const k = await ph[1].evaluate((g) => (Net.gen - g) / 2, g1);   /* each reconnect raises the generation twice (close + open) */
-  ok(k >= 1, "เงียบเกิน 12 วินาที: มือถือต่อใหม่เอง (" + k + " ครั้ง)");
+  ok(k >= 1, "เงียบเกิน 15 วินาที: มือถือต่อใหม่เอง (" + k + " ครั้ง)");
   await ph[1].evaluate(() => FAKE_RT.setSilent(false));
   await ph[1].waitForFunction(() => Date.now() - P.recvAt < 4000, null, { timeout: 15000 });
   ok(true, "ต่อใหม่แล้วได้สถานะจากจอใหญ่อีกครั้ง");
 
-  /* 4) back on screen after sleeping: reconnects right away when nothing came for 6 s */
+  /* 4) back on screen after sleeping: reconnects right away when nothing came for 8 s */
   const g2 = await ph[0].evaluate(() => Net.gen);
   await ph[0].evaluate(() => FAKE_RT.setSilent(true));
-  await sleep(7000);
+  await sleep(9000);
   await ph[0].evaluate(() => { FAKE_RT.setSilent(false); document.dispatchEvent(new Event("visibilitychange")); });
-  ok(await ph[0].evaluate((g) => Net.gen > g, g2), "กลับมาเปิดจอหลังเงียบเกิน 6 วินาที: ต่อใหม่ทันที");
+  ok(await ph[0].evaluate((g) => Net.gen > g, g2), "กลับมาเปิดจอหลังเงียบเกิน 8 วินาที: ต่อใหม่ทันที");
   const g3 = await ph[1].evaluate(() => Net.gen);
   await ph[1].evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
   ok(await ph[1].evaluate((g) => Net.gen === g, g3), "กลับมาเปิดจอตอนที่ยังได้ข้อมูลปกติ: ไม่ต่อใหม่โดยไม่จำเป็น");

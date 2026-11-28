@@ -186,7 +186,7 @@ body.ph { background: #F3F6FF; color: #14213D; }
 <div id="app"></div>
 <div id="netb" aria-hidden="true"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/logic-over-luck/engine.js?v=2026112806"></script>
+<script src="/logic-over-luck/engine.js?v=2026112807"></script>
 <script>
 "use strict";
 /* Logic over Luck (Rules Race: Math Club Edition v5). Big screen (#host) + phones (#join=CODE).
@@ -196,7 +196,7 @@ body.ph { background: #F3F6FF; color: #14213D; }
    each phone and the Host make an ECDH P-256 key pair, the shared AES-GCM key is never sent. */
 
 /* page version: RAISE THIS NUMBER (and the ?v= of engine.js above) EVERY TIME THIS FOLDER CHANGES (YYYYMMDD + 2 digits) */
-var LOL_V = 2026112806;
+var LOL_V = 2026112807;
 
 /* ---------- small helpers ---------- */
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -367,10 +367,10 @@ var Net = {
     this.ch = null; this.up = null; this.ready = false; this.q = []; clearTimeout(this.timer);
   }
 };
-/* back on screen or back online: reconnect if the connection is not up, or (phone) if nothing came from the Host for 6 s */
+/* back on screen or back online: reconnect if the connection is not up, or (phone) if nothing came from the Host for 8 s */
 function netWake() {
   if (!Net.opened || Net.mode !== "supabase") return;
-  if (!Net.ready || (Net.me !== "host" && Date.now() - (Net.lastRecv || 0) > 6000)) Net.kick();
+  if (!Net.ready || (Net.me !== "host" && Date.now() - (Net.lastRecv || 0) > 8000)) Net.kick();
 }
 document.addEventListener("visibilitychange", function () { if (!document.hidden) netWake(); });
 window.addEventListener("online", netWake);
@@ -516,7 +516,7 @@ function startHost() {
     if (H.deadline && !H.paused && Date.now() >= H.deadline) advance();
     tickHost();
   }, 200);
-  if (!HB) HB = setInterval(function () { bcast(); }, 3000);
+  if (!HB) HB = setInterval(function () { bcast(); }, 5000);   /* the state again every 5 s even without changes (28 Nov: was 3 s, fewer Supabase messages) */
 }
 var HB = null;
 function fitStage() {
@@ -990,7 +990,9 @@ var BC = { t: null, last: 0, busy: false, again: false };
 function bcast() {
   if (!H) return;
   if (BC.t) return;
-  var gap = Math.min(1000, Math.max(150, H.players.length * 25)), wait = Math.max(0, BC.last + gap - Date.now());
+  /* Supabase counts a broadcast as 1 + every phone that receives it (free plan: 100 per second): keep the Host at about 30 per second
+     (28 Nov: was players x 25 ms up to 1 s; 40 phones -> 1.35 s) */
+  var gap = Math.max(150, (H.players.filter(function (p) { return !p.bot; }).length + 1) * 33), wait = Math.max(0, BC.last + gap - Date.now());
   BC.t = setTimeout(sendState, wait);
 }
 function sendState() {
@@ -1465,8 +1467,8 @@ function playerBoot(code) {
   else renderPlayer();
   setInterval(tickPlayer, 250);
   setInterval(resendPend, 2000);
-  /* the Host sends the state at least every 3 s: 12 s of silence while "connected" means a dead connection (phone slept, Wi-Fi changed) */
-  setInterval(function () { if (P.joined && Net.ready && Net.mode === "supabase" && Date.now() - (Net.lastRecv || 0) > 12000) Net.kick(); }, 2000);
+  /* the Host sends the state at least every 5 s: 15 s of silence while "connected" means a dead connection (phone slept, Wi-Fi changed) */
+  setInterval(function () { if (P.joined && Net.ready && Net.mode === "supabase" && Date.now() - (Net.lastRecv || 0) > 15000) Net.kick(); }, 2000);
 }
 function connect() {
   if (!P.pid) { P.pid = newId(); ss("lol-pid", P.pid); }

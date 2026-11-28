@@ -186,7 +186,7 @@ body.ph { background: #F3F6FF; color: #14213D; }
 <div id="app"></div>
 <div id="netb" aria-hidden="true"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/logic-over-luck/engine.js?v=2026112804"></script>
+<script src="/logic-over-luck/engine.js?v=2026112805"></script>
 <script>
 "use strict";
 /* Logic over Luck (Rules Race: Math Club Edition v5). Big screen (#host) + phones (#join=CODE).
@@ -196,7 +196,7 @@ body.ph { background: #F3F6FF; color: #14213D; }
    each phone and the Host make an ECDH P-256 key pair, the shared AES-GCM key is never sent. */
 
 /* page version: RAISE THIS NUMBER (and the ?v= of engine.js above) EVERY TIME THIS FOLDER CHANGES (YYYYMMDD + 2 digits) */
-var LOL_V = 2026112804;
+var LOL_V = 2026112805;
 
 /* ---------- small helpers ---------- */
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -283,50 +283,69 @@ function facesOf(d) { return LOL.DICE[d].join(" "); }
 
 /* ---------- Realtime (same design as /calcu/ and /mathmory/: "lol-<code>" down, "lol-<code>-up" up, only the Host subscribes to "up") ---------- */
 var SB = { url: "https://pmiwrnbpoumkpmbbylvw.supabase.co", key: "sb_publishable_XhPC1F8vvNzOt7KoaEaQKw_C_0pJksR" };
+/* Reconnecting (Logic over Luck only, 28 Nov): with the Supabase library loaded, the page never drops to the local test mode;
+   a failed or lost connection is retried after 1, 2, 4, 8, 10, 10 ... s, and right away when the page becomes visible again or
+   the network comes back. Messages sent meanwhile wait in a queue (only the newest state). Each try has a generation number so
+   events of an old connection are ignored. Without the library (tests with the CDN blocked) it uses BroadcastChannel. */
 var Net = {
-  up: null, ch: null, me: null, mode: "", ready: false, q: [], client: null, timer: null, code: "", onmsg: null,
+  up: null, ch: null, me: null, mode: "", ready: false, q: [], client: null, timer: null, retryT: null, code: "", onmsg: null,
+  gen: 0, retries: 0, opened: false, quiet: false, onReady: null, stats: null,
   setStatus: function (st) {
+    if (this.quiet) return;
     var b = document.getElementById("netb"); if (!b) return;
     b.className = st;
     b.textContent = st === "ok" ? "เชื่อมต่อ Supabase แล้ว" : st === "local" ? "โหมดทดสอบ: ใช้ได้เฉพาะแท็บในเบราว์เซอร์เดียวกัน" : st === "bad" ? "ขาดการเชื่อมต่อ กำลังลองใหม่" : "กำลังเชื่อมต่อ…";
   },
   open: function (code, me, onmsg) {
-    this.close(); this.me = me; this.code = code; this.onmsg = onmsg; this.q = []; this.ready = false;
-    var self = this;
-    if (window.supabase && window.supabase.createClient) {
-      try {
-        this.mode = "supabase"; this.setStatus("wait");
-        this.client = window.supabase.createClient(SB.url, SB.key, { realtime: { params: { eventsPerSecond: 40 } } });
-        var isHost = me === "host", cfg = { config: { broadcast: { self: false, ack: false } } };
-        var ch = this.client.channel("lol-" + code, cfg), up = this.client.channel("lol-" + code + "-up", cfg);
-        this.ch = ch; this.up = up;
-        function recv(p) { try { onmsg(p.payload); } catch (err) { if (window.console) console.error(err); } }
-        if (isHost) up.on("broadcast", { event: "m" }, recv); else ch.on("broadcast", { event: "m" }, recv);
-        this.timer = setTimeout(function () { if (self.ch === ch && !self.ready) self.fallback(); }, 5000);
-        var need = isHost ? 2 : 1, got = 0;
-        function status(s) {
-          if (self.ch !== ch) return;
-          if (s === "SUBSCRIBED") { if (++got === need) { clearTimeout(self.timer); self.ready = true; self.setStatus("ok"); self.flush(); } }
-          else if (s === "CHANNEL_ERROR" || s === "TIMED_OUT" || s === "CLOSED") { if (!self.ready) self.fallback(); else self.setStatus("bad"); }
-        }
-        ch.subscribe(status); if (isHost) up.subscribe(status);
-        return;
-      } catch (err) { if (window.console) console.error(err); this.teardown(); }
-    }
-    this.local();
+    this.close(); this.me = me; this.code = code; this.onmsg = onmsg; this.q = []; this.ready = false; this.opened = true; this.retries = 0;
+    if (window.supabase && window.supabase.createClient) { this.mode = "supabase"; this.connect(); }
+    else this.local();
+  },
+  connect: function () {
+    var self = this, g = ++this.gen, code = this.code, me = this.me, onmsg = this.onmsg;
+    this.ready = false; this.setStatus(this.retries ? "bad" : "wait");
+    try {
+      this.client = window.supabase.createClient(SB.url, SB.key, { realtime: { params: { eventsPerSecond: 40 } } });
+      var isHost = me === "host", cfg = { config: { broadcast: { self: false, ack: false } } };
+      var ch = this.client.channel("lol-" + code, cfg), up = this.client.channel("lol-" + code + "-up", cfg);
+      this.ch = ch; this.up = up;
+      function recv(p) { if (g !== self.gen) return; self.lastRecv = Date.now(); if (self.stats) self.stats(p.payload); try { onmsg(p.payload); } catch (err) { if (window.console) console.error(err); } }
+      if (isHost) up.on("broadcast", { event: "m" }, recv); else ch.on("broadcast", { event: "m" }, recv);
+      this.timer = setTimeout(function () { if (g === self.gen && !self.ready) self.retry(); }, 6000);
+      var need = isHost ? 2 : 1, got = 0;
+      function status(st) {
+        if (g !== self.gen) return;
+        if (st === "SUBSCRIBED") {
+          if (++got === need) { clearTimeout(self.timer); self.ready = true; self.retries = 0; self.lastRecv = Date.now(); self.setStatus("ok"); self.flush(); if (self.onReady) self.onReady(); }
+        } else if (st === "CHANNEL_ERROR" || st === "TIMED_OUT" || st === "CLOSED") { self.ready = false; self.setStatus("bad"); self.retry(); }
+      }
+      ch.subscribe(status); if (isHost) up.subscribe(status);
+    } catch (err) { if (window.console) console.error(err); this.teardown(); this.local(); }   /* the library itself is broken: local mode, as before */
+  },
+  retry: function () {
+    if (!this.opened || this.mode !== "supabase" || this.retryT) return;
+    var self = this, d = Math.min(10000, 1000 * Math.pow(2, this.retries++));
+    this.setStatus("bad");
+    this.retryT = setTimeout(function () { self.retryT = null; if (!self.opened) return; self.teardown(); self.connect(); }, d);
+  },
+  /* reconnect now (page visible again, network back, or a phone hears nothing from the Host for too long) */
+  kick: function () {
+    if (!this.opened || this.mode !== "supabase") return;
+    clearTimeout(this.retryT); this.retryT = null; this.retries = 0;
+    this.teardown(); this.connect();
   },
   teardown: function () {
-    clearTimeout(this.timer);
-    try { if (this.client && this.ch) this.client.removeChannel(this.ch); } catch (e) {}
-    try { if (this.client && this.up) this.client.removeChannel(this.up); } catch (e) {}
-    try { if (this.client && this.client.realtime && this.client.realtime.disconnect) this.client.realtime.disconnect(); } catch (e) {}
+    this.gen++; clearTimeout(this.timer);
+    var c = this.client, ch = this.ch, up = this.up;
     this.client = null; this.ch = null; this.up = null; this.ready = false;
+    try { if (c && ch) c.removeChannel(ch); } catch (e) {}
+    try { if (c && up) c.removeChannel(up); } catch (e) {}
+    try { if (c && c.realtime && c.realtime.disconnect) c.realtime.disconnect(); } catch (e) {}
   },
-  fallback: function () { this.teardown(); this.local(); },
   local: function () {
-    var onmsg = this.onmsg, me = this.me; this.mode = "local";
+    var onmsg = this.onmsg, me = this.me, self = this; this.mode = "local";
     this.ch = new BroadcastChannel("lol-" + this.code);
-    this.ch.onmessage = function (e) { var m = e.data; if (!m || m.from === me || (me !== "host" && m.from !== "host")) return; try { onmsg(m); } catch (err) { if (window.console) console.error(err); } };
+    this.ch.onmessage = function (e) { var m = e.data; if (!m || m.from === me || (me !== "host" && m.from !== "host")) return; self.lastRecv = Date.now(); try { onmsg(m); } catch (err) { if (window.console) console.error(err); } };
     this.ready = true; this.setStatus("local"); this.flush();
   },
   flush: function () { var q = this.q; this.q = []; for (var i = 0; i < q.length; i++) this.post(q[i]); },
@@ -337,16 +356,25 @@ var Net = {
     } else this.ch.postMessage(m);
   },
   send: function (m) {
-    if (!this.ch) return;
+    if (!this.opened) return;
     m.from = this.me === "host" ? "host" : "p"; m = JSON.parse(JSON.stringify(m));
     if (!this.ready) { if (m.type === "state") this.q = this.q.filter(function (x) { return x.type !== "state"; }); if (this.q.length < 60) this.q.push(m); return; }
     this.post(m);
   },
   close: function () {
+    this.opened = false; clearTimeout(this.retryT); this.retryT = null;
     if (this.mode === "supabase") this.teardown(); else if (this.ch) { try { this.ch.close(); } catch (e) {} }
     this.ch = null; this.up = null; this.ready = false; this.q = []; clearTimeout(this.timer);
   }
 };
+/* back on screen or back online: reconnect if the connection is not up, or (phone) if nothing came from the Host for 6 s */
+function netWake() {
+  if (!Net.opened || Net.mode !== "supabase") return;
+  if (!Net.ready || (Net.me !== "host" && Date.now() - (Net.lastRecv || 0) > 6000)) Net.kick();
+}
+document.addEventListener("visibilitychange", function () { if (!document.hidden) netWake(); });
+window.addEventListener("online", netWake);
+window.addEventListener("pageshow", function (e) { if (e.persisted) netWake(); });
 
 /* ---------- encryption of secret data (WebCrypto: ECDH P-256 -> AES-GCM 256) ---------- */
 var Sec = {
@@ -480,6 +508,7 @@ function newRoom() {
 }
 var HT = null;
 function startHost() {
+  Net.onReady = function () { H.players.forEach(function (p) { DIRTY[p.pid] = true; }); bcast(); };   /* after a reconnect: send everyone's secret part again */
   Net.open(H.code, "host", onHostMsg);
   saveHost(); renderHost(); bcast();
   clearInterval(HT);
@@ -1344,17 +1373,21 @@ function playerBoot(code) {
   else renderPlayer();
   setInterval(tickPlayer, 250);
   setInterval(resendPend, 2000);
+  /* the Host sends the state at least every 3 s: 12 s of silence while "connected" means a dead connection (phone slept, Wi-Fi changed) */
+  setInterval(function () { if (P.joined && Net.ready && Net.mode === "supabase" && Date.now() - (Net.lastRecv || 0) > 12000) Net.kick(); }, 2000);
 }
 function connect() {
   if (!P.pid) { P.pid = newId(); ss("lol-pid", P.pid); }
   ss("lol-code", P.code); ss("lol-name", P.name);
   P.joined = false; P.err = ""; P.st = null; P.priv = null; P.pv = 0; P.key = null; P.hpub = "";
+  Net.onReady = function () { if (!P.joined) send(); else if (P.pid) Net.send({ type: "need", pid: P.pid }); };   /* reconnected: ask for the secret part again */
   Net.open(P.code, "p", onPlayerMsg);
   var tries = 0;
   function send() { if (P.joined) return; Net.send({ type: "join", pid: P.pid, name: P.name, v: LOL_V, pub: P.kp.pub }); }
   send(); clearInterval(P.joinT);
   P.joinT = setInterval(function () {
     if (P.joined) { clearInterval(P.joinT); return; }
+    if (!Net.ready) return;   /* tries count only while connected */
     if (++tries >= 5) { clearInterval(P.joinT); Net.close(); ss("lol-joined", null); P.err = "ไม่พบห้องนี้ ตรวจรหัสห้องอีกครั้ง"; renderPlayer(); return; }
     send();
   }, 2000);
@@ -1638,7 +1671,7 @@ function evPhone(st, pr, h) {
 function playerHtml() {
   var st = P.st, pr = P.priv;
   if (!P.joined) {
-    var c0 = P.code || "", connecting = P.joinT && !P.err && Net.ch;
+    var c0 = P.code || "", connecting = P.joinT && !P.err && Net.opened;
     return '<div class="ptop"><div><div class="t" style="font-size:1.8rem">Logic over Luck</div><div class="s">ชมรมคณิตศาสตร์ เล่นร่วมกันบนจอใหญ่</div></div></div>' +
       '<div class="pc" style="display:flex;flex-direction:column;gap:12px"><label><span class="lbl">รหัสห้อง (4 หลัก)</span><input id="jc" class="inp" inputmode="numeric" maxlength="4" autocomplete="off" value="' + esc(c0) + '"></label>' +
       '<label><span class="lbl">ชื่อเล่น</span><input id="jn" class="inp" maxlength="20" autocomplete="nickname" value="' + esc(P.name) + '"></label>' +

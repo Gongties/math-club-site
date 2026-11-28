@@ -24,7 +24,7 @@ $P -c "grant usage on schema public to anon; select admin_set('testpass', true, 
 note "เปิดเว็บในเครื่อง"
 (python3 -m http.server "$WEB_PORT" >/tmp/sigma-http.log 2>&1 &) ; (node tests/rpcserver.js >/tmp/sigma-rpc.log 2>&1 &) ; sleep 1
 # 3) หน้าเว็บและเกม
-for t in site-pages calcu-submit calcu-round calcu-head lol-submit; do note "browser/$t"; node "tests/browser/$t.js" || FAIL=1; done
+for t in site-pages calcu-submit calcu-round calcu-head lol-submit lol-reconnect; do note "browser/$t"; node "tests/browser/$t.js" || FAIL=1; done
 if python3 -c "import cv2" 2>/dev/null; then
   got=$(python3 -c "import cv2;print(cv2.QRCodeDetector().detectAndDecode(cv2.imread('/tmp/mm_qr.png'))[0])"); want="http://localhost:$WEB_PORT/mathmory/#join=$(cat /tmp/mm_code.txt)"
   [ "$got" = "$want" ] && echo "ผ่าน  QR ล็อบบี้ Mathmory ถอดได้ $got" || { echo "ไม่ผ่าน QR ได้ '$got'"; FAIL=1; }

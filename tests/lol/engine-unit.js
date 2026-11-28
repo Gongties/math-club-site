@@ -119,5 +119,14 @@ eq("19 conditions, 15 effects, 13 rules", [Object.keys(L.COND).length, Object.ke
 var seen = {}; for (i = 0; i < 2000; i++) seen[L.drawLucky()] = 1;
 eq("lucky 1..7", Object.keys(seen).sort(), ["1", "2", "3", "4", "5", "6", "7"]);
 
+/* ---- common-rule vote ---- */
+var vo = L.voteOptions(["ban", "lucky"]);
+eq("vote options: 3 different, none excluded", [vo.length, new Set(vo).size, vo.indexOf("ban"), vo.indexOf("lucky")], [3, 3, -1, -1]);
+var seenR = {}; for (i = 0; i < 3000; i++) L.voteOptions(["curse"]).forEach(function (r) { seenR[r] = 1; });
+eq("vote options cover the other 12 rules", Object.keys(seenR).sort(), L.RULES.filter(function (r) { return r !== "curse"; }).sort());
+eq("vote: most votes", L.voteWinner(["a", "b", "c"], [{ opt: "b", t: 5 }, { opt: "b", t: 6 }, { opt: "a", t: 1 }]).win, "b");
+eq("vote tie: the option voted earliest", L.voteWinner(["a", "b", "c"], [{ opt: "b", t: 5 }, { opt: "a", t: 7 }, { opt: "b", t: 9 }, { opt: "a", t: 8 }, { opt: "c", t: 1 }]), { win: "b", tally: { a: 2, b: 2, c: 1 }, how: "tie" });
+eq("vote: nobody voted -> random of the 3", ["a", "b", "c"].indexOf(L.voteWinner(["a", "b", "c"], []).win) >= 0 && L.voteWinner(["a", "b", "c"], []).how === "random", true);
+
 console.log(count - fails + "/" + count + " passed");
 process.exit(fails ? 1 : 0);

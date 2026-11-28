@@ -91,6 +91,20 @@ body.ph #netb.ok { background: #2E9E6B; } body.ph #netb.local { background: #D9A
 .pod .sc { font-size: 30px; color: #B4BEDA; margin-bottom: 10px; }
 .rest { display: flex; flex-wrap: wrap; gap: 10px 14px; font-size: 26px; }
 .rest span { background: #171E38; border: 2px solid #2B3560; border-radius: 99px; padding: 4px 16px; }
+/* common-rule cards */
+.rcards { display: flex; gap: 24px; justify-content: center; }
+.rcard { flex: 1; max-width: 560px; background: #232C50; border: 3px solid #9C8CFF; border-radius: 22px; padding: 22px 26px; }
+.rcard .rn { font-family: Prompt, sans-serif; font-weight: 700; font-size: 40px; line-height: 1.2; }
+.rcard .re { font-size: 24px; color: #B4BEDA; }
+.rcard .rd { font-size: 27px; line-height: 1.4; margin-top: 8px; }
+.rcard.win { border-color: #FFD84D; background: #3A3520; } .rcard.lose { opacity: .45; }
+.rcard .vt { font-family: Prompt, sans-serif; font-weight: 700; font-size: 48px; color: #FFD84D; margin-top: 10px; }
+.rcard.sm { padding: 12px 20px; } .rcard.sm .rn { font-size: 30px; } .rcard.sm .rd { font-size: 22px; margin-top: 4px; }
+.rcard.sp { border-color: #FF8A80; }
+.lucky { font-family: Prompt, sans-serif; font-weight: 700; font-size: 30px; background: #FFD84D; color: #0E1326; border-radius: 22px; padding: 12px 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.lucky b { font-size: 64px; line-height: 1; }
+.dref .d .bt { font-size: 26px; color: #FF8A80; font-weight: 700; margin-top: 6px; }
+.ovb .ck { width: 34px; height: 34px; }
 /* overlays */
 .ov { position: absolute; inset: 0; z-index: 20; background: rgba(5, 8, 20, .85); display: flex; align-items: center; justify-content: center; }
 .ovb { width: 1100px; max-height: 960px; overflow: auto; padding: 48px; border-radius: 30px; background: #171E38; border: 3px solid #2B3560; display: flex; flex-direction: column; gap: 22px; font-size: 30px; }
@@ -136,6 +150,11 @@ body.ph { background: #F3F6FF; color: #14213D; }
 .steps { display: flex; flex-direction: column; gap: 6px; }
 .steps div { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dashed #C9D0E6; padding-bottom: 4px; }
 .steps b.p { color: #14562F; } .steps b.m { color: #B3261E; }
+.crule { background: #fff; border: 2px solid #9C8CFF; border-radius: 12px; padding: 8px 12px; line-height: 1.45; font-size: .95rem; }
+.crule b { color: #4B3FB3; }
+.vopt { display: block; width: 100%; text-align: left; border: 3px solid #14213D; border-radius: 14px; background: #fff; color: #14213D; padding: 12px 14px; }
+.vopt.on { background: #FFD84D; box-shadow: 3px 3px 0 #14213D; }
+.vopt .nm { font-weight: 700; font-size: 1.1rem; } .vopt .ds { font-size: .9rem; color: #4A5578; }
 .verw { background: #FFE9A8; border: 3px solid #14213D; border-radius: 14px; padding: 12px; font-weight: 700; }
 </style>
 </head>
@@ -143,7 +162,7 @@ body.ph { background: #F3F6FF; color: #14213D; }
 <div id="app"></div>
 <div id="netb" aria-hidden="true"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/logic-over-luck/engine.js?v=2026112801"></script>
+<script src="/logic-over-luck/engine.js?v=2026112802"></script>
 <script>
 "use strict";
 /* Logic over Luck (Rules Race: Math Club Edition v5). Big screen (#host) + phones (#join=CODE).
@@ -153,7 +172,7 @@ body.ph { background: #F3F6FF; color: #14213D; }
    each phone and the Host make an ECDH P-256 key pair, the shared AES-GCM key is never sent. */
 
 /* page version: RAISE THIS NUMBER (and the ?v= of engine.js above) EVERY TIME THIS FOLDER CHANGES (YYYYMMDD + 2 digits) */
-var LOL_V = 2026112801;
+var LOL_V = 2026112802;
 
 /* ---------- small helpers ---------- */
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -211,6 +230,15 @@ var EFF_T = {
 };
 var RULE_T = { ban: "รอเติมสต๊อก", curse: "พากันลงเหว", prime: "เลขเฉพาะกิจ", median: "ชายกลาง", outlier: "หนีสังคม", minority: "เกาะติดเทรนด์ใหม่",
   norepeat: "อย่าให้มีครั้งที่สอง", underdog: "Never Gonna Give You Up", bust: "อย่าบินสูงในฝูงไก่", robin: "โรบินฮู้ด", crowded: "ภาษีสังคม", bubble: "ฟองสบู่", lucky: "เลขนำโชค" };
+var RULE_D = { ban: "ลูกเต๋าที่มีผู้เลือกมากที่สุดในรอบก่อนหน้าจะถูกห้ามใช้ในรอบนี้", curse: "หากทอยได้เลขที่เป็นฐานนิยม จะได้คะแนนหน้าลูกเต๋าเป็น 0",
+  prime: "หากทอยได้จำนวนเฉพาะ ได้ 2 คะแนน ถ้าไม่ใช่หัก 1 คะแนน", median: "หากทอยได้เลขที่เป็นมัธยฐานของห้อง ได้ 4 คะแนน",
+  outlier: "ผู้ที่ทอยได้เลขห่างจากค่าเฉลี่ยที่สุด ได้ 3 คะแนน", minority: "ผู้ที่ใช้ลูกเต๋าที่มีคนเลือกน้อยที่สุด รับเพิ่ม 3 คะแนน",
+  norepeat: "ผู้ที่ทอยได้เลขเดียวกับรอบก่อน หัก 2 คะแนน", underdog: "ผู้เล่นในอันดับครึ่งล่างที่ทำตามกฎส่วนตัวได้ ได้ 2 คะแนน",
+  bust: "หากได้คะแนนประจำรอบเกิน 10 คะแนน คะแนนรอบนั้นจะกลายเป็น 0", robin: "ผู้เล่นอันดับหนึ่งหักคะแนนสะสม 3 คะแนน เพื่อแบ่งให้ผู้เล่น 3 คนสุดท้าย",
+  crowded: "ถูกหักคะแนนสะสม 1 คะแนน ต่อทุก ๆ x คนที่ใช้ลูกเต๋าลูกเดียวกับคุณ (รวมตัวเองด้วย)", bubble: "หากใช้ลูกเต๋าที่คนเลือกมากที่สุดและไม่เกินครึ่งห้อง จะได้ 3 คะแนน",
+  lucky: "ต้นรอบสุ่มเลข 1–7 ใครทอยได้เลขนั้น +4" };
+/* card text; Crowded Dice shows the real x of this room */
+function ruleDesc(id, cx) { var d = RULE_D[id] || ""; return id === "crowded" && cx ? d + " ห้องนี้ x = " + cx : d; }
 function condName(c) { return COND_T[c] ? COND_T[c][0] : c; }
 function effName(e) { return EFF_T[e] ? EFF_T[e][0] : e; }
 function facesOf(d) { return LOL.DICE[d].join(" "); }
@@ -375,12 +403,21 @@ function qrSvg(text) {
 /* =====================================================================
    HOST (big screen). Runs the whole game; the phones only show what it sends.
    ===================================================================== */
-var DEF_CFG = { room: "ห้องเรียน", tBuild: 60, tPick: 15, tRr: 10, tRev: 12 };
+var DEF_CFG = { room: "ห้องเรียน", tBuild: 60, tPick: 15, tRr: 10, tRev: 12, tVote: 20, tBreak: 180,
+  special: 1, votePct: 50, voteCount: 0, cap: 3, crowdX: 0 };   /* voteCount 0 = use votePct; crowdX 0 = number of players / 5 rounded up */
 var PVC = Date.now();   /* version numbers of secret data keep growing across a reload of the Host (phones drop anything older) */
 var H = null, KEYS = {}, LASTPRIV = {}, DIRTY = {}, HOSTKEY = null, HV = { kill: null, killT: 0, cfgOpen: false, endAsk: 0 };
 var TEST = /[?&]test\b/.test(location.search);
 
 function hostCfg() { var c = {}, s = null; try { s = JSON.parse(ls("lol-cfg") || "null"); } catch (e) {} for (var k in DEF_CFG) c[k] = s && s[k] != null ? s[k] : DEF_CFG[k]; return c; }
+/* settings the scoring engine needs */
+function engCfg() {
+  var c = H.cfg;
+  return { cap: Math.max(1, Number(c.cap) || 3), crowdX: Number(c.crowdX) || null, voteFrac: (Number(c.votePct) || 50) / 100, voteCount: Number(c.voteCount) || null };
+}
+function crowdXNow() { return Number(H.cfg.crowdX) || Math.ceil(H.players.length / 5); }
+/* common rules in force in round t: the voted rule from round 4, plus the final-round special rule in round 12 */
+function activeRules(t) { var r = []; if (t >= 4 && H.rule) r.push(H.rule); if (t === 12 && H.special) r.push(H.special); return r; }
 function newCode() { var c; do { c = String(1000 + Math.floor(rnd() * 9000)); } while (H && c === H.code); return c; }
 function saveHost() { try { ls("lol-host", JSON.stringify({ t: Date.now(), H: H, kp: HOSTKEY })); } catch (e) {} }
 function hostBoot() {
@@ -467,9 +504,24 @@ function hostAct(p, a) {
     p.cond = a.cond; p.eff = a.eff; p.built = true;
     if (H.players.every(function (q) { return q.built; })) H.deadline = Date.now() + 1500;
   } else if (a.a === "pick" && H.phase === "pick") {
-    if (!LOL.DICE[a.die]) return;
+    if (!LOL.DICE[a.die] || (H.banned || []).indexOf(a.die) >= 0) return;
     p.die = a.die;
     if (H.players.every(function (q) { return q.die; })) H.deadline = Date.now() + 800;
+  } else if (a.a === "vote" && H.phase === "vote") {
+    var V = H.vote;
+    if (V.voters.indexOf(p.pid) < 0 || V.votes[p.pid] || V.opts.indexOf(a.opt) < 0) return;   /* one vote, voting group only */
+    V.votes[p.pid] = [a.opt, Date.now()];
+    if (V.voters.every(function (q) { return V.votes[q] || !byPid(q); })) H.deadline = Date.now() + 1200;
+  } else if (a.a === "brk" && H.phase === "break") {
+    if (p.brkDone) return;   /* one free change */
+    if (!a.keep) {
+      /* Compound Interest cannot be picked at the break; a player who already has it may keep it */
+      var keepInt = p.eff === "interest" && a.eff === "interest";
+      if (!LOL.buildOk(a.cond, a.eff, { when: keepInt ? "start" : "break" })) return;
+      p.cond = a.cond; p.eff = a.eff;
+    }
+    p.brkDone = true; p.brkChanged = !a.keep;
+    if (H.players.every(function (q) { return q.brkDone; })) H.deadline = Date.now() + 1500;
   } else if (a.a === "rr" && H.phase === "reroll") {
     if (!p.rrLeft || p.rrDone) return;
     p.rrDone = true;
@@ -487,7 +539,7 @@ function hostStart() {
   H.runId = "lol-" + H.code + "-" + Date.now().toString(36);
   H.n = H.players.length;
   H.players.forEach(function (p) { p.built = false; p.cond = p.eff = null; p.acc = 0; p.hist = []; p.prevX = null; p.prevDie = null; p.next6 = false; p.rrLeft = true; p.det = null; p.rp = 0; });
-  H.round = 0; H.places = null; H.room = null;
+  H.round = 0; H.places = null; H.room = null; H.rule = null; H.special = null; H.vote = null; H.curRules = []; H.banned = []; H.lucky = null;
   setPhase("build", Number(H.cfg.tBuild) || 60);
   botsDo(); saveHost(); renderHost(); bcast();
 }
@@ -495,7 +547,15 @@ function advance() {
   if (H.phase === "build") finishBuild();
   else if (H.phase === "pick") endPick();
   else if (H.phase === "reroll") endReroll();
-  else if (H.phase === "reveal") { if (H.round < 12) startRound(H.round + 1); else endGame(); }
+  else if (H.phase === "reveal") {
+    if (H.round >= 12) endGame();
+    else if (H.round === 6) startBreak();
+    else if (H.round === 3 || H.round === 9) startVote(H.round + 1);
+    else startRound(H.round + 1);
+  }
+  else if (H.phase === "vote") endVote();
+  else if (H.phase === "voted") startRound(H.vote.round);
+  else if (H.phase === "break") startVote(7);
   saveHost(); renderHost(); bcast();
 }
 function randomBuild(when) {
@@ -507,8 +567,31 @@ function finishBuild() {
   H.players.forEach(function (p) { if (!p.built) { var b = randomBuild("start"); p.cond = b[0]; p.eff = b[1]; p.built = true; p.autoBuilt = true; } });
   startRound(1);
 }
+/* vote before rounds 4, 7, 10: 3 rules not active now and not the special rule; the voting group = lowest-ranked at the start of the round */
+function startVote(t) {
+  var grp = LOL.votingGroup(H.players.map(function (p) { return p.acc; }), engCfg());
+  H.vote = { round: t, opts: LOL.voteOptions([H.rule, H.special].filter(Boolean), rnd), voters: grp.map(function (i) { return H.players[i].pid; }), votes: {}, res: null };
+  setPhase("vote", Number(H.cfg.tVote) || 20);
+  botsDo();
+}
+function endVote() {
+  var V = H.vote, list = Object.keys(V.votes).map(function (pid) { return { opt: V.votes[pid][0], t: V.votes[pid][1] }; });
+  V.res = LOL.voteWinner(V.opts, list, rnd);
+  H.rule = V.res.win;   /* replaces the current rule */
+  setPhase("voted", 6);
+}
+/* mid-game break after round 6: reveal the final-round special rule (drawn from all 13), everyone may change their rule once */
+function startBreak() {
+  H.special = Number(H.cfg.special) ? pick(LOL.RULES) : null;
+  H.players.forEach(function (p) { p.brkDone = false; p.brkChanged = false; });
+  setPhase("break", Number(H.cfg.tBreak) || 180);
+  botsDo();
+}
 function startRound(t) {
   H.round = t;
+  H.curRules = activeRules(t);
+  H.banned = H.curRules.indexOf("ban") >= 0 ? LOL.bannedDice(H.players.map(function (p) { return p.prevDie; })) : [];
+  H.lucky = H.curRules.indexOf("lucky") >= 0 ? 1 + Math.floor(rnd() * 7) : null;   /* Lucky Number 1..7, shown before dice are picked */
   H.players.forEach(function (p) {
     p.die = null; p.x = null; p.rerolled = false; p.rrDone = false; p.det = null;
     p.reff = p.eff === "random" ? LOL.RANDOM_POOL[Math.floor(rnd() * LOL.RANDOM_POOL.length)] : null;   /* Random: equal chance of the 14 other effects */
@@ -518,7 +601,9 @@ function startRound(t) {
 }
 function endPick() {
   H.players.forEach(function (p) {
-    if (!p.die) { p.die = p.prevDie || pick(LOL.DIE_IDS); p.autoDie = true; } else p.autoDie = false;   /* time ran out: keep last round's die (random in round 1) */
+    var allowed = LOL.DIE_IDS.filter(function (d) { return H.banned.indexOf(d) < 0; });
+    /* time ran out: keep last round's die (a random allowed die in round 1 or if it is banned) */
+    if (!p.die) { p.die = p.prevDie && allowed.indexOf(p.prevDie) >= 0 ? p.prevDie : pick(allowed); p.autoDie = true; } else p.autoDie = false;
     p.x = pick(LOL.DICE[p.die]);
   });
   if (rrAllDone()) return endReroll();
@@ -526,10 +611,10 @@ function endPick() {
   botsDo();
 }
 function endReroll() {
-  var t = H.round, inp = { round: t, final: t === 12, rules: [], banned: [], lucky: null, cfg: {},
+  var t = H.round, inp = { round: t, final: t === 12, rules: H.curRules.map(function (id) { return { id: id, scope: null }; }), banned: H.banned, lucky: H.lucky, cfg: engCfg(),
     players: H.players.map(function (p) {
       return { die: p.die, x: p.x, rerolled: p.rerolled, cond: p.cond, eff: p.eff === "random" ? p.reff : p.eff, acc: p.acc, prevX: p.prevX,
-        next6: p.next6, aura: false, hist: p.hist.slice(), tie: rnd() };
+        next6: p.next6, aura: false, hist: p.hist.slice(), tie: (p.tie = rnd()) };
     }) };
   var res = LOL.scoreRound(inp), before = rankOf(H.players.map(function (p) { return p.acc; }));
   H.players.forEach(function (p, i) {
@@ -558,8 +643,10 @@ function botsDo() {
     setTimeout(function () {
       if (H.phase !== ph || H.round !== t) return;
       if (ph === "build") { var b = randomBuild("start"); hostAct(p, { a: "build", cond: b[0], eff: b[1] }); }
-      else if (ph === "pick") hostAct(p, { a: "pick", die: rnd() < .7 && p.prevDie ? p.prevDie : pick(LOL.DIE_IDS) });
+      else if (ph === "pick") { var al = LOL.DIE_IDS.filter(function (d) { return H.banned.indexOf(d) < 0; }); hostAct(p, { a: "pick", die: rnd() < .7 && al.indexOf(p.prevDie) >= 0 ? p.prevDie : pick(al) }); }
       else if (ph === "reroll" && p.rrLeft) hostAct(p, { a: "rr", use: p.x <= 1 && rnd() < .5 });
+      else if (ph === "vote" && H.vote.voters.indexOf(p.pid) >= 0) hostAct(p, { a: "vote", opt: pick(H.vote.opts) });
+      else if (ph === "break") { if (rnd() < .7) hostAct(p, { a: "brk", keep: true }); else { var nb = randomBuild("break"); hostAct(p, { a: "brk", cond: nb[0], eff: nb[1] }); } }
     }, 400 + rnd() * 2500);
   });
 }
@@ -573,6 +660,8 @@ function privOf(p, i) {
   if (H.phase === "reroll" || H.phase === "reveal") o.x = p.x;   /* your own roll, before everyone sees it */
   if (H.phase === "reveal") o.det = p.det;
   if (p.cond === "samedie" || p.cond === "sameroll") o.leaders = leaderNames(i);
+  if ((H.phase === "vote" || H.phase === "voted") && H.vote && H.vote.votes[p.pid]) o.myVote = H.vote.votes[p.pid][0];
+  if (H.phase === "break") { o.brkDone = !!p.brkDone; o.brkChanged = !!p.brkChanged; }
   return o;
 }
 function publicState() {
@@ -586,6 +675,12 @@ function publicState() {
     st.stat = H.room;
   }
   if (H.phase === "end") st.places = H.places;
+  st.cur = H.curRules || []; st.banned = H.banned || []; st.lucky = H.lucky; st.rule = H.rule; st.special = H.special; st.cx = crowdXNow();
+  if ((H.phase === "vote" || H.phase === "voted") && H.vote) {
+    var V = H.vote;
+    st.vote = { round: V.round, opts: V.opts, voters: V.voters, nv: Object.keys(V.votes).length, res: H.phase === "voted" ? V.res : null };   /* who voted what stays secret; the tally only after the vote */
+  }
+  if (H.phase === "break") st.cnt.brk = H.players.filter(function (p) { return p.brkDone; }).length;
   return st;
 }
 var BC = { t: null, last: 0, busy: false, again: false };
@@ -632,10 +727,12 @@ var HACT = {
   },
   cfg: function () { HV.cfgOpen = true; renderHost(); },
   cfgSave: function () {
-    ["room", "tBuild", "tPick", "tRr", "tRev"].forEach(function (k) {
+    var LIM = { tBuild: [5, 900], tPick: [3, 300], tRr: [3, 300], tRev: [3, 300], tVote: [5, 300], tBreak: [10, 900], votePct: [1, 100], voteCount: [0, 60], cap: [1, 50], crowdX: [0, 60] };
+    Object.keys(DEF_CFG).forEach(function (k) {
       var el = document.getElementById("cf_" + k); if (!el) return;
-      var v = k === "room" ? (el.value.trim().slice(0, 30) || DEF_CFG.room) : Math.max(5, Math.min(600, Math.round(Number(el.value) || DEF_CFG[k])));
-      H.cfg[k] = v;
+      if (k === "room") H.cfg.room = el.value.trim().slice(0, 30) || DEF_CFG.room;
+      else if (k === "special") H.cfg.special = el.checked ? 1 : 0;
+      else { var n = Math.round(Number(el.value)); if (!isFinite(n) || el.value.trim() === "") n = DEF_CFG[k]; H.cfg[k] = Math.max(LIM[k][0], Math.min(LIM[k][1], n)); }
     });
     ls("lol-cfg", JSON.stringify(H.cfg)); HV.cfgOpen = false; saveHost(); renderHost(); bcast();
   },
@@ -659,7 +756,7 @@ document.addEventListener("click", function (e) {
 });
 
 /* ---------- host screens ---------- */
-var PHASE_T = { lobby: "รอผู้เล่น", build: "สร้างกฎส่วนตัว", pick: "เลือกลูกเต๋า", reroll: "ทอยแล้ว รอตัดสินใจทอยใหม่", reveal: "เปิดผล", end: "จบเกม" };
+var PHASE_T = { lobby: "รอผู้เล่น", build: "สร้างกฎส่วนตัว", vote: "โหวตกฎส่วนรวม", voted: "ผลโหวต", break: "พักครึ่ง", pick: "เลือกลูกเต๋า", reroll: "ทอยแล้ว รอตัดสินใจทอยใหม่", reveal: "เปิดผล", end: "จบเกม" };
 function joinUrl() { return location.origin + "/logic-over-luck/#join=" + H.code; }
 var QRC = { code: "", svg: "" };
 function lobbyQr() { if (QRC.code !== H.code) { QRC.code = H.code; QRC.svg = qrSvg(joinUrl()); } return QRC.svg; }
@@ -700,11 +797,15 @@ function renderHost() {
     h = hdr("สร้างกฎส่วนตัว", "เลือกเงื่อนไข 1 ข้อ + ผล 1 ข้อ รวมไม่เกิน 5 เหรียญ บนมือถือ") +
       '<div class="main" style="flex-direction:column;align-items:center;justify-content:center;gap:30px"><div class="big2">' + done + " / " + n + '</div><div class="su">คนที่สร้างกฎแล้ว ไม่ทันเวลา ระบบสุ่มกฎให้</div>' +
       '<div class="chips" style="justify-content:center;max-width:1600px">' + H.players.map(function (p) { return '<span class="chip' + (p.built ? " done" : "") + '" style="padding-right:20px">' + (p.built ? "✓ " : "") + esc(p.name) + "</span>"; }).join("") + "</div></div>" + controls();
+  } else if (ph === "vote" || ph === "voted") {
+    h = hdr(ph === "vote" ? "โหวตกฎส่วนรวม ก่อนรอบที่ " + H.vote.round : "กฎส่วนรวมรอบที่ " + H.vote.round + "–" + (H.vote.round + 2), ph === "vote" ? "เฉพาะกลุ่มโหวตโหวตบนมือถือ คนละ 1 เสียง" : "ใช้ตั้งแต่รอบถัดไป") + voteHtml() + controls();
+  } else if (ph === "break") {
+    h = hdr("พักครึ่ง", "เปลี่ยนกฎส่วนตัวได้ 1 ครั้งบนมือถือ (เลือกดอกเบี้ยทบต้นใหม่ไม่ได้)") + breakHtml() + controls();
   } else if (ph === "pick" || ph === "reroll") {
     var picked = H.players.filter(function (p) { return p.die; }).length;
     var sub = ph === "pick" ? "เลือกแล้ว " + picked + " / " + n + " คน" : "ใครยังมีสิทธิ์ทอยใหม่ ตัดสินใจบนมือถือ";
     h = hdr("รอบที่ " + H.round + " / 12" + (H.round === 12 ? " <span style=\"color:#FFD84D\">คะแนน ×2</span>" : ""), PHASE_T[ph] + " " + sub) +
-      '<div class="main" style="flex-direction:column;justify-content:center"><div class="dref">' + LOL.DIE_IDS.map(function (d) { return '<div class="d"><div class="n">' + DIE_T[d] + '</div><div class="f">' + facesOf(d) + "</div></div>"; }).join("") + "</div>" +
+      '<div class="main" style="flex-direction:column;justify-content:center;gap:28px">' + rulesStrip() + '<div class="dref">' + LOL.DIE_IDS.map(function (d) { var b = H.banned.indexOf(d) >= 0; return '<div class="d' + (b ? " ban" : "") + '"><div class="n">' + DIE_T[d] + '</div><div class="f">' + facesOf(d) + "</div>" + (b ? '<div class="bt">ห้ามใช้รอบนี้</div>' : "") + "</div>"; }).join("") + "</div>" +
       '<div class="su" style="text-align:center;margin-top:30px">' + (ph === "pick" ? "เลือกลูกเต๋าบนมือถือ ไม่มีใครเห็นว่าคุณเลือกลูกไหนจนกว่าจะเปิดผล" : "ทุกคนเห็นเลขของตัวเองแล้ว คนที่ยังมีสิทธิ์ทอยใหม่ (1 ครั้งต่อเกม) ตัดสินใจตอนนี้") + "</div></div>" + controls();
   } else if (ph === "reveal") {
     h = hdr("ผลรอบที่ " + H.round + " / 12" + (H.round === 12 ? " (คะแนน ×2)" : ""), H.round < 12 ? "รอบถัดไปเริ่มเองเมื่อหมดเวลา" : "หมดเวลาแล้วไปหน้าสรุปผล") + revealHtml() + controls();
@@ -714,6 +815,34 @@ function renderHost() {
   }
   if (HV.cfgOpen) h += cfgHtml();
   el.innerHTML = h;
+}
+function rcard(id, cls, extra) {
+  return '<div class="rcard ' + (cls || "") + '"><div class="rn">' + esc(RULE_T[id]) + '</div><div class="re">' + esc(id === H.special && H.round >= 6 && cls && cls.indexOf("sp") >= 0 ? "กฎพิเศษรอบสุดท้าย" : "") + '</div><div class="rd">' + esc(ruleDesc(id, crowdXNow())) + "</div>" + (extra || "") + "</div>";
+}
+/* the rules in force this round (and the lucky number) above the dice */
+function rulesStrip() {
+  var cur = H.curRules || [];
+  if (!cur.length) return '<div class="su" style="text-align:center">รอบ 1–3 ยังไม่มีกฎส่วนรวม</div>';
+  return '<div class="rcards">' + cur.map(function (id) { return rcard(id, "sm" + (H.round === 12 && id === H.special ? " sp" : "")); }).join("") +
+    (H.lucky != null ? '<div class="lucky">เลขนำโชค<b>' + H.lucky + "</b></div>" : "") + "</div>";
+}
+function voteHtml() {
+  var V = H.vote, res = V.res, voters = V.voters.map(byPid).filter(Boolean);
+  var cards = V.opts.map(function (id) {
+    var cls = res ? (id === res.win ? "win" : "lose") : "";
+    return rcard(id, cls, res ? '<div class="vt">' + res.tally[id] + " เสียง</div>" : "");
+  }).join("");
+  var note = res ? (res.how === "random" ? "ไม่มีใครโหวต ระบบสุ่มจาก 3 ข้อ" : res.how === "tie" ? "คะแนนเท่ากัน ข้อที่ได้รับโหวตก่อนชนะ" : "") :
+    "กลุ่มโหวต " + voters.length + " คน (อันดับครึ่งล่าง) โหวตแล้ว " + Object.keys(V.votes).length + " คน";
+  return '<div class="main" style="flex-direction:column;justify-content:center;gap:34px"><div class="rcards">' + cards + '</div><div class="su" style="text-align:center">' + note + "</div>" +
+    (res ? "" : '<div class="chips" style="justify-content:center">' + voters.map(function (p) { return '<span class="chip' + (V.votes[p.pid] ? " done" : "") + '" style="padding-right:20px;font-size:24px">' + (V.votes[p.pid] ? "✓ " : "") + esc(p.name) + "</span>"; }).join("") + "</div>") +
+    (H.rule && !res ? '<div class="su" style="text-align:center">กฎที่ชนะจะมาแทนกฎเดิม: ' + esc(RULE_T[H.rule]) + "</div>" : "") + "</div>";
+}
+function breakHtml() {
+  var n = H.players.length, done = H.players.filter(function (p) { return p.brkDone; }).length;
+  return '<div class="main" style="flex-direction:column;justify-content:center;align-items:center;gap:30px">' +
+    (H.special ? '<div class="s1">กฎพิเศษรอบสุดท้าย จะเพิ่มเข้ามาในรอบ 12 คู่กับกฎที่โหวตได้ก่อนรอบ 10</div><div class="rcards" style="width:900px">' + rcard(H.special, "sp") + "</div>" : '<div class="su">ปิดกฎพิเศษรอบสุดท้ายไว้</div>') +
+    '<div class="big2">' + done + " / " + n + '</div><div class="su">คนที่ตัดสินใจแล้ว (เปลี่ยนกฎส่วนตัวได้ 1 ครั้ง หรือใช้กฎเดิม)</div></div>';
 }
 function revealHtml() {
   var order = H.players.map(function (p, i) { return i; }).sort(function (a, b) { return H.players[b].acc - H.players[a].acc || a - b; });
@@ -729,7 +858,8 @@ function revealHtml() {
   }).join("");
   var s = H.room || {};
   return '<div class="main" style="flex-direction:column;gap:16px"><div class="stats"><span>ค่าเฉลี่ย <b>' + (Math.round(s.mean * 100) / 100) + "</b></span><span>ฐานนิยม <b>" + (s.mode && s.mode.length ? s.mode.join(", ") : "ไม่มี") +
-    "</b></span><span>มัธยฐาน <b>" + (s.median || []).join(" และ ") + "</b></span><span>" + (s.rr ? "<b>รอบนี้มีคนทอยใหม่</b>" : "รอบนี้ไม่มีใครทอยใหม่") + "</span></div>" +
+    "</b></span><span>มัธยฐาน <b>" + (s.median || []).join(" และ ") + "</b></span><span>" + (s.rr ? "<b>รอบนี้มีคนทอยใหม่</b>" : "รอบนี้ไม่มีใครทอยใหม่") + "</span>" +
+    ((H.curRules || []).length ? "<span>กฎ <b>" + H.curRules.map(function (id) { return esc(RULE_T[id]); }).join(" + ") + "</b></span>" : "") + (H.lucky != null ? "<span>เลขนำโชค <b>" + H.lucky + "</b></span>" : "") + "</div>" +
     '<div class="rv" style="grid-template-rows:repeat(' + rows + ', auto);grid-template-columns:repeat(' + cols + ',minmax(0,1fr))">' + rowsH + "</div></div>";
 }
 function endHtml() {
@@ -748,8 +878,10 @@ function cfgHtml() {
   var c = H.cfg;
   function row(k, label, small) { return "<label>" + label + '<input id="cf_' + k + '" class="' + (small ? "sm" : "") + '" value="' + esc(c[k]) + '"' + (small ? ' inputmode="numeric"' : "") + "></label>"; }
   return '<div class="ov"><div class="ovb"><div class="s2">ตั้งค่าห้อง</div>' + row("room", "ชื่อห้อง") + row("tBuild", "เวลาสร้างกฎก่อนเกม (วินาที)", 1) + row("tPick", "เวลาเลือกลูกเต๋า (วินาที)", 1) +
-    row("tRr", "เวลาตัดสินใจทอยใหม่ (วินาที)", 1) + row("tRev", "เวลาดูผลแต่ละรอบ (วินาที)", 1) +
-    '<div class="s1">ค่าอื่นของกติกา (กลุ่มโหวต, เพดานการเสียคะแนน, ค่า x ของภาษีสังคม, กฎพิเศษรอบสุดท้าย) จะเพิ่มในขั้นถัดไป</div>' +
+    row("tRr", "เวลาตัดสินใจทอยใหม่ (วินาที)", 1) + row("tRev", "เวลาดูผลแต่ละรอบ (วินาที)", 1) + row("tVote", "เวลาโหวตกฎส่วนรวม (วินาที)", 1) + row("tBreak", "เวลาพักครึ่ง (วินาที)", 1) +
+    '<label>กฎพิเศษรอบสุดท้าย (เพิ่มในรอบ 12)<input type="checkbox" class="ck" id="cf_special"' + (Number(c.special) ? " checked" : "") + "></label>" +
+    row("votePct", "กลุ่มโหวตและ Never Gonna Give You Up: % ของผู้เล่น (ปัดขึ้น)", 1) + row("voteCount", "หรือระบุเป็นจำนวนคน (0 = ใช้ %)", 1) +
+    row("cap", "เสียคะแนนจากขโมยและตัดหน้าได้สูงสุดต่อรอบ", 1) + row("crowdX", "ค่า x ของภาษีสังคม (0 = จำนวนผู้เล่น ÷ 5 ปัดขึ้น)", 1) +
     '<div style="display:flex;gap:16px;justify-content:flex-end"><button class="gb" data-h="cfgClose">ยกเลิก</button><button class="pb" data-h="cfgSave">บันทึก</button></div></div></div>';
 }
 
@@ -812,6 +944,8 @@ function pendDone() {
   if (a.a === "build") return P.st.phase !== "build" || (pr.cond === a.cond && pr.eff === a.eff);
   if (a.a === "pick") return P.st.phase !== "pick" || pr.die === a.die;
   if (a.a === "rr") return P.st.phase !== "reroll" || pr.rrDone || pr.rerolled;
+  if (a.a === "vote") return P.st.phase !== "vote" || !!pr.myVote;
+  if (a.a === "brk") return P.st.phase !== "break" || !!pr.brkDone;
   return true;
 }
 function resendPend() { if (P.pend && !pendDone()) sendSec(P.pend); else P.pend = null; }
@@ -834,6 +968,10 @@ var PACT = {
   cond: function (b) { P.sel.cond = b.dataset.v; if (P.sel.eff && LOL.buildCost(P.sel.cond, P.sel.eff) > 5) P.sel.eff = null; renderPlayer(true); },
   eff: function (b) { P.sel.eff = b.dataset.v; if (P.sel.cond && LOL.buildCost(P.sel.cond, P.sel.eff) > 5) P.sel.cond = null; renderPlayer(true); },
   build: function () { if (P.sel.cond && P.sel.eff && LOL.buildOk(P.sel.cond, P.sel.eff, { when: "start" })) { sendSec({ a: "build", cond: P.sel.cond, eff: P.sel.eff }); renderPlayer(true); } },
+  vsel: function (b) { P.vsel = b.dataset.v; renderPlayer(true); },
+  vote: function () { if (P.vsel) { sendSec({ a: "vote", opt: P.vsel }); renderPlayer(true); } },
+  bkeep: function () { sendSec({ a: "brk", keep: true }); renderPlayer(true); },
+  bsend: function () { if (P.sel.cond && P.sel.eff && breakOk(P.sel.cond, P.sel.eff)) { sendSec({ a: "brk", cond: P.sel.cond, eff: P.sel.eff }); renderPlayer(true); } },
   die: function (b) { sendSec({ a: "pick", die: b.dataset.v }); P.myPick = b.dataset.v; renderPlayer(true); },
   rr: function (b) { sendSec({ a: "rr", use: b.dataset.v === "1" }); P.myRr = b.dataset.v; renderPlayer(true); },
   reload: function () { location.reload(); }
@@ -861,6 +999,23 @@ function pTop(title, sub, timer) {
 function statusBar() {
   var st = P.st, me = myPub(); if (!me) return "";
   return '<div class="sbar"><span>' + esc(me.name) + "</span><span>คะแนนสะสม <b>" + num(me.acc) + "</b></span><span>อันดับ <b>" + me.rank + "</b>/" + st.n + "</span><span>ทอยใหม่ <b>" + (P.priv && P.priv.rrLeft ? "1" : "0") + "</b></span></div>";
+}
+/* at the break Compound Interest can only be kept, not newly picked */
+function breakOk(c, e) { var pr = P.priv || {}; return LOL.buildOk(c, e, { when: e === "interest" && pr.eff === "interest" ? "start" : "break" }); }
+/* common rules in force, lucky number and banned dice (public) */
+function rulesBoxP(st) {
+  var out = (st.cur || []).map(function (id) { return '<div class="crule"><b>กฎส่วนรวม' + (st.round === 12 && id === st.special ? "พิเศษ" : "") + ": " + esc(RULE_T[id]) + "</b><br>" + esc(ruleDesc(id, st.cx)) + "</div>"; });
+  if (st.lucky != null) out.push('<div class="crule"><b>เลขนำโชครอบนี้: ' + st.lucky + "</b></div>");
+  return out.join("");
+}
+function optList(kind, table, prices, when) {
+  var sel = P.sel, pr = P.priv || {};
+  return Object.keys(prices).map(function (k) {
+    var other = kind === "cond" ? sel.eff : sel.cond, cost = prices[k] + (other ? (kind === "cond" ? LOL.EFF[other] : LOL.COND[other]) : 0);
+    var on = sel[kind] === k, off = cost > 5 && !on;
+    if (kind === "eff" && k === "interest" && when === "break" && pr.eff !== "interest") off = true;
+    return '<button class="opt' + (on ? " on" : "") + '" data-p="' + kind + '" data-v="' + esc(k) + '"' + (off ? " disabled" : "") + '><span class="pr">' + prices[k] + '</span><span><span class="nm">' + esc(table[k][0]) + '</span><br><span class="ds">' + esc(table[k][1]) + "</span></span></button>";
+  }).join("");
 }
 function myPub() { var st = P.st; if (!st) return null; return st.players.filter(function (p) { return p.pid === P.pid; })[0] || null; }
 function ruleBox(pr) {
@@ -895,31 +1050,60 @@ function playerHtml() {
     if (!P.sel.cond && !P.sel.eff && pr.built) { P.sel.cond = pr.cond; P.sel.eff = pr.eff; }
     var sel = P.sel, used = (sel.cond ? LOL.COND[sel.cond] : 0) + (sel.eff ? LOL.EFF[sel.eff] : 0);
     var sent = pr.built ? '<div class="ok">✓ ส่งกฎแล้ว: ถ้า ' + esc(condName(pr.cond)) + " → " + esc(effName(pr.eff)) + " (เปลี่ยนได้จนหมดเวลา)</div>" : '<div class="muted">ยังไม่ได้ส่งกฎ ถ้าหมดเวลา ระบบสุ่มกฎให้</div>';
-    function optList(kind, table, prices) {
-      return Object.keys(prices).map(function (k) {
-        var other = kind === "cond" ? sel.eff : sel.cond, cost = prices[k] + (other ? (kind === "cond" ? LOL.EFF[other] : LOL.COND[other]) : 0);
-        var on = sel[kind] === k;
-        return '<button class="opt' + (on ? " on" : "") + '" data-p="' + kind + '" data-v="' + esc(k) + '"' + (cost > 5 && !on ? " disabled" : "") + '><span class="pr">' + prices[k] + '</span><span><span class="nm">' + esc(table[k][0]) + '</span><br><span class="ds">' + esc(table[k][1]) + "</span></span></button>";
-      }).join("");
-    }
     return h + pTop("สร้างกฎส่วนตัว", "เงื่อนไข 1 ข้อ + ผล 1 ข้อ ไม่เกิน 5 เหรียญ", true) +
       '<div class="pc budget"><div style="display:flex;justify-content:space-between;font-weight:700"><span>ใช้ไป ' + used + ' / 5 เหรียญ</span><span>' + (sel.cond && sel.eff ? "ครบแล้ว" : "เลือกให้ครบ") + "</span></div>" +
       '<div class="muted">ถ้า ' + (sel.cond ? esc(condName(sel.cond)) : "…") + " → " + (sel.eff ? esc(effName(sel.eff)) : "…") + "</div>" +
       '<button class="btn" data-p="build" style="width:100%;margin-top:8px"' + (sel.cond && sel.eff ? "" : " disabled") + ">ส่งกฎนี้</button></div>" + sent +
-      '<div class="pc"><div class="lbl">1. เงื่อนไข</div><div class="opts">' + optList("cond", COND_T, LOL.COND) + "</div></div>" +
-      '<div class="pc"><div class="lbl">2. ผล</div><div class="opts">' + optList("eff", EFF_T, LOL.EFF) + "</div></div>";
+      '<div class="pc"><div class="lbl">1. เงื่อนไข</div><div class="opts">' + optList("cond", COND_T, LOL.COND, "start") + "</div></div>" +
+      '<div class="pc"><div class="lbl">2. ผล</div><div class="opts">' + optList("eff", EFF_T, LOL.EFF, "start") + "</div></div>";
+  }
+  if (ph !== "break") P.brkInit = 0;
+  if (ph === "vote" || ph === "voted") {
+    var V = st.vote, voter = V.voters.indexOf(P.pid) >= 0, mv = pr.myVote || (P.pend && P.pend.a === "vote" ? P.pend.opt : null);
+    if (ph === "voted") {
+      return h + pTop("ผลโหวต", "กฎส่วนรวมรอบที่ " + V.round + "–" + (V.round + 2), true) + V.opts.map(function (id) {
+        return '<div class="vopt' + (id === V.res.win ? " on" : "") + '"><div class="nm">' + (id === V.res.win ? "✓ " : "") + esc(RULE_T[id]) + " (" + V.res.tally[id] + ' เสียง)</div><div class="ds">' + esc(ruleDesc(id, st.cx)) + "</div></div>";
+      }).join("") + (V.res.how === "random" ? '<div class="muted">ไม่มีใครโหวต ระบบสุ่ม</div>' : V.res.how === "tie" ? '<div class="muted">คะแนนเท่ากัน ข้อที่ได้รับโหวตก่อนชนะ</div>' : "");
+    }
+    var list = V.opts.map(function (id) {
+      var on = (mv || P.vsel) === id;
+      return '<button class="vopt' + (on ? " on" : "") + '" data-p="vsel" data-v="' + esc(id) + '"' + (!voter || mv ? " disabled" : "") + '><div class="nm">' + esc(RULE_T[id]) + '</div><div class="ds">' + esc(ruleDesc(id, st.cx)) + "</div></button>";
+    }).join("");
+    return h + pTop("โหวตกฎส่วนรวม", "ก่อนรอบที่ " + V.round + " (โหวตได้ 1 ครั้ง)", true) + list +
+      (!voter ? '<div class="muted">รอบนี้คุณไม่ได้อยู่ในกลุ่มโหวต (กลุ่มโหวต = อันดับครึ่งล่าง) รอผลโหวต</div>' :
+        mv ? '<div class="ok">✓ โหวต ' + esc(RULE_T[mv]) + " แล้ว" + (pr.myVote ? "" : " (กำลังส่ง…)") + "</div>" :
+        '<button class="btn" data-p="vote"' + (P.vsel ? "" : " disabled") + ">ยืนยันโหวต</button>") +
+      '<div class="muted">โหวตแล้ว ' + V.nv + " / " + V.voters.length + " คน</div>";
+  }
+  P.vsel = null;
+  if (ph === "break") {
+    if (P.brkInit !== st.round) { P.brkInit = st.round; P.sel = { cond: pr.cond, eff: pr.eff }; }
+    var spc = st.special ? '<div class="crule"><b>กฎพิเศษรอบสุดท้าย (เพิ่มในรอบ 12): ' + esc(RULE_T[st.special]) + "</b><br>" + esc(ruleDesc(st.special, st.cx)) + "</div>" : "";
+    if (pr.brkDone || (P.pend && P.pend.a === "brk")) {
+      return h + pTop("พักครึ่ง", "รอทุกคนตัดสินใจ", true) + spc + ruleBox(pr) +
+        '<div class="ok">' + (pr.brkDone ? (pr.brkChanged ? "✓ เปลี่ยนกฎแล้ว" : "✓ ใช้กฎเดิม") : "กำลังส่ง…") + "</div><div class=\"muted\">ตัดสินใจแล้ว " + (st.cnt.brk || 0) + " / " + st.n + " คน</div>";
+    }
+    var bs = P.sel, bOk = bs.cond && bs.eff && breakOk(bs.cond, bs.eff), same = bs.cond === pr.cond && bs.eff === pr.eff;
+    return h + pTop("พักครึ่ง", "เปลี่ยนกฎส่วนตัวได้ 1 ครั้ง ไม่เลือกถือว่าใช้กฎเดิม", true) + spc + ruleBox(pr) +
+      '<button class="btn alt" data-p="bkeep">ใช้กฎเดิม</button>' +
+      '<div class="pc budget"><div style="display:flex;justify-content:space-between;font-weight:700"><span>กฎใหม่ ใช้ไป ' + ((bs.cond ? LOL.COND[bs.cond] : 0) + (bs.eff ? LOL.EFF[bs.eff] : 0)) + ' / 5 เหรียญ</span></div>' +
+      '<div class="muted">ถ้า ' + (bs.cond ? esc(condName(bs.cond)) : "…") + " → " + (bs.eff ? esc(effName(bs.eff)) : "…") + "</div>" +
+      '<button class="btn" data-p="bsend" style="width:100%;margin-top:8px"' + (bOk && !same ? "" : " disabled") + ">เปลี่ยนเป็นกฎนี้ (ครั้งเดียว)</button></div>" +
+      '<div class="pc"><div class="lbl">1. เงื่อนไข</div><div class="opts">' + optList("cond", COND_T, LOL.COND, "break") + "</div></div>" +
+      '<div class="pc"><div class="lbl">2. ผล</div><div class="opts">' + optList("eff", EFF_T, LOL.EFF, "break") + "</div></div>";
   }
   var rt = "รอบที่ " + st.round + " / 12" + (st.round === 12 ? " คะแนน ×2" : "");
   if (ph === "pick") {
     var mine = P.pend && P.pend.a === "pick" ? P.pend.die : pr.die;
-    return h + pTop(rt, "เลือกลูกเต๋า (เปลี่ยนได้จนหมดเวลา)", true) + ruleBox(pr) +
-      '<div class="dice">' + LOL.DIE_IDS.map(function (d) { return '<button class="die' + (mine === d ? " on" : "") + '" data-p="die" data-v="' + d + '"><div class="n">' + DIE_T[d] + '</div><div class="f">' + facesOf(d) + "</div></button>"; }).join("") + "</div>" +
+    var ban = st.banned || [];
+    return h + pTop(rt, "เลือกลูกเต๋า (เปลี่ยนได้จนหมดเวลา)", true) + ruleBox(pr) + rulesBoxP(st) +
+      '<div class="dice">' + LOL.DIE_IDS.map(function (d) { var b = ban.indexOf(d) >= 0; return '<button class="die' + (mine === d ? " on" : "") + '" data-p="die" data-v="' + d + '"' + (b ? " disabled" : "") + '><div class="n">' + DIE_T[d] + '</div><div class="f">' + (b ? "ห้ามใช้รอบนี้" : facesOf(d)) + "</div></button>"; }).join("") + "</div>" +
       (mine ? '<div class="ok">✓ เลือก ' + DIE_T[mine] + " แล้ว</div>" : P.pend && P.pend.a === "pick" ? '<div class="muted">กำลังส่ง…</div>' : '<div class="muted">ไม่เลือกภายในเวลา ระบบใช้ลูกเดิมจากรอบก่อน (รอบแรกสุ่มให้)</div>') +
       '<div class="muted">เลือกแล้ว ' + st.cnt.picked + " / " + st.n + " คน</div>";
   }
   if (ph === "reroll") {
     var canRr = pr.rrLeft && !pr.rrDone && !pr.rerolled;
-    return h + pTop(rt, "ผลทอยของคุณ (คนอื่นยังไม่เห็น)", true) + ruleBox(pr) +
+    return h + pTop(rt, "ผลทอยของคุณ (คนอื่นยังไม่เห็น)", true) + ruleBox(pr) + rulesBoxP(st) +
       '<div class="pc"><div class="muted" style="text-align:center">' + DIE_T[pr.die] + '</div><div class="roll">' + pr.x + "</div>" +
       (pr.rerolled ? '<div class="ok" style="text-align:center">ทอยใหม่แล้ว ผลนี้คือผลจริงของรอบนี้</div>' : "") + "</div>" +
       (canRr ? '<div class="muted">คุณมีสิทธิ์ทอยใหม่ 1 ครั้งต่อเกม ทอยใหม่แล้วต้องใช้ผลใหม่</div><div class="dice"><button class="btn" data-p="rr" data-v="1">ทอยใหม่</button><button class="btn alt" data-p="rr" data-v="0">ใช้ผลนี้</button></div>' + (P.pend && P.pend.a === "rr" ? '<div class="muted">กำลังส่ง…</div>' : "")
@@ -927,7 +1111,7 @@ function playerHtml() {
   }
   if (ph === "reveal") {
     var d = pr.det || {}, rv = st.rev || [], mi = me.idx, my = rv[mi] || {};
-    return h + pTop("ผลรอบที่ " + st.round, st.round < 12 ? "รอบถัดไปเริ่มเอง" : "รอดูผลสุดท้าย", true) + ruleBox(pr) +
+    return h + pTop("ผลรอบที่ " + st.round, st.round < 12 ? "รอบถัดไปเริ่มเอง" : "รอดูผลสุดท้าย", true) + ruleBox(pr) + rulesBoxP(st) +
       '<div class="pc"><div style="display:flex;justify-content:space-between;align-items:center"><span>' + DIE_T[my.die] + " ทอยได้ <b style=\"font-size:1.6rem\">" + my.x + '</b></span><span style="font-family:Prompt,sans-serif;font-weight:700;font-size:1.8rem">' + sign(d.rp || 0) + "</span></div>" +
       '<div class="steps" style="margin-top:8px">' + stepsHtml(d) + "</div>" +
       '<div style="margin-top:10px;font-weight:700">คะแนนสะสม ' + num(d.acc0) + " → " + num(d.acc) + " อันดับ " + me.rank + " จาก " + st.n + "</div></div>" +

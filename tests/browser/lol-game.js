@@ -3,6 +3,9 @@
 "use strict";
 const { chromium } = require("playwright");
 const BASE = "http://localhost:8765/logic-over-luck/";
+/* LOL_FORCE=ban,lucky,crowded,robin : after each vote is checked, set the rule of rounds 4, 7, 10 and the special rule to these
+   (so the rules that a random vote may skip get tested too) */
+const FORCE = process.env.LOL_FORCE ? process.env.LOL_FORCE.split(",") : null;
 let fails = 0;
 function ok(cond, msg) { console.log((cond ? "ผ่าน  " : "ไม่ผ่าน ") + msg); if (!cond) fails++; }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -17,7 +20,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const host = await ctx.newPage(); watch(host, "host");
   await host.setViewportSize({ width: 1920, height: 1080 });
   await host.goto(BASE);
-  await host.evaluate(() => { localStorage.clear(); localStorage.setItem("lol-cfg", JSON.stringify({ room: "ทดสอบ", tBuild: 12, tPick: 6, tRr: 5, tRev: 3 })); });
+  await host.evaluate(() => { localStorage.clear(); localStorage.setItem("lol-cfg", JSON.stringify({ room: "ทดสอบ", tBuild: 12, tPick: 6, tRr: 5, tRev: 3, tVote: 8, tBreak: 10, special: 1, votePct: 50, voteCount: 0, cap: 3, crowdX: 0 })); });
   await host.goto(BASE + "?test#host");
   await host.waitForFunction(() => window.H && H.code);
   const code = await host.evaluate(() => H.code);
@@ -82,13 +85,64 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   let rerolledOnce = false, checks = { roll: 0, total: 0, replay: 0 };
   const L = require(__dirname + "/../../logic-over-luck/engine.js");
   let mine = null;   /* independent replay of every round from the Host's own data */
+  const ruleLog = [];
   for (let t = 1; t <= 12; t++) {
+    if (t === 7) {   /* mid-game break: phone 0 changes its rule, phone 1 keeps it, phone 2 does nothing */
+      await host.waitForFunction(() => H.phase === "break", null, { timeout: 40000 });
+      const sp = await host.evaluate(() => H.special);
+      ok(!!sp, "พักครึ่ง เปิดกฎพิเศษรอบสุดท้าย: " + sp);
+      if (FORCE) await host.evaluate((r) => { H.special = r; }, FORCE[3]);
+      await phones[0].bringToFront(); await phones[0].waitForSelector("[data-p=bkeep]", { timeout: 15000 });
+      await host.evaluate(() => HACT.pause());
+      await host.screenshot({ path: "/tmp/lol_h_break.png" }); await phones[0].screenshot({ path: "/tmp/lol_p0_break.png" });
+      await host.evaluate(() => HACT.pause());
+      ok(await phones[0].locator('[data-p=eff][data-v="interest"]').isDisabled(), "พักครึ่ง เลือกดอกเบี้ยทบต้นใหม่ไม่ได้");
+      await phones[0].click('[data-p=cond][data-v="odd"]'); await phones[0].click('[data-p=eff][data-v="+2"]'); await phones[0].click("[data-p=bsend]");
+      await phones[1].bringToFront(); await phones[1].waitForSelector("[data-p=bkeep]", { timeout: 15000 }); await phones[1].click("[data-p=bkeep]");
+      await phones[0].waitForSelector("text=เปลี่ยนกฎแล้ว", { timeout: 15000 });
+      await host.waitForFunction(() => H.phase === "vote", null, { timeout: 30000 });
+      const r = await host.evaluate(() => H.players.slice(0, 3).map((p) => [p.cond, p.eff, p.brkChanged]));
+      ok(r[0][0] === "odd" && r[0][1] === "+2" && r[0][2] && r[1][0] === "notrep" && !r[1][2] && !r[2][2], "พักครึ่ง: เปลี่ยนกฎ/ใช้กฎเดิม/ไม่ตัดสินใจ ได้ผลถูก");
+    }
+    if (t === 4 || t === 7 || t === 10) {   /* vote: every phone in the voting group votes for its first option */
+      await host.waitForFunction((tt) => H.phase === "vote" && H.vote.round === tt, t, { timeout: 40000 });
+      const vi = await host.evaluate(() => ({ voters: H.vote.voters, opts: H.vote.opts, rule: H.rule, special: H.special, grp: LOL.votingGroup(H.players.map((p) => p.acc), engCfg()).map((i) => H.players[i].pid) }));
+      ok(JSON.stringify(vi.voters) === JSON.stringify(vi.grp) && vi.opts.length === 3 && new Set(vi.opts).size === 3 && vi.opts.indexOf(vi.rule) < 0 && vi.opts.indexOf(vi.special) < 0,
+        "โหวตก่อนรอบ " + t + ": กลุ่มโหวต " + vi.voters.length + " คน ตัวเลือก 3 ข้อไม่ซ้ำและไม่ใช่กฎที่ใช้อยู่/กฎพิเศษ");
+      const myPids = await host.evaluate(() => H.players.slice(0, 3).map((p) => p.pid));
+      if (t === 4) { await host.evaluate(() => HACT.pause()); await host.screenshot({ path: "/tmp/lol_h_vote.png" }); for (let i = 0; i < 3; i++) await phones[i].screenshot({ path: "/tmp/lol_p" + i + "_vote.png" }); await host.evaluate(() => HACT.pause()); }
+      for (let i = 0; i < 3; i++) {
+        if (vi.voters.indexOf(myPids[i]) < 0) continue;
+        const p = phones[i]; await p.bringToFront();
+        await p.waitForSelector("[data-p=vsel]:not([disabled])", { timeout: 15000 });
+        await p.locator("[data-p=vsel]").first().click(); await p.click("[data-p=vote]");
+        await p.waitForSelector("text=โหวต", { timeout: 10000 });
+      }
+      await host.waitForFunction(() => H.phase === "voted", null, { timeout: 30000 });
+      if (t === 4) { await host.evaluate(() => HACT.pause()); await host.screenshot({ path: "/tmp/lol_h_voted.png" }); await host.evaluate(() => HACT.pause()); }
+      const vr = await host.evaluate(() => ({ res: H.vote.res, rule: H.rule, n: Object.keys(H.vote.votes).length, list: Object.keys(H.vote.votes).map((k) => ({ opt: H.vote.votes[k][0], t: H.vote.votes[k][1] })), opts: H.vote.opts }));
+      const again = L.voteWinner(vr.opts, vr.list);
+      ok(vr.rule === vr.res.win && (vr.res.how === "random" || again.win === vr.rule) && Object.values(vr.res.tally).reduce((a, b) => a + b, 0) === vr.n, "ผลโหวต " + vr.rule + " (" + vr.res.how + ") ตรงกับการนับใหม่");
+      if (FORCE) await host.evaluate((r) => { H.rule = r; }, FORCE[[4, 7, 10].indexOf(t)]);
+      ruleLog.push(FORCE ? FORCE[[4, 7, 10].indexOf(t)] : vr.rule);
+    }
     await host.waitForFunction((tt) => H.round === tt && H.phase === "pick", t, { timeout: 40000 });
+    const rinfo = await host.evaluate(() => ({ cur: H.curRules, banned: H.banned, lucky: H.lucky, rule: H.rule, special: H.special }));
+    if (t <= 3) ok(rinfo.cur.length === 0, "รอบ " + t + " ไม่มีกฎส่วนรวม");
+    else if (t < 12) ok(JSON.stringify(rinfo.cur) === JSON.stringify([rinfo.rule]), "รอบ " + t + " ใช้กฎที่โหวต " + rinfo.cur);
+    else ok(JSON.stringify(rinfo.cur) === JSON.stringify([rinfo.rule, rinfo.special]), "รอบ 12 ใช้ 2 กฎ: " + rinfo.cur);
+    if (rinfo.cur.indexOf("lucky") >= 0) ok(rinfo.lucky >= 1 && rinfo.lucky <= 7, "เลขนำโชครอบ " + t + " = " + rinfo.lucky); else ok(rinfo.lucky === null, "ไม่มีเลขนำโชคเมื่อกฎไม่ใช้");
+    if (t === 12) { await host.evaluate(() => HACT.pause()); await host.screenshot({ path: "/tmp/lol_h_r12.png" }); await phones[0].screenshot({ path: "/tmp/lol_p0_r12.png", fullPage: true }); await host.evaluate(() => HACT.pause()); }
+    if (rinfo.banned.length) {
+      await phones[0].bringToFront(); await phones[0].waitForSelector(".die", { timeout: 15000 });
+      ok(await phones[0].locator(`[data-p=die][data-v="${rinfo.banned[0]}"]`).isDisabled(), "ลูกเต๋าต้องห้าม " + rinfo.banned + " กดไม่ได้บนมือถือ");
+    }
     for (let i = 0; i < 3; i++) {
       if (i === 2 && t % 3 === 0) continue;   /* phone 2 sometimes misses the pick: keeps last die */
       const p = phones[i]; await p.bringToFront();
       await p.waitForSelector(".die", { timeout: 15000 });
-      await p.click(`[data-p=die][data-v="${dice[(i + t) % 4]}"]`);
+      const allowed = dice.filter((d) => rinfo.banned.indexOf(d) < 0);
+      await p.click(`[data-p=die][data-v="${allowed[(i + t) % allowed.length]}"]`);
       if (t === 1 && i === 0) await p.screenshot({ path: "/tmp/lol_p0_pick.png" });
     }
     await host.waitForFunction(() => H.phase === "reroll" || H.phase === "reveal", null, { timeout: 30000 });
@@ -107,10 +161,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     }
     await host.waitForFunction(() => H.phase === "reveal", null, { timeout: 30000 });
     if (t === 1) await host.evaluate(() => HACT.pause());   /* hold the reveal while taking pictures */
-    const snap = await host.evaluate(() => H.players.map((p) => ({ die: p.prevDie, x: p.prevX, rerolled: p.rerolled, cond: p.cond, eff: p.eff, reff: p.reff, acc: p.acc, rp: p.rp })));
+    const snap = await host.evaluate(() => H.players.map((p) => ({ die: p.prevDie, x: p.prevX, rerolled: p.rerolled, cond: p.cond, eff: p.eff, reff: p.reff, acc: p.acc, rp: p.rp, tie: p.tie })));
+    const env = await host.evaluate(() => ({ rules: H.curRules, banned: H.banned, lucky: H.lucky, cfg: engCfg() }));
+    if (env.banned.length) ok(snap.every((q) => env.banned.indexOf(q.die) < 0), "รอบ " + t + " ไม่มีใครใช้ลูกเต๋าต้องห้าม");
     if (!mine) mine = snap.map(() => ({ acc: 0, prevX: null, next6: false, hist: [] }));
-    const res = L.scoreRound({ round: t, final: t === 12, rules: [], banned: [], lucky: null, players: snap.map((q, k) => ({ die: q.die, x: q.x, rerolled: q.rerolled, cond: q.cond,
-      eff: q.eff === "random" ? q.reff : q.eff, acc: mine[k].acc, prevX: mine[k].prevX, next6: mine[k].next6, hist: mine[k].hist.slice(), tie: 0 })) });
+    const res = L.scoreRound({ round: t, final: t === 12, rules: env.rules.map((id) => ({ id: id, scope: null })), banned: env.banned, lucky: env.lucky, cfg: env.cfg,
+      players: snap.map((q, k) => ({ die: q.die, x: q.x, rerolled: q.rerolled, cond: q.cond,
+      eff: q.eff === "random" ? q.reff : q.eff, acc: mine[k].acc, prevX: mine[k].prevX, next6: mine[k].next6, hist: mine[k].hist.slice(), tie: q.tie })) });
     snap.forEach((q, k) => { mine[k].acc = res.acc[k]; mine[k].prevX = q.x; mine[k].next6 = res.players[k].next6Next; mine[k].hist.push(res.roundPts[k]); });
     if (JSON.stringify(res.acc) === JSON.stringify(snap.map((q) => q.acc))) checks.replay++; else console.log("รอบ", t, "คิดใหม่", JSON.stringify(res.acc), "จอใหญ่", JSON.stringify(snap.map((q) => q.acc)));
     if (t === 1) for (let i = 0; i < 3; i++) await phones[i].screenshot({ path: "/tmp/lol_p" + i + "_reveal.png", fullPage: true });
@@ -137,6 +194,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       ok(true, "รีโหลดมือถือกลางเกม กลับเข้าห้องเดิม");
     }
   }
+  console.log("กฎที่โหวตได้: " + ruleLog.join(", "));
   ok(checks.replay === 12, "คิดคะแนนใหม่แยกต่างหากจากข้อมูลจริงของจอใหญ่ ตรงกันทุกรอบ (" + checks.replay + "/12)");
   ok(checks.total === 36, "คะแนนสะสมบนมือถือตรงจอใหญ่ทุกรอบ (" + checks.total + " ครั้ง)");
   await host.waitForFunction(() => H.phase === "end", null, { timeout: 30000 });
@@ -158,7 +216,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const leakP = fromPhones.filter((m) => m.type === "sec" && (m.die || m.cond || m.eff || m.use !== undefined));
   ok(leakP.length === 0, "ข้อความ sec จากมือถือไม่มีข้อมูลเปิด");
   const states = log.filter((m) => m.type === "state");
-  const secretWords = /"(cond|eff|reff|die|x|rerolled|rrLeft|rrDone|det)":/;
+  const voteStates = states.filter((m) => m.vote && m.phase === "vote");
+  ok(voteStates.length > 0 && voteStates.every((m) => !m.vote.res), "ระหว่างโหวต สถานะบอกแค่จำนวนคนโหวต ไม่บอกคะแนน");
+  const secretWords = /"(cond|eff|reff|die|x|rerolled|rrLeft|rrDone|det|votes|myVote|brkChanged)":/;
   const leakS = states.filter((m) => { const c = Object.assign({}, m); delete c.sec; delete c.rev; delete c.hpub; return secretWords.test(JSON.stringify(c)); });
   if (leakS.length) console.log("พบ", JSON.stringify(leakS[0]).match(secretWords));
   ok(states.every((m) => Object.keys(m.hpub || {}).sort().join() === "crv,kty,x,y"), "hpub มีแค่กุญแจสาธารณะ (crv, kty, x, y) ไม่มีกุญแจลับ d");

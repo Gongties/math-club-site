@@ -283,12 +283,32 @@
     idx.forEach(function (p, k) { place[p] = k && cmp(idx[k - 1], p) === 0 ? place[idx[k - 1]] : k + 1; });
     return place;
   }
+  /* ---------- common-rule vote (before rounds 4, 7, 10) ----------
+     options: 3 rules drawn from those not excluded (the rule active now and the final-round special rule) */
+  function voteOptions(exclude, rnd) {
+    rnd = rnd || Math.random;
+    var pool = RULES.filter(function (r) { return !has(exclude || [], r); }), out = [];
+    while (out.length < 3 && pool.length) out.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
+    return out;
+  }
+  /* votes: [{ opt, t }] (t = when the vote arrived). Most votes wins; tied options: the one that got a vote earliest;
+     nobody voted: random. Returns { win, tally: {opt: count}, how: "votes" | "tie" | "random" } */
+  function voteWinner(opts, votes, rnd) {
+    var tally = {}, first = {};
+    opts.forEach(function (o) { tally[o] = 0; first[o] = Infinity; });
+    (votes || []).forEach(function (v) { if (!(v.opt in tally)) return; tally[v.opt]++; if (v.t < first[v.opt]) first[v.opt] = v.t; });
+    var mx = Math.max.apply(null, opts.map(function (o) { return tally[o]; }));
+    if (!mx) return { win: opts[Math.floor((rnd || Math.random)() * opts.length)], tally: tally, how: "random" };
+    var tied = opts.filter(function (o) { return tally[o] === mx; });
+    tied.sort(function (a, b) { return first[a] - first[b]; });
+    return { win: tied[0], tally: tally, how: tied.length > 1 ? "tie" : "votes" };
+  }
   function drawRandomEffect(rnd) { return RANDOM_POOL[Math.floor((rnd || Math.random)() * RANDOM_POOL.length)]; }
   function drawLucky(rnd) { return 1 + Math.floor((rnd || Math.random)() * 7); }
 
   var api = { DICE: DICE, DIE_IDS: DIE_IDS, COND: COND, EFF: EFF, RULES: RULES, RANDOM_POOL: RANDOM_POOL, DEFAULTS: DEFAULTS,
     modeOf: modeOf, medianHits: medianHits, votingGroup: votingGroup, bannedDice: bannedDice, leadersFor: leadersFor,
     buildCost: buildCost, buildOk: buildOk, scoreRound: scoreRound, sigmaLords: sigmaLords, applyFanum: applyFanum,
-    finalPlaces: finalPlaces, drawRandomEffect: drawRandomEffect, drawLucky: drawLucky };
+    finalPlaces: finalPlaces, voteOptions: voteOptions, voteWinner: voteWinner, drawRandomEffect: drawRandomEffect, drawLucky: drawLucky };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.LOL = api;
 })(this);

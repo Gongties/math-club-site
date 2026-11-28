@@ -585,6 +585,47 @@ body.ani .endov.tape .rew { animation: rewb 1s steps(1, end) infinite; }
 .ttab td.tn { text-align: left; white-space: nowrap; } .ttab td.tw { background: #1F5A3E; color: #5BD98F; font-weight: 700; box-shadow: 0 0 16px rgba(91, 217, 143, .5); }
 .ttab td:last-child { background: transparent; }
 .tpl { display: inline-block; font-family: Prompt, sans-serif; font-weight: 700; color: #0E1326; background: #FFD84D; border-radius: 99px; padding: 4px 18px; white-space: nowrap; }
+/* ---------- batch 6 ---------- */
+.a-flipin, .a-rslot, .a-rstrip, .a-lucky, .a-wglow, .a-barw, .a-flipbig { animation-delay: calc(var(--d, 0ms) - var(--el, 0ms)); animation-fill-mode: both; }
+.rcard { position: relative; overflow: hidden; }
+body.ani .a-flipin { animation-name: flipin; animation-duration: .7s; animation-timing-function: cubic-bezier(.3, 1.2, .5, 1); }
+@keyframes flipin { 0% { transform: perspective(800px) rotateY(90deg) scale(1.2); box-shadow: 0 0 0 rgba(255, 216, 77, 0); } 60% { transform: perspective(800px) rotateY(-10deg) scale(1.05); box-shadow: 0 0 40px rgba(255, 216, 77, .8); } 100% { transform: none; } }
+.rslot { position: absolute; left: 0; right: 0; top: 0; height: 58px; padding: 12px 20px 0; overflow: hidden; background: #232C50; opacity: 0; visibility: hidden; z-index: 2; }
+body.ani .a-rslot { animation-name: rslot; animation-duration: 1.6s; }
+@keyframes rslot { 0%, 92% { opacity: 1; visibility: visible; } 100% { opacity: 0; visibility: hidden; } }
+.rstrip b { display: block; height: 46px; font-family: Prompt, sans-serif; font-size: 30px; line-height: 46px; white-space: nowrap; color: #FFD84D; }
+.rstrip { transform: translateY(-414px); }
+body.ani .a-rstrip { animation-name: rstrip; animation-duration: 1.5s; animation-timing-function: cubic-bezier(.2, .7, .3, 1); }
+@keyframes rstrip { from { transform: none; } to { transform: translateY(-414px); } }   /* 9 names then the rule: 9 x 46 px */
+.lreel { display: block; height: 64px; overflow: hidden; }
+.lstrip { display: flex; flex-direction: column; transform: translateY(var(--to)); }
+.lstrip i { display: block; height: 64px; font-style: normal; font-size: 64px; line-height: 64px; text-align: center; }
+body.ani .a-lucky { animation-name: lreel; animation-duration: 1.3s; animation-timing-function: cubic-bezier(.2, .7, .3, 1.05); }
+@keyframes lreel { from { transform: none; } to { transform: translateY(var(--to)); } }
+.lucky .lnum { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.vbar { height: 16px; border-radius: 8px; background: #171E38; margin-top: 8px; overflow: hidden; } .vbar i { display: block; height: 100%; background: #FFD84D; border-radius: 8px; transform-origin: 0 50%; }
+body.ani .a-barw { animation-name: barw; animation-duration: .8s; animation-timing-function: cubic-bezier(.3, .7, .3, 1); }
+@keyframes barw { from { transform: scaleX(0); } to { transform: none; } }
+body.ani .a-wglow { animation-name: wglow; animation-duration: 1s; }
+@keyframes wglow { 0% { transform: none; box-shadow: none; } 40% { transform: scale(1.08); box-shadow: 0 0 60px rgba(255, 216, 77, .9); } 100% { transform: scale(1.03); box-shadow: 0 0 30px rgba(255, 216, 77, .6); } }
+.rcard.win { transform: scale(1.03); box-shadow: 0 0 30px rgba(255, 216, 77, .6); }
+body.ani .a-flipbig { animation-name: flipbig; animation-duration: 1s; animation-timing-function: cubic-bezier(.3, 1.2, .5, 1); }
+@keyframes flipbig { 0% { opacity: 0; transform: perspective(900px) rotateY(180deg) scale(.4); } 60% { opacity: 1; transform: perspective(900px) rotateY(-12deg) scale(1.08); } 100% { opacity: 1; transform: none; } }
+.ldice { display: flex; gap: 14px; justify-content: center; } .ldice i { width: 44px; height: 44px; border-radius: 10px; border: 3px solid #2B3560; }
+.ldice i.dz-std { background: #F4F1E8; } .ldice i.dz-con { background: #1E7A4C; } .ldice i.dz-risk { background: #6A1018; border-color: #FF4D3D; } .ldice i.dz-prime { background: #8E5BFF; }
+body.ani .ldice i { animation: ldice 2.8s ease-in-out infinite; }
+@keyframes ldice { 0%, 100% { transform: translateY(0) rotate(-8deg); } 50% { transform: translateY(-14px) rotate(10deg); } }
+.rr.lead { border-color: #FFD84D; box-shadow: inset 6px 0 0 #FFD84D; }
+.subok { width: 120px; height: 120px; border-radius: 50%; background: #2E9E6B; color: #fff; font-size: 80px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: 0 0 40px rgba(91, 217, 143, .6); }
+.rulei { display: flex; gap: 10px; align-items: flex-start; } .ric { font-size: 1.8rem; line-height: 1; flex: none; display: inline-block; }
+body.ani .ric { animation: ric 2.4s ease-in-out infinite; }
+body.ani .ri-interest { animation-name: coin; } body.ani .ri-next6 { animation-name: gift; } body.ani .ri-shield { animation-name: shieldp; } body.ani .ri-random { animation-name: dice6; }
+@keyframes ric { 0%, 100% { transform: none; } 50% { transform: scale(1.12); } }
+@keyframes coin { 0%, 100% { transform: rotateY(0); } 50% { transform: rotateY(180deg) translateY(-3px); } }
+@keyframes gift { 0%, 80%, 100% { transform: none; } 85% { transform: rotate(-12deg); } 90% { transform: rotate(10deg); } 95% { transform: rotate(-6deg); } }
+@keyframes shieldp { 0%, 100% { filter: none; } 50% { filter: drop-shadow(0 0 6px #4DD8FF); } }
+@keyframes dice6 { 0%, 70%, 100% { transform: none; } 80% { transform: rotate(180deg); } 90% { transform: rotate(360deg); } }
+.opt { transition: transform .15s, box-shadow .15s; } .opt.on { transform: translateX(4px); box-shadow: 3px 3px 0 #14213D; }
 /* banned dice: police tape (11.2) */
 .dref .d.ban::before, .die.bn::before { content: "ห้ามใช้ ห้ามใช้ ห้ามใช้ ห้ามใช้"; position: absolute; left: -20%; right: -20%; top: 42%; z-index: 3; transform: rotate(-12deg); background: repeating-linear-gradient(45deg, #FFD84D 0 18px, #14213D 18px 36px);
   color: transparent; height: 30px; overflow: hidden; box-shadow: 0 3px 8px rgba(0, 0, 0, .4); }
@@ -612,7 +653,7 @@ body.ani .a-old { animation-name: oldx; animation-duration: .6s; }
 <div id="app"></div>
 <div id="netb" aria-hidden="true"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/logic-over-luck/engine.js?v=2026112814"></script>
+<script src="/logic-over-luck/engine.js?v=2026112815"></script>
 <script>
 "use strict";
 /* Logic over Luck (Rules Race: Math Club Edition v5). Big screen (#host) + phones (#join=CODE).
@@ -622,14 +663,14 @@ body.ani .a-old { animation-name: oldx; animation-duration: .6s; }
    each phone and the Host make an ECDH P-256 key pair, the shared AES-GCM key is never sent. */
 
 /* page version: RAISE THIS NUMBER (and the ?v= of engine.js above) EVERY TIME THIS FOLDER CHANGES (YYYYMMDD + 2 digits) */
-var LOL_V = 2026112814;
+var LOL_V = 2026112815;
 
 /* ---------- animation and sound (step 8; ideas: claude/logic-over-luck-animation-ideas.md) ----------
    An animated element carries data-t0 = when its scene started (ms). After every redraw aniSync() sets --el = the time already
    spent in that scene, so the CSS animation continues instead of restarting, and a scene that started long ago (page reloaded,
    teacher pressed "ข้ามภาพ") shows its end state at once. Nothing here sends a message. */
 var RM = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-var ANI = { skipAt: 0, sndKey: null, bump: {} };
+var ANI = { skipAt: 0, sndKey: null, bump: {}, seen: {} };
 function aniSet(on) { document.body.classList.toggle("ani", !!on && !RM); }
 function aniCfg() { return !!H && Number(H.cfg.anim) !== 0; }
 function aniOn() { return document.body.classList.contains("ani"); }
@@ -1737,9 +1778,9 @@ function renderHost() {
   var h = "", ph = H.phase, n = H.players.length;
   if (ph === "lobby") {
     var cs = n > 30 ? "font-size:21px;padding:3px 6px 3px 14px" : n > 20 ? "font-size:24px" : "";
-    var chips = H.players.map(function (p) { var k = HV.kill === p.pid; return '<span class="chip' + (k ? " kill" : "") + '" style="' + cs + '">' + avP(p, n > 30 ? 30 : n > 20 ? 36 : 44) + (p.bot ? "🤖 " : "") + esc(p.name) + (p.sid ? ' <span style="color:#5BD98F" title="นับคะแนนชมรม">✓</span>' : "") + '<button class="kx" data-h="kick" data-p="' + esc(p.pid) + '" aria-label="ลบ ' + esc(p.name) + '">' + (k ? "ลบ?" : "✕") + "</button></span>"; }).join("");
+    var chips = H.players.map(function (p) { var k = HV.kill === p.pid, nw = !ANI.seen[p.pid]; ANI.seen[p.pid] = 1; return '<span class="chip' + (k ? " kill" : "") + (nw ? ' a-pop" data-t0="' + Date.now() : "") + '" style="' + cs + '">' + avP(p, n > 30 ? 30 : n > 20 ? 36 : 44) + (p.bot ? "🤖 " : "") + esc(p.name) + (p.sid ? ' <span style="color:#5BD98F" title="นับคะแนนชมรม">✓</span>' : "") + '<button class="kx" data-h="kick" data-p="' + esc(p.pid) + '" aria-label="ลบ ' + esc(p.name) + '">' + (k ? "ลบ?" : "✕") + "</button></span>"; }).join("");
     h = hdr("รอผู้เล่นเข้าห้อง", "สแกน QR หรือเปิดลิงก์แล้วใส่รหัสห้อง") +
-      '<div class="lob"><div class="card" style="display:flex;flex-direction:column;gap:20px;align-items:center;justify-content:center"><div class="s1">รหัสห้อง</div><div class="code">' + esc(H.code) + '</div><div class="qr">' + lobbyQr() + '</div><div class="url">' + esc(location.host + "/logic-over-luck/") + "</div></div>" +
+      '<div class="lob"><div class="card" style="display:flex;flex-direction:column;gap:20px;align-items:center;justify-content:center"><div class="s1">รหัสห้อง</div><div class="code">' + esc(H.code) + '</div><div class="qr">' + lobbyQr() + '</div><div class="url">' + esc(location.host + "/logic-over-luck/") + '</div><div class="ldice">' + LOL.DIE_IDS.map(function (d, k) { return '<i class="' + DIE_CLS[d] + '" style="animation-delay:-' + (k * .7) + 's"></i>'; }).join("") + "</div></div>" +
       '<div class="card" style="display:flex;flex-direction:column;gap:20px;min-height:0"><div style="display:flex;justify-content:space-between;align-items:baseline"><div class="s2">ผู้เล่น ' + n + ' คน</div><div class="s1">เริ่มคนละ ' + esc(H.cfg.start) + " คะแนน, เวลาสร้างกฎ " + H.cfg.tBuild + " วินาที, เลือกเต๋า " + H.cfg.tPick + " วินาที</div></div>" +
       '<div class="chips" style="flex:1">' + (chips || '<span class="su">ยังไม่มีใครเข้าห้อง</span>') + "</div></div></div>" +
       '<div class="ftr"><div style="display:flex;gap:14px"><button class="gb" data-h="cfg">⚙ ตั้งค่า</button>' + (TEST ? '<button class="gb" data-h="bots">+ บอท 5 ตัว (ทดสอบ)</button><button class="gb" data-h="sims">+ มือถือจำลอง 10 เครื่อง</button>' : "") + '<button class="gb" data-h="newroom">สร้างห้องใหม่</button><a class="gb" href="/games/" style="display:inline-flex;align-items:center;text-decoration:none">← กลับเว็บชมรม</a></div>' +
@@ -1829,16 +1870,30 @@ function hostAni(el) {
     }
   }
 }
-function rcard(id, cls, extra) {
-  return '<div class="rcard ' + (cls || "") + '"><div class="rn">' + esc(RULE_T[id]) + '</div><div class="re">' + esc(id === H.special && H.round >= 6 && cls && cls.indexOf("sp") >= 0 ? "กฎพิเศษรอบสุดท้าย" : "") + '</div><div class="rd">' + esc(ruleDesc(id, crowdXNow())) + "</div>" + (extra || "") + "</div>";
+function rcard(id, cls, extra, attrs) {
+  return '<div class="rcard ' + (cls || "") + '"' + (attrs || "") + '><div class="rn">' + esc(RULE_T[id]) + '</div><div class="re">' + esc(id === H.special && H.round >= 6 && cls && cls.indexOf("sp") >= 0 ? "กฎพิเศษรอบสุดท้าย" : "") + '</div><div class="rd">' + esc(ruleDesc(id, crowdXNow())) + "</div>" + (extra || "") + "</div>";
 }
 /* the rules in force this round (and the lucky number) above the dice */
 function rulesStrip() {
-  var cur = H.curRules || [], ck = H.cookNow;
+  var cur = H.curRules || [], ck = H.cookNow, R = H.round, t0 = H.roundAt || 0, at = 1900;   /* after the round banner */
   if (!cur.length && !ck) return '<div class="su" style="text-align:center">ไม่มีกฎส่วนรวม</div>';
-  return '<div class="rcards">' + cur.map(function (id) { return rcard(id, "sm" + (H.round === 12 && id === H.special ? " sp" : "")); }).join("") +
-    (ck ? rcard(ck.id, "sm sp", '<div class="re" style="color:#FFD84D">Let Him Cook: ใช้กับ' + cookScopeT() + "</div>") : "") +
-    (H.lucky != null ? '<div class="lucky">เลขนำโชค<b>' + H.lucky + "</b></div>" : "") + "</div>";
+  var nw = R === 1 ? cur[0] : R === 4 || R === 7 || R === 10 ? (H.rules || [])[(H.rules || []).length - 1] : R === 12 ? H.special : null;
+  var card = function (id) {
+    var cls = "sm" + (R === 12 && id === H.special ? " sp" : "");
+    if (id !== nw) return rcard(id, cls);
+    if (R === 1) {   /* 3.1: names spin like a slot machine and stop on the rule of round 1 */
+      var names = LOL.RULES.filter(function (r) { return r !== id; }).slice(0, 9).map(function (r) { return "<b>" + esc(RULE_T[r]) + "</b>"; }).join("");
+      return rcard(id, cls + " rnew", '<div class="rslot a-rslot" data-t0="' + t0 + '" style="--d:' + at + 'ms"><div class="rstrip a-rstrip" data-t0="' + t0 + '" style="--d:' + at + 'ms">' + names + "<b>" + esc(RULE_T[id]) + "</b></div></div>");
+    }
+    return rcard(id, cls + " rnew a-flipin", "", ' data-t0="' + t0 + '" style="--d:' + at + 'ms"');   /* 3.2: the new rule flips in */
+  };
+  var lk = "";
+  if (H.lucky != null) {   /* 3.3: the lucky number spins and stops */
+    var st = ""; for (var r = 0; r < 2; r++) for (var v = 1; v <= 7; v++) st += "<i>" + v + "</i>";
+    lk = '<div class="lucky">เลขนำโชค<span class="lreel"><span class="lstrip a-lucky" data-t0="' + t0 + '" style="--to:' + (-14 * 64) + "px;--d:" + (at + 300) + 'ms">' + st + "<i>" + H.lucky + "</i></span></span><b class=\"lnum\">" + H.lucky + "</b></div>";
+  }
+  return '<div class="rcards">' + cur.map(card).join("") +
+    (ck ? rcard(ck.id, "sm sp", '<div class="re" style="color:#FFD84D">🍳 Let Him Cook: ใช้กับ' + cookScopeT() + "</div>") : "") + lk + "</div>";
 }
 function cookScopeT() { var C = H.ev && H.ev.cook; return C ? SCOPE_T[C.scope] + " รอบ " + C.from + (C.to > C.from ? "–" + C.to : "") : ""; }
 function lordNames() { return lordsP().map(function (p) { return p.name; }).join(", "); }
@@ -1955,23 +2010,27 @@ function evStepHtml(ph) {
 }
 function voteHtml() {
   var V = H.vote, res = V.res, voters = V.voters.map(byPid).filter(Boolean);
-  var cards = V.opts.map(function (id) {
-    var cls = res ? (id === res.win ? "win" : "lose") : "";
-    return rcard(id, cls, res ? '<div class="vt">' + res.tally[id] + " เสียง</div>" : "");
+  var tot = res ? Math.max(1, V.opts.reduce(function (a, id) { return a + (res.tally[id] || 0); }, 0)) : 1;
+  var cards = V.opts.map(function (id, k) {
+    if (!res) return rcard(id, "a-deal", "", ' style="--d:' + (150 + k * 250) + 'ms"');
+    var w = Math.round((res.tally[id] || 0) / tot * 100);
+    return rcard(id, id === res.win ? "win a-wglow" : "lose", '<div class="vt">' + res.tally[id] + ' เสียง</div><div class="vbar"><i class="a-barw" style="width:' + w + "%;--d:" + (200 + k * 120) + 'ms"></i></div>', id === res.win ? ' style="--d:1100ms"' : "");
   }).join("");
   var note = res ? (res.how === "random" ? "ไม่มีใครโหวต ระบบสุ่มจาก 3 ข้อ" : res.how === "tie" ? "คะแนนเท่ากัน ข้อที่ได้รับโหวตก่อนชนะ" : "") :
     (V.kind === "top1" ? "อันดับ 1 เป็นคนเลือก" + (voters.length > 1 ? " (เสมอกัน " + voters.length + " คน โหวตกัน)" : "") : "กลุ่มโหวต " + voters.length + " คน (อันดับครึ่งล่าง)") + " โหวตแล้ว " + bumpN("vote", Object.keys(V.votes).length) + " คน";
-  return '<div class="main" style="flex-direction:column;justify-content:center;gap:34px"><div class="rcards">' + cards + '</div><div class="su" style="text-align:center">' + note + "</div>" +
+  var top1 = !res && V.kind === "top1" ? '<div class="lordb a-pop" style="--d:0ms"><div class="lavs">' + voters.map(function (p) { return avP(p, 70); }).join("") + "</div>อันดับ 1 เป็นคนเลือกกฎ</div>" : "";   /* 6.4 */
+  return '<div class="main" style="flex-direction:column;justify-content:center;gap:30px">' + top1 + '<div class="rcards">' + cards + '</div><div class="su" style="text-align:center">' + note + "</div>" +
     (res ? "" : '<div class="chips" style="justify-content:center">' + voters.map(function (p) { return '<span class="chip' + (V.votes[p.pid] ? " done" : "") + '" style="padding-right:20px;font-size:24px">' + avP(p, 30) + (V.votes[p.pid] ? "✓ " : "") + esc(p.name) + "</span>"; }).join("") + "</div>") +
     (!res && (H.rules || []).length ? '<div class="su" style="text-align:center">' + (H.rules.length >= 2 ? "กฎที่ชนะจะเพิ่มเข้ามา และ " + esc(RULE_T[H.rules[0]]) + " จะหลุดออก (ใช้ 2 ข้อล่าสุด)" : "กฎที่ชนะจะใช้คู่กับ " + esc(RULE_T[H.rules[0]])) + "</div>" : "") +
-    (res && V.drop ? '<div class="su" style="text-align:center">' + esc(RULE_T[V.drop]) + " หลุดออก ใช้ 2 ข้อล่าสุด</div>" : "") + "</div>";
+    (res && V.drop ? '<div class="su a-show" style="text-align:center;--d:1500ms"><s>' + esc(RULE_T[V.drop]) + "</s> หลุดออก ใช้ 2 ข้อล่าสุด</div>" : "") + "</div>";
 }
 function breakHtml() {
   var n = H.players.length, done = H.players.filter(function (p) { return p.brkDone; }).length;
   return '<div class="main" style="flex-direction:column;justify-content:center;align-items:center;gap:30px">' +
-    (H.special ? '<div class="s1">กฎพิเศษรอบสุดท้าย จะเพิ่มเข้ามาในรอบ 12 คู่กับกฎ 2 ข้อที่ใช้อยู่ตอนนั้น (กฎที่โหวตก่อนรอบ 7 และ 10)</div><div class="rcards" style="width:900px">' + rcard(H.special, "sp") + "</div>" : '<div class="su">ปิดกฎพิเศษรอบสุดท้ายไว้</div>') +
+    (H.special ? '<div class="s1">กฎพิเศษรอบสุดท้าย จะเพิ่มเข้ามาในรอบ 12 คู่กับกฎ 2 ข้อที่ใช้อยู่ตอนนั้น (กฎที่โหวตก่อนรอบ 7 และ 10)</div><div class="rcards" style="width:900px">' + rcard(H.special, "sp a-flipbig", "", ' style="--d:400ms"') + "</div>" : '<div class="su">ปิดกฎพิเศษรอบสุดท้ายไว้</div>') +
     '<div class="big2">' + bumpN("brk", done) + " / " + n + '</div><div class="su">คนที่ตัดสินใจแล้ว (เปลี่ยนกฎส่วนตัวได้ 1 ครั้ง หรือใช้กฎเดิม)</div>' +
-    '<div class="su" style="text-align:center;max-width:1600px">ครึ่งบนหลังรอบ 6 ได้ทอยใหม่เพิ่ม 1 ครั้ง: ' + H.players.filter(function (p) { return p.rrBonus; }).map(function (p) { return esc(p.name); }).join(", ") + "</div></div>";
+    '<div class="su" style="text-align:center">ครึ่งบนหลังรอบ 6 ได้ทอยใหม่เพิ่ม 1 ครั้ง</div><div class="chips" style="justify-content:center;max-width:1650px">' +
+    H.players.filter(function (p) { return p.rrBonus; }).map(function (p, k) { return '<span class="chip a-pop" style="padding-right:20px;font-size:24px;--d:' + (1300 + Math.min(k, 30) * 60) + 'ms">' + avP(p, 30) + esc(p.name) + ' <b style="color:#5BD98F">🎲+1</b></span>'; }).join("") + "</div></div>";
 }
 /* ---------- the reveal (step 8, batch 2) ----------
    Timeline (ms after the reveal starts, H.rv, worked out once in endReroll so a reload replays nothing):
@@ -2267,7 +2326,7 @@ function revealHtml() {
     var p = P[i], mv = p.rkBefore - rk[i], j = oldPos[i];
     var dx = (Math.floor(j / rows) - Math.floor(k / rows)) * (cw + 24), dy = (j % rows - k % rows) * (rh + 10);
     var fl = Math.round(p.idx * R.step), up = p.acc - p.acc0, xc = p.prevDie === "risk" && (p.prevX === 0 || p.prevX === 7) ? " x" + p.prevX : p.prevDie === "prime" && isPrime(p.prevX) ? " pf" : "";
-    return '<div class="rr a-move' + (up > 0 ? " fup" : up < 0 ? " fdn" : "") + (p.aura ? " aura" : "") + '" style="height:' + rh + "px;font-size:" + fs + "px;grid-template-columns:" + tpl + ";padding:0 " + (cols === 3 ? 10 : 16) + "px;--dx:" + dx + "px;--dy:" + dy + "px;--d:" + R.sortAt + "ms;--d2:" + (R.cntAt + 500) + 'ms">' +
+    return '<div class="rr a-move' + (up > 0 ? " fup" : up < 0 ? " fdn" : "") + (p.aura ? " aura" : "") + (rk[i] === 1 ? " lead" : "") + '" style="height:' + rh + "px;font-size:" + fs + "px;grid-template-columns:" + tpl + ";padding:0 " + (cols === 3 ? 10 : 16) + "px;--dx:" + dx + "px;--dy:" + dy + "px;--d:" + R.sortAt + "ms;--d2:" + (R.cntAt + 500) + 'ms">' +
       '<span class="rk"' + seqAttr(t0, [[0, p.rkBefore], [R.sortAt, rk[i]]]) + ">" + rk[i] + '</span><span class="nm">' + avP(p, Math.round(fs * 1.2), "avr") + (p.bot ? "🤖 " : "") + (p.lord ? '<span class="lord">👑 </span>' : "") + esc(p.name) +
       (mv > 0 ? ' <span class="mv up a-pop" style="--d:' + (R.sortAt + 600) + 'ms">▲' + mv + "</span>" : mv < 0 ? ' <span class="mv dn a-pop" style="--d:' + (R.sortAt + 600) + 'ms">▼' + (-mv) + "</span>" : "") +
       '</span><span class="dn a-flip" style="--d:' + fl + 'ms"><i class="ddot ' + DIE_CLS[p.prevDie] + '"></i>' + DIE_T[p.prevDie].replace("เต๋า", "") +
@@ -2454,7 +2513,7 @@ function subDraw() {
   else if (SUB.st === "err") h += '<div style="font-size:30px;color:#FF8A80" role="alert">' + esc(SUB.msg) + "</div>";
   else if (SUB.st === "ok") {
     var r = SUB.res || {}, unk = (r.unknown || []).map(function (id) { var p = H.players.filter(function (x) { return x.sid === id; })[0]; return p ? p.name : "(ไม่ทราบชื่อ)"; });
-    h += '<div style="font-size:36px;color:#5BD98F;font-weight:700">✓ บันทึกแล้ว ' + (r.saved || 0) + " คน (สัปดาห์ที่ " + esc(SUB.week) + ")</div>" +
+    h += '<div class="subok a-pop">✓</div><div style="font-size:36px;color:#5BD98F;font-weight:700">✓ บันทึกแล้ว ' + (r.saved || 0) + " คน (สัปดาห์ที่ " + esc(SUB.week) + ")</div>" +
       '<div style="font-size:28px;line-height:1.6">สัปดาห์นี้มีผลเกมในระบบ ' + (r.rounds || 1) + " รอบ ระบบรวมคะแนนชมรมของทุกรอบแล้วจัดอันดับสัปดาห์ใหม่ให้ ดูผลที่หน้าแอดมิน</div>" +
       (unk.length ? '<div style="font-size:28px;color:#FF8A80">ไม่พบเลขประจำตัวในรายชื่อ ' + unk.length + " คน: " + esc(unk.join(", ")) + " (ไม่ได้บันทึก)</div>" : "") +
       (r.bad_nick ? '<div style="font-size:28px;color:#FFD65A">ชื่อเล่น ' + r.bad_nick + " คนไม่ผ่านตัวกรอง จึงไม่ได้บันทึกชื่อ (ยังนับคะแนน)</div>" : "") +
@@ -2690,11 +2749,28 @@ function pendDoneFor(a, st, pr) {
 }
 function resendPend() { if (P.pend && !pendDone()) sendSec(P.pend); else P.pend = null; }
 function leftMs() { var st = P.st; if (!st || !st.left || st.paused) return 0; return st.left - (Date.now() - P.recvAt); }
+/* 1.6: a short buzz on phones that can (Android; iPhones ignore it) when it is your turn, and again 5 s before the end */
+function myTurn() {
+  var st = P.st, pr = P.priv; if (!st || !pr) return false;
+  var ph = st.phase, lord = isLord();
+  if (ph === "build") return !pr.built;
+  if (ph === "pick") return !pr.forced && !pr.die;
+  if (ph === "reroll") return !!(pr.rrLeft && !pr.rrDone && !pr.rerolled && !pr.rrBlock);
+  if (ph === "vote") return st.vote && st.vote.voters.indexOf(P.pid) >= 0 && !pr.myVote;
+  if (ph === "break") return !pr.brkDone;
+  if (ph === "locked") return !pr.lockDone;
+  if (ph === "guess") return !lord && pr.guess == null;
+  if (ph === "ev") return lord && !pr.myEv;
+  if (ph === "aura" || ph === "cook" || ph === "npc") return lord;
+  if (ph === "god") return !!pr.godNow && pr.godX == null;
+  return false;
+}
+function buzz(p) { try { if (navigator.vibrate && (!P.st || P.st.anim !== 0)) navigator.vibrate(p); } catch (e) {} }
 function tickPlayer() {
   var el = document.getElementById("ptm"), w = document.getElementById("ptmw"); if (!el || !w) return;
   var left = leftMs(), s = secs(left);
   w.style.setProperty("--p", frac(left, P.st && P.st.dur));
-  if (el.textContent !== String(s)) { el.textContent = s; w.classList.toggle("warn", s <= 5); }
+  if (el.textContent !== String(s)) { el.textContent = s; w.classList.toggle("warn", s <= 5); if (s === 5 && P.vib5 !== P.phKey && myTurn()) { P.vib5 = P.phKey; buzz([40, 60, 40]); } }
 }
 
 var PACT = {
@@ -2782,7 +2858,8 @@ function renderPlayer(force) {
   aniIn(pw.children, P.joined ? P.phaseStart : 0, 40);
   var stl = pw.querySelectorAll(".steps > div");   /* the reveal: your score lines one after another (5.7) */
   if (stl.length) aniIn(stl, P.phaseStart + 300, 160);
-  aniSync(pw);
+  aniSync(pw); aniBump(pw);
+  if (P.joined && P.vibK !== P.phKey && myTurn()) { P.vibK = P.phKey; buzz(70); }
   spinRoll();
   tickPlayer();
 }
@@ -2832,11 +2909,14 @@ function optList(kind, table, prices, when) {
 function myPub() { var st = P.st; if (!st) return null; return st.players.filter(function (p) { return p.pid === P.pid; })[0] || null; }
 function ruleBox(pr) {
   if (!pr || !pr.cond) return "";
-  var h = '<div class="rule"><b>กฎของคุณ:</b> ถ้า ' + esc(condName(pr.cond)) + " → " + esc(effName(pr.eff));
+  var ic = EFF_IC[pr.eff] || "⭐";
+  var h = '<div class="rule rulei"><span class="ric ri-' + esc(pr.eff).replace(/[^a-z0-9]/gi, "") + '" aria-hidden="true">' + ic + "</span><div><b>กฎของคุณ:</b> ถ้า " + esc(condName(pr.cond)) + " → " + esc(effName(pr.eff));
   if (pr.eff === "random" && pr.reff) h += '<br><b>รอบนี้สุ่มได้:</b> ' + esc(effName(pr.reff));
   if (pr.leaders && pr.leaders.length) h += "<br><b>ผู้นำของคุณ:</b> " + esc(pr.leaders.join(", "));
-  return h + "</div>" + sigBox(pr);
+  return h + "</div></div>" + sigBox(pr);
 }
+/* 11.6: a small picture for each effect (only on your own phone) */
+var EFF_IC = { "+2": "⭐", "+3": "⭐", "+5": "🌟", "+7": "💫", shield: "🛡️", flip: "🔄", crowd: "👥", interest: "🪙", steal2: "🪝", echo: "🔁", random: "🎲", x2: "✖️", x3: "✖️", spoiler: "☄️", next6: "🎁" };
 /* The 67 Event status of this player */
 function sigBox(pr) {
   var st = P.st, t = [];
@@ -2957,7 +3037,7 @@ function playerHtml() {
     var sel = P.sel, used = (sel.cond ? LOL.COND[sel.cond] : 0) + (sel.eff ? LOL.EFF[sel.eff] : 0);
     var sent = pr.built ? '<div class="ok">✓ ส่งกฎแล้ว: ถ้า ' + esc(condName(pr.cond)) + " → " + esc(effName(pr.eff)) + " (เปลี่ยนได้จนหมดเวลา)</div>" : '<div class="muted">ยังไม่ได้ส่งกฎ ถ้าหมดเวลา ระบบสุ่มกฎให้</div>';
     return h + pTop("สร้างกฎส่วนตัว", "เงื่อนไข 1 ข้อ + ผล 1 ข้อ ไม่เกิน 5 เหรียญ", true) +
-      '<div class="pc budget"><div style="display:flex;justify-content:space-between;font-weight:700"><span>ใช้ไป ' + used + ' / 5 เหรียญ</span><span>' + (sel.cond && sel.eff ? "ครบแล้ว" : "เลือกให้ครบ") + "</span></div>" +
+      '<div class="pc budget"><div style="display:flex;justify-content:space-between;font-weight:700"><span>🪙 ใช้ไป ' + bumpN("coin", used) + ' / 5 เหรียญ</span><span>' + (sel.cond && sel.eff ? "ครบแล้ว" : "เลือกให้ครบ") + "</span></div>" +
       '<div class="muted">ถ้า ' + (sel.cond ? esc(condName(sel.cond)) : "…") + " → " + (sel.eff ? esc(effName(sel.eff)) : "…") + "</div>" +
       '<button class="btn" data-p="build" style="width:100%;margin-top:8px"' + (sel.cond && sel.eff ? "" : " disabled") + ">ส่งกฎนี้</button></div>" + sent +
       '<div class="pc"><div class="lbl">1. เงื่อนไข</div><div class="opts">' + optList("cond", COND_T, LOL.COND, "start") + "</div></div>" +
@@ -3075,14 +3155,14 @@ function stepsHtml(d) {
     else if (s.k === "gain") row("ได้จาก " + esc(effName(d.eff)), s.d);
     else if (s.k === "double") row("รอบสุดท้าย คูณ 2", s.d);
   });
-  if (d.stolen) row("ถูกหักจากคะแนนสะสม (ขโมย/ตัดหน้า)", -d.stolen);
+  if (d.stolen) row("🪝☄️ ถูกหักจากคะแนนสะสม (ขโมย/ตัดหน้า)", -d.stolen);
   if (d.guess !== undefined) {   /* Delulu */
     if (d.gOk) row("Delulu ทาย " + d.guess + " ถูก", "รอด");
-    else if (d.delulu) row("Delulu " + (d.guess == null ? "ไม่ได้ทาย" : "ทาย " + d.guess + " ผิด"), d.delulu);
+    else if (d.delulu) row("🔨 Delulu " + (d.guess == null ? "ไม่ได้ทาย" : "ทาย " + d.guess + " ผิด"), d.delulu);
     else row("Delulu " + (d.guess == null ? "ไม่ได้ทาย" : "ทาย " + d.guess + " ผิด") + " แต่มีโล่", 0);
   }
-  if (d.crowded) row(esc(RULE_T.crowded), d.crowded);
-  if (d.robin) row(esc(RULE_T.robin), d.robin);
+  if (d.crowded) row("🏋️ " + esc(RULE_T.crowded), d.crowded);
+  if (d.robin) row("🏹 " + esc(RULE_T.robin), d.robin);
   return out.join("");
 }
 

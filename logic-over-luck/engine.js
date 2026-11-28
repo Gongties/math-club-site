@@ -203,11 +203,11 @@
         }
         var vs = tg.filter(function (v) { return !out[v].shield; });
         vs.forEach(function (v) { take(v, c.stealLoss); });
-        gain[p] = vs.length ? c.stealGain : 0; o.targets = vs;
+        gain[p] = vs.length ? c.stealGain : 0; o.targets = vs; o.blocked = tg.filter(function (v) { return out[v].shield; });   /* blocked: for the big screen (shield bounce) */
       } else if (o.eff === "spoiler") {   /* v5: the user can be a target too */
         var ws = spikes.filter(function (v) { return !out[v].shield; });
         ws.forEach(function (v) { take(v, c.spoilLoss); });
-        gain[p] = ws.length ? c.spoilGain : 0; o.targets = ws;
+        gain[p] = ws.length ? c.spoilGain : 0; o.targets = ws; o.blocked = spikes.filter(function (v) { return out[v].shield; });
       }
     });
 

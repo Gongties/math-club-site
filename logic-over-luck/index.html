@@ -180,13 +180,110 @@ body.ph { background: #F3F6FF; color: #14213D; }
 .faces .btn.on { background: #14213D; color: #FFD84D; }
 .sig { background: #2A2140; color: #FFD84D; border-radius: 12px; padding: 8px 12px; font-weight: 700; line-height: 1.45; }
 .verw { background: #FFE9A8; border: 3px solid #14213D; border-radius: 14px; padding: 12px; font-weight: 700; }
+
+/* ---------- animation (step 8, batch 1) ----------
+   Animations run only while <body> has the class "ani" (setting on, and the device does not ask for reduced motion).
+   Each animated element waits var(--d) and is shifted back by var(--el), the time already spent in its scene, so a redraw in
+   the middle carries on where it was and a page opened late shows the end state. The base style of every class is its end state. */
+.a-in, .a-ban, .a-tum, .a-roll, .a-land, .a-spin, .a-fx, .a-old { animation-delay: calc(var(--d, 0ms) - var(--el, 0ms)); animation-fill-mode: both; }
+body.ani .a-in { animation-name: ain; animation-duration: .45s; animation-timing-function: cubic-bezier(.2, .8, .3, 1); }
+body.ph.ani .a-in { animation-duration: .35s; }
+@keyframes ain { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
+body.ani .bump { display: inline-block; animation: bump .45s ease-out; }
+@keyframes bump { 0% { transform: scale(1); } 35% { transform: scale(1.35); color: #FFD84D; } 100% { transform: scale(1); } }
+/* timer rings: progress drawn with SVG (1.1) */
+#stage .ring { position: relative; border: 0; }
+#stage .ring.pz { border: 10px solid #FFD65A; }
+#stage .ring svg, .tm svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
+#stage .ring .tr { fill: none; stroke: #2B3560; stroke-width: 10; }
+#stage .ring .pr { fill: none; stroke: #9C8CFF; stroke-width: 10; stroke-linecap: round; stroke-dasharray: 326.73px; stroke-dashoffset: calc(326.73px * (1 - var(--p, 1))); transition: stroke-dashoffset .25s linear; }
+#stage .ring.warn .pr { stroke: #FF5A5F; }
+#stage .ring span, .tm span { position: relative; }
+body.ani #stage .ring.warn, body.ani .tm.warn { animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+.tm { position: relative; border: 0; }
+.tm .tr { fill: none; stroke: #DDE2F0; stroke-width: 5; }
+.tm .pr { fill: none; stroke: #9C8CFF; stroke-width: 5; stroke-linecap: round; stroke-dasharray: 160.22px; stroke-dashoffset: calc(160.22px * (1 - var(--p, 1))); transition: stroke-dashoffset .25s linear; }
+.tm.warn .pr { stroke: #D64545; }
+/* round banner (1.3): big, tilted, chunky (Brainrot style) */
+.rban { position: absolute; left: 0; right: 0; top: 300px; z-index: 15; pointer-events: none; text-align: center; font-family: Prompt, sans-serif; font-weight: 700; font-size: 180px; line-height: 1;
+  color: #FFD84D; text-shadow: 8px 8px 0 #14213D, -4px -4px 0 #FF5AA8, 0 0 40px rgba(255, 216, 77, .5); opacity: 0; visibility: hidden;
+  padding: 50px 0; background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(5, 8, 20, .92) 40%, rgba(5, 8, 20, 0) 100%); }
+.rban small { display: block; font-size: 70px; color: #fff; text-shadow: 5px 5px 0 #14213D, -3px -3px 0 #4DD8FF; margin-top: 10px; }
+body.ani .a-ban { animation-name: ban; animation-duration: 1.8s; }
+@keyframes ban { 0% { opacity: 0; visibility: visible; transform: scale(.3) rotate(-14deg); } 16% { opacity: 1; transform: scale(1.15) rotate(4deg); }
+  26% { transform: scale(1) rotate(-3deg); } 34% { transform: scale(1.03) rotate(-2deg) translateX(-6px); } 40% { transform: scale(1) rotate(-3deg) translateX(5px); } 46% { transform: rotate(-3deg); }
+  78% { opacity: 1; visibility: visible; transform: scale(1) rotate(-3deg); } 99% { opacity: 0; visibility: visible; transform: scale(1.5) rotate(-3deg); } 100% { opacity: 0; visibility: hidden; } }
+/* the 4 dice (4.6): Standard white and classy, Consistent green with a steady glow, High Risk red-black with sparks, Prime purple crystal with glowing prime faces */
+.dref .d { position: relative; overflow: hidden; }
+.dref .d.dz-std { background: linear-gradient(160deg, #FFFFFF, #E9E5DA); border-color: #D9C48A; color: #14213D; }
+.dref .d.dz-std .f { color: #14213D; }
+.dref .d.dz-con { background: linear-gradient(160deg, #1E7A4C, #11512F); border-color: #5BD98F; box-shadow: 0 0 30px rgba(91, 217, 143, .45); }
+.dref .d.dz-con .f { color: #E6FFF0; }
+.dref .d.dz-risk { background: linear-gradient(160deg, #520E14, #120407); border-color: #FF4D3D; box-shadow: 0 0 26px rgba(255, 77, 61, .35); }
+.dref .d.dz-risk .f { color: #FFB199; }
+.dref .d.dz-prime { background: linear-gradient(135deg, #5B2DC0 0%, #9D6BFF 32%, #4E22A0 52%, #B48CFF 76%, #44188F 100%); border-color: #E2D3FF; box-shadow: 0 0 28px rgba(180, 140, 255, .45); }
+.dref .d.dz-prime .f { color: #EFE6FF; }
+.dref .d .bt, .dref .d .nt { position: relative; }
+.dref .d.dz-std .bt { color: #B3261E; }
+.np { opacity: .55; }
+.pf { color: #fff; text-shadow: 0 0 8px #F0D0FF, 0 0 18px #C08BFF, 0 0 30px #9D6BFF; }
+body.ani .dz-risk::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .85;
+  background-image: radial-gradient(circle, #FFC04D 0 2px, transparent 3px), radial-gradient(circle, #FF5A1F 0 1.5px, transparent 2.5px);
+  background-size: 64px 74px, 46px 58px; animation: spark 1.7s linear infinite; }
+@keyframes spark { from { background-position: 0 0, 22px 0; } to { background-position: 0 -74px, 22px -58px; } }
+.die { transition: transform .15s, box-shadow .15s; position: relative; overflow: hidden; }
+.die.dz-std { background: #fff; border-color: #14213D; }
+.die.dz-con { background: #DDF6E8; box-shadow: 0 0 14px rgba(46, 158, 107, .5); }
+.die.dz-risk { background: linear-gradient(160deg, #5A0F15, #160508); color: #FFE3DA; }
+.die.dz-prime { background: linear-gradient(135deg, #5B2DC0, #9D6BFF 40%, #4E22A0 62%, #B48CFF); color: #fff; }
+.die.dz-prime .pf { text-shadow: 0 0 6px #fff, 0 0 14px #F0D0FF; }
+.die.on { transform: translateY(-5px); box-shadow: 4px 8px 0 #14213D; outline: 4px solid #FFD84D; outline-offset: 2px; }
+.die.dz-std.on, .die.dz-con.on { background-image: linear-gradient(#FFF6CC, #FFF6CC); }
+.die .ck { position: absolute; top: 6px; right: 8px; font-weight: 700; }
+.btn, .opt, .vopt, .evc, .die { -webkit-tap-highlight-color: transparent; }
+body.ani .btn:active:not([disabled]), body.ani .vopt:active:not([disabled]), body.ani .evc:active:not([disabled]) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #14213D; }
+body.ani .die:active:not([disabled]), body.ani .opt:active:not([disabled]) { transform: scale(.96); }
+/* the Host while everyone rolls (4.4): plain dice, the same for everyone, no numbers (picks stay secret until the reveal) */
+.tumble { display: flex; gap: 28px; justify-content: center; align-items: center; height: 104px; flex: none; }
+.tumble i { width: 84px; height: 84px; border-radius: 18px; background: #C9D0E6; box-shadow: inset -7px -7px 0 rgba(0, 0, 0, .18); display: flex; align-items: center; justify-content: center;
+  font-style: normal; font-family: Prompt, sans-serif; font-weight: 700; font-size: 44px; color: #5A6785; }
+body.ani .a-tum { animation-name: tum; animation-duration: 1.5s; animation-timing-function: cubic-bezier(.2, .7, .3, 1); }
+@keyframes tum { 0% { opacity: 0; transform: translateY(-170px) rotate(-220deg); } 55% { opacity: 1; transform: translateY(12px) rotate(18deg); } 72% { transform: translateY(-14px) rotate(-7deg); } 86% { transform: translateY(0) rotate(3deg); } 100% { transform: none; } }
+/* the phone's own roll (4.2) and re-roll (4.3) */
+.rollbox { position: relative; width: 150px; height: 150px; margin: 6px auto 2px; border-radius: 26px; border: 4px solid #14213D; box-shadow: 5px 5px 0 #14213D; display: flex; align-items: center; justify-content: center; background: #fff; color: #14213D; }
+.rollbox.dz-con { background: #DDF6E8; box-shadow: 5px 5px 0 #14213D, 0 0 22px rgba(46, 158, 107, .6); }
+.rollbox.dz-risk { background: linear-gradient(160deg, #5A0F15, #160508); color: #FFE3DA; overflow: hidden; }
+.rollbox.dz-prime { background: linear-gradient(135deg, #5B2DC0, #9D6BFF 40%, #4E22A0 62%, #B48CFF); color: #fff; }
+.rollbox .roll { position: relative; }
+.rollbox .rspin { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: Prompt, sans-serif; font-weight: 700; font-size: 5rem; opacity: 0; visibility: hidden; }
+body.ani .a-roll { animation-name: rolld; animation-duration: .9s; animation-timing-function: ease-out; }
+@keyframes rolld { 0% { transform: translateY(-60px) rotate(-180deg) scale(.6); } 35% { transform: translateY(8px) rotate(40deg) scale(1.05); } 55% { transform: translateY(-10px) rotate(-20deg); }
+  75% { transform: translateY(0) rotate(8deg); } 90% { transform: rotate(-3deg); } 100% { transform: none; } }
+body.ani .a-spin { animation-name: spinv; animation-duration: .9s; animation-timing-function: steps(1, end); }
+@keyframes spinv { 0% { opacity: 1; visibility: visible; } 99.9% { opacity: 1; visibility: visible; } 100% { opacity: 0; visibility: hidden; } }
+body.ani .a-land { animation-name: landx; animation-duration: 1.25s; }
+@keyframes landx { 0%, 71.9% { opacity: 0; transform: scale(.4); } 72% { opacity: 1; transform: scale(1.45); } 86% { transform: scale(.92); } 100% { opacity: 1; transform: none; } }
+.fx { position: absolute; inset: -40px; pointer-events: none; border-radius: 50%; opacity: 0; visibility: hidden; }
+.fx0 { background: radial-gradient(circle at 40% 55%, rgba(120, 120, 130, .85) 0 18%, transparent 19%), radial-gradient(circle at 62% 42%, rgba(150, 150, 160, .8) 0 15%, transparent 16%), radial-gradient(circle at 50% 30%, rgba(100, 100, 110, .75) 0 13%, transparent 14%); }
+.fx7 { background: radial-gradient(circle, rgba(255, 240, 160, .95) 0 14%, rgba(255, 160, 40, .9) 26%, rgba(255, 60, 20, .7) 40%, transparent 58%); }
+body.ani .a-fx { animation-duration: 1.3s; animation-timing-function: ease-out; }
+body.ani .fx0.a-fx { animation-name: smoke; } body.ani .fx7.a-fx { animation-name: boom; }
+@keyframes smoke { 0% { opacity: 0; visibility: visible; transform: scale(.3) translateY(0); } 25% { opacity: .9; transform: scale(.8) translateY(-6px); } 100% { opacity: 0; visibility: hidden; transform: scale(1.6) translateY(-60px); } }
+@keyframes boom { 0% { opacity: 0; visibility: visible; transform: scale(.2); } 20% { opacity: 1; transform: scale(1.1); } 55% { opacity: .8; transform: scale(1.35); } 100% { opacity: 0; visibility: hidden; transform: scale(1.7); } }
+.rollbox.x0 .roll { color: #9AA0AE; }
+.rollbox.x7 .roll { color: #FFD84D; text-shadow: 0 0 12px #FF8A1F, 0 0 26px #FF3D1F; }
+.oldx { text-align: center; color: #8A93B0; font-weight: 700; }
+.oldx s { font-family: Prompt, sans-serif; font-size: 1.6rem; }
+body.ani .a-old { animation-name: oldx; animation-duration: .6s; }
+@keyframes oldx { 0% { opacity: 1; transform: translateY(80px) scale(2.2); color: #14213D; } 60% { opacity: .7; transform: translate(60px, -10px) rotate(25deg) scale(1.1); } 100% { opacity: 1; transform: none; } }
 </style>
 </head>
 <body>
 <div id="app"></div>
 <div id="netb" aria-hidden="true"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/logic-over-luck/engine.js?v=2026112809"></script>
+<script src="/logic-over-luck/engine.js?v=2026112810"></script>
 <script>
 "use strict";
 /* Logic over Luck (Rules Race: Math Club Edition v5). Big screen (#host) + phones (#join=CODE).
@@ -196,7 +293,77 @@ body.ph { background: #F3F6FF; color: #14213D; }
    each phone and the Host make an ECDH P-256 key pair, the shared AES-GCM key is never sent. */
 
 /* page version: RAISE THIS NUMBER (and the ?v= of engine.js above) EVERY TIME THIS FOLDER CHANGES (YYYYMMDD + 2 digits) */
-var LOL_V = 2026112809;
+var LOL_V = 2026112810;
+
+/* ---------- animation and sound (step 8; ideas: claude/logic-over-luck-animation-ideas.md) ----------
+   An animated element carries data-t0 = when its scene started (ms). After every redraw aniSync() sets --el = the time already
+   spent in that scene, so the CSS animation continues instead of restarting, and a scene that started long ago (page reloaded,
+   teacher pressed "ข้ามภาพ") shows its end state at once. Nothing here sends a message. */
+var RM = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+var ANI = { skipAt: 0, sndKey: null, bump: {} };
+function aniSet(on) { document.body.classList.toggle("ani", !!on && !RM); }
+function aniCfg() { return !!H && Number(H.cfg.anim) !== 0; }
+function aniOn() { return document.body.classList.contains("ani"); }
+function aniEl(t0) { t0 = Number(t0) || 0; return t0 <= ANI.skipAt ? 1e7 : Math.max(0, Date.now() - t0); }
+function aniSync(root) {
+  var list = root.querySelectorAll("[data-t0]");
+  for (var i = 0; i < list.length; i++) list[i].style.setProperty("--el", aniEl(list[i].getAttribute("data-t0")) + "ms");
+}
+/* fade/slide in the blocks of a new screen, one after another */
+function aniIn(nodes, t0, step) {
+  for (var i = 0; i < nodes.length; i++) { var n = nodes[i]; n.classList.add("a-in"); n.setAttribute("data-t0", t0); n.style.setProperty("--d", Math.min(i, 6) * step + "ms"); }
+}
+/* counters that went up get a little bounce (only the ones that changed since the last redraw) */
+function aniBump(root) {
+  var list = root.querySelectorAll("[data-bump]");
+  for (var i = 0; i < list.length; i++) {
+    var k = list[i].getAttribute("data-bump"), v = Number(list[i].getAttribute("data-v")), old = ANI.bump[k];
+    if (old != null && v > old) list[i].classList.add("bump");
+    ANI.bump[k] = v;
+  }
+}
+function bumpN(key, v) { return '<span data-bump="' + key + '" data-v="' + v + '">' + v + "</span>"; }
+/* timer ring with a progress circle (Host r=52 in 120, phone r=25.5 in 58) */
+function ringSvg(big) { var c = big ? 60 : 29, r = big ? 52 : 25.5; return '<svg viewBox="0 0 ' + 2 * c + " " + 2 * c + '" aria-hidden="true"><circle class="tr" cx="' + c + '" cy="' + c + '" r="' + r + '"/><circle class="pr" cx="' + c + '" cy="' + c + '" r="' + r + '"/></svg>'; }
+function frac(left, dur) { return dur > 0 ? Math.max(0, Math.min(1, left / dur)).toFixed(3) : 1; }
+var DIE_CLS = { std: "dz-std", con: "dz-con", risk: "dz-risk", prime: "dz-prime" };
+function isPrime(v) { return v === 2 || v === 3 || v === 5 || v === 7; }
+/* the faces of a die; on the Prime die the prime faces glow */
+function facesHtml(d) { return LOL.DICE[d].map(function (v) { return d !== "prime" ? String(v) : isPrime(v) ? '<span class="pf">' + v + "</span>" : '<span class="np">' + v + "</span>"; }).join(" "); }
+
+/* sound: big screen only (user 28 Nov), made with WebAudio (no files); the browser lets it play only after a click on the page */
+var SND = {
+  ctx: null,
+  on: function () { return !!H && Number(H.cfg.sound) !== 0; },
+  wake: function () {
+    try { if (!SND.ctx) { var A = window.AudioContext || window.webkitAudioContext; if (A) SND.ctx = new A(); } if (SND.ctx && SND.ctx.state === "suspended") SND.ctx.resume(); } catch (e) {}
+  },
+  ready: function () { return SND.on() && SND.ctx && SND.ctx.state === "running"; },
+  tone: function (f, dur, type, vol, f2, at) {
+    var c = SND.ctx, t = c.currentTime + (at || 0), o = c.createOscillator(), g = c.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || 0.12, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + dur + 0.02);
+  },
+  noise: function (dur, vol, at, hp) {
+    var c = SND.ctx, t = c.currentTime + (at || 0), n = Math.floor(c.sampleRate * dur), b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0);
+    for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    var s = c.createBufferSource(), g = c.createGain(), f = c.createBiquadFilter(); f.type = "highpass"; f.frequency.value = hp || 800;
+    s.buffer = b; g.gain.value = vol || 0.08; s.connect(f); f.connect(g); g.connect(c.destination); s.start(t);
+  },
+  play: function (k) {
+    if (!SND.ready()) return;
+    try {
+      if (k === "tick") SND.tone(1320, 0.06, "square", 0.05);
+      else if (k === "tick0") SND.tone(660, 0.18, "square", 0.07);
+      else if (k === "round") { SND.noise(0.35, 0.06, 0, 1500); SND.tone(220, 0.35, "sawtooth", 0.06, 880); SND.tone(880, 0.18, "square", 0.06, 0, 0.36); SND.tone(1320, 0.25, "square", 0.06, 0, 0.5); }
+      else if (k === "roll") { for (var i = 0; i < 9; i++) SND.noise(0.035, 0.12, i * 0.085 + Math.random() * 0.03, 2500); SND.tone(140, 0.12, "triangle", 0.12, 0, 0.82); }
+      else if (k === "reveal") { SND.tone(523, 0.14, "triangle", 0.1); SND.tone(659, 0.14, "triangle", 0.1, 0, 0.12); SND.tone(784, 0.3, "triangle", 0.1, 0, 0.24); }
+      else if (k === "chime") { SND.tone(784, 0.25, "sine", 0.1); SND.tone(1175, 0.4, "sine", 0.08, 0, 0.15); }
+    } catch (e) {}
+  }
+};
+document.addEventListener("pointerdown", function () { if (document.body.classList.contains("host")) SND.wake(); }, true);
 
 /* ---------- small helpers ---------- */
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -472,7 +639,7 @@ function qrSvg(text) {
 var DEF_CFG = { room: "ห้องเรียน", tBuild: 60, tPick: 15, tRr: 10, tRev: 12, tVote: 20, tBreak: 180,
   special: 1, votePct: 50, voteCount: 0, cap: 3, crowdX: 0,
   tEv: 20, tEvVote: 15, tCook: 30, tAura: 20, tGod: 10, tGuess: 10, tNpc: 10, tLocked: 30,
-  start: 15 };   /* starting score (rules 28 Nov, 0-30 by the user) */   /* The 67 Event time limits (rules section 12) */   /* voteCount 0 = use votePct; crowdX 0 = number of players / 5 rounded up */
+  start: 15, anim: 1, sound: 1 };   /* anim: animations on the big screen and phones, sound: big screen only (step 8) */   /* starting score (rules 28 Nov, 0-30 by the user) */   /* The 67 Event time limits (rules section 12) */   /* voteCount 0 = use votePct; crowdX 0 = number of players / 5 rounded up */
 var PVC = Date.now();   /* version numbers of secret data keep growing across a reload of the Host (phones drop anything older) */
 var H = null, KEYS = {}, LASTPRIV = {}, DIRTY = {}, HOSTKEY = null, HV = { kill: null, killT: 0, cfgOpen: false, endAsk: 0 };
 var TEST = /[?&]test\b/.test(location.search);
@@ -639,14 +806,14 @@ function hostAct(p, a) {
     if (!p.rrLeft || p.rrDone || p.rrBlock) return;
     p.rrDone = true;
     if (a.use) { p.x = pick(LOL.DICE[p.die]); p.rerolled = true; p.rrLeft = Math.max(0, (Number(p.rrLeft) || 0) - 1); }   /* re-rolls left (at most 1 per round) */
-    if (rrAllDone()) H.deadline = Date.now() + 800;
+    if (rrAllDone()) H.deadline = Date.now() + (a.use && aniCfg() ? 2000 : 800);   /* a re-roll: let the phone's roll land first */
   } else return;
   saveHost(); renderHost(); bcast();
 }
 function rrAllDone() { return H.players.every(function (q) { return !q.rrLeft || q.rrDone || q.rerolled || q.rrBlock; }); }
 
 /* ---------- game flow ---------- */
-function setPhase(ph, sec) { H.phase = ph; H.paused = 0; H.deadline = sec ? Date.now() + sec * 1000 : 0; H.phaseAt = Date.now(); }
+function setPhase(ph, sec) { H.phase = ph; H.paused = 0; H.deadline = sec ? Date.now() + sec * 1000 : 0; H.dur = sec ? sec * 1000 : 0; H.phaseAt = Date.now(); }
 function hostStart() {
   if (H.players.length < 2) return;
   H.runId = "lol-" + H.code + "-" + Date.now().toString(36); H.subOk = false;
@@ -723,7 +890,7 @@ function startBreak() {
   botsDo();
 }
 function startRound(t) {
-  H.round = t;
+  H.round = t; H.roundAt = Date.now();   /* the round banner starts here */
   if (t === 1 && !(H.rules || []).length) H.rules = [pick(LOL.RULES.filter(function (r) { return R1_EXCLUDE.indexOf(r) < 0; }))];
   H.curRules = activeRules(t);
   /* Let Him Cook: the cooked rule is added for its rounds, only for the players in its scope (pids) */
@@ -772,7 +939,7 @@ function endGod() {
   toReroll();
 }
 function toReroll() {
-  if (rrAllDone()) return endReroll();
+  if (rrAllDone()) { if (aniCfg()) { setPhase("reroll", 2); return; } return endReroll(); }   /* nobody can re-roll: with animations, 2 s so the phones show the roll */
   setPhase("reroll", Number(H.cfg.tRr) || 10);
   botsDo();
 }
@@ -819,8 +986,10 @@ function endReroll() {
       H.ev = { round: t, lords: L.map(function (i) { return H.players[i].pid; }), opts: opts, votes: {}, stage: "pending" };
     }
   }
-  setPhase("reveal", Number(H.cfg.tRev) || 12);
+  setPhase("reveal", (Number(H.cfg.tRev) || 12) + revealAniSec());
 }
+/* user 28 Nov 15:05: the reveal gets more time automatically for the animations of the rules in force (filled in with batch 2) */
+function revealAniSec() { return 0; }
 
 /* ---------- The 67 Event ---------- */
 function startEv() { H.ev.stage = "choose"; setPhase("ev", H.ev.lords.length > 1 ? Number(H.cfg.tEvVote) || 15 : Number(H.cfg.tEv) || 20); botsDo(); }
@@ -974,6 +1143,7 @@ function publicState() {
   var accs = H.players.map(function (p) { return p.acc; }), rk = rankOf(accs);
   var st = { type: "state", v: LOL_V, code: H.code, room: H.cfg.room, phase: H.phase, round: H.round, n: H.players.length,
     left: H.deadline ? Math.max(0, H.deadline - Date.now()) : 0, paused: H.paused ? 1 : 0, hpub: HOSTKEY.pub, ts: Date.now(),
+    dur: H.dur || 0, el: H.phaseAt ? Date.now() - H.phaseAt : 1e7, anim: Number(H.cfg.anim) === 0 ? 0 : 1,   /* phones: timer ring and where their animations are */
     players: H.players.map(function (p, i) { return { pid: p.pid, name: p.name, idx: i, bot: p.bot, acc: p.acc, rank: rk[i] }; }),
     cnt: { built: H.players.filter(function (p) { return p.built; }).length, picked: H.players.filter(function (p) { return p.die; }).length } };
   if (H.phase === "reveal" || H.phase === "end") {
@@ -1039,6 +1209,7 @@ function sendState() {
 }
 
 /* ---------- host controls ---------- */
+var CFG_BOOL = ["special", "anim", "sound"];   /* settings that are on/off switches */
 var HACT = {
   start: function () { hostStart(); },
   bots: function () { addBots(5); },
@@ -1058,7 +1229,7 @@ var HACT = {
     Object.keys(DEF_CFG).forEach(function (k) {
       var el = document.getElementById("cf_" + k); if (!el) return;
       if (k === "room") H.cfg.room = el.value.trim().slice(0, 30) || DEF_CFG.room;
-      else if (k === "special") H.cfg.special = el.checked ? 1 : 0;
+      else if (CFG_BOOL.indexOf(k) >= 0) H.cfg[k] = el.checked ? 1 : 0;
       else { var n = Math.round(Number(el.value)); if (!isFinite(n) || el.value.trim() === "") n = DEF_CFG[k]; H.cfg[k] = Math.max(LIM[k][0], Math.min(LIM[k][1], n)); }
     });
     ls("lol-cfg", JSON.stringify(H.cfg)); HV.cfgOpen = false; saveHost(); renderHost(); bcast();
@@ -1076,7 +1247,9 @@ var HACT = {
   },
   again: function () { H.phase = "lobby"; H.round = 0; H.places = null; H.deadline = 0; H.paused = 0; H.subOk = false; saveHost(); renderHost(); bcast(); },
   subOpen: function () { subOpen(); },
-  cfgReset: function () { Object.keys(DEF_CFG).forEach(function (k) { var el = document.getElementById("cf_" + k); if (!el) return; if (k === "special") el.checked = !!DEF_CFG.special; else el.value = DEF_CFG[k]; }); },
+  cfgReset: function () { Object.keys(DEF_CFG).forEach(function (k) { var el = document.getElementById("cf_" + k); if (!el) return; if (CFG_BOOL.indexOf(k) >= 0) el.checked = !!DEF_CFG[k]; else el.value = DEF_CFG[k]; }); },
+  askip: function () { ANI.skipAt = Date.now(); renderHost(); },   /* the teacher skips the animation now playing */
+  snd: function () { H.cfg.sound = SND.on() ? 0 : 1; var c = hostCfg(); c.sound = H.cfg.sound; ls("lol-cfg", JSON.stringify(c)); if (H.cfg.sound) { SND.wake(); SND.play("chime"); } saveHost(); renderHost(); },
   newroom: function () { if (!confirm("สร้างห้องใหม่? ผู้เล่นทุกคนต้องเข้าห้องใหม่ด้วยรหัสใหม่")) return; H.players.forEach(function (p) { if (!p.bot) Net.send({ type: "reject", to: p.pid, msg: "ครูปิดห้องนี้แล้ว" }); }); newRoom(); }
 };
 document.addEventListener("click", function (e) {
@@ -1093,12 +1266,17 @@ function lobbyQr() { if (QRC.code !== H.code) { QRC.code = H.code; QRC.svg = qrS
 function timerHtml() {
   if (H.paused) return '<div class="ring pz">หยุด</div>';
   if (!H.deadline) return "";
-  var s = secs(H.deadline - Date.now());
-  return '<div class="ring' + (s <= 5 ? " warn" : "") + '" id="hring">' + s + "</div>";
+  var left = H.deadline - Date.now(), s = secs(left);
+  return '<div class="ring' + (s <= 5 ? " warn" : "") + '" id="hringw" style="--p:' + frac(left, H.dur) + '">' + ringSvg(true) + '<span id="hring">' + s + "</span></div>";
 }
 function tickHost() {
-  var el = document.getElementById("hring"); if (!el || !H.deadline) return;
-  var s = secs(H.deadline - Date.now()); if (el.textContent !== String(s)) { el.textContent = s; el.classList.toggle("warn", s <= 5); }
+  var el = document.getElementById("hring"), w = document.getElementById("hringw"); if (!el || !w || !H.deadline) return;
+  var left = H.deadline - Date.now(), s = secs(left);
+  w.style.setProperty("--p", frac(left, H.dur));
+  if (el.textContent !== String(s)) {
+    el.textContent = s; w.classList.toggle("warn", s <= 5);
+    if (s <= 5 && s >= 1 && !H.paused) SND.play(s === 1 ? "tick0" : "tick");   /* the last 5 seconds */
+  }
 }
 function hdr(title, sub) {
   return '<div class="hdr"><div class="hl"><div class="s1">' + esc(H.cfg.room) + " รหัส " + esc(H.code) + '</div><div class="s2">Logic over Luck</div></div>' +
@@ -1108,7 +1286,9 @@ function controls() {
   if (H.phase === "lobby" || H.phase === "end") return "";
   var ask = Date.now() - HV.endAsk < 4000, br = H.ev && H.ev.brain;
   return '<div class="ftr"><div style="display:flex;gap:14px"><button class="gb" data-h="pause">' + (H.paused ? "▶ เดินเวลาต่อ" : "⏸ หยุดเวลา") + '</button><button class="gb" data-h="skip">⏭ จบเวลาเฟสนี้</button>' +
-    (br && H.phase !== "evd" ? '<button class="gb" data-h="brain">' + (HV.brainHide ? "แสดงกฎที่เปิดเผย" : "ซ่อนกฎที่เปิดเผย") + "</button>" : "") + "</div>" +
+    (br && H.phase !== "evd" ? '<button class="gb" data-h="brain">' + (HV.brainHide ? "แสดงกฎที่เปิดเผย" : "ซ่อนกฎที่เปิดเผย") + "</button>" : "") +
+    (Number(H.cfg.anim) !== 0 && !RM ? '<button class="gb" data-h="askip" title="ข้ามภาพเคลื่อนไหวที่กำลังเล่น ไปผลสุดท้ายทันที">⏩ ข้ามภาพ</button>' : "") +
+    '<button class="gb" data-h="snd" aria-label="เปิดหรือปิดเสียง">' + (SND.on() ? "🔊 เสียง" : "🔇 ปิดเสียง") + "</button></div>" +
     '<button class="gb red" data-h="end">' + (ask ? "แตะอีกครั้งเพื่อจบเกม" : "ตัดจบเกม") + "</button></div>";
 }
 function renderHost() {
@@ -1126,7 +1306,7 @@ function renderHost() {
   } else if (ph === "build") {
     var done = H.players.filter(function (p) { return p.built; }).length;
     h = hdr("สร้างกฎส่วนตัว", "เลือกเงื่อนไข 1 ข้อ + ผล 1 ข้อ รวมไม่เกิน 5 เหรียญ บนมือถือ") +
-      '<div class="main" style="flex-direction:column;align-items:center;justify-content:center;gap:30px"><div class="big2">' + done + " / " + n + '</div><div class="su">คนที่สร้างกฎแล้ว ไม่ทันเวลา ระบบสุ่มกฎให้</div>' +
+      '<div class="main" style="flex-direction:column;align-items:center;justify-content:center;gap:30px"><div class="big2">' + bumpN("build", done) + " / " + n + '</div><div class="su">คนที่สร้างกฎแล้ว ไม่ทันเวลา ระบบสุ่มกฎให้</div>' +
       '<div class="chips" style="justify-content:center;max-width:1600px">' + H.players.map(function (p) { return '<span class="chip' + (p.built ? " done" : "") + '" style="padding-right:20px">' + (p.built ? "✓ " : "") + esc(p.name) + "</span>"; }).join("") + "</div></div>" + controls();
   } else if (ph === "vote" || ph === "voted") {
     h = hdr(ph === "vote" ? "โหวตกฎส่วนรวม ก่อนรอบที่ " + H.vote.round : "กฎส่วนรวมรอบที่ " + H.vote.round + "–" + (H.vote.round + 2), ph === "vote" ? (H.vote.kind === "top1" ? "อันดับ 1 เลือกกฎบนมือถือ" : "เฉพาะกลุ่มโหวตโหวตบนมือถือ คนละ 1 เสียง") : "ใช้ตั้งแต่รอบถัดไป") + voteHtml() + controls();
@@ -1134,12 +1314,14 @@ function renderHost() {
     h = hdr("พักครึ่ง", "เปลี่ยนกฎส่วนตัวได้ 1 ครั้งบนมือถือ (เลือกดอกเบี้ยทบต้นใหม่ไม่ได้)") + breakHtml() + controls();
   } else if (ph === "pick" || ph === "reroll") {
     var picked = H.players.filter(function (p) { return p.die; }).length;
-    var sub = ph === "pick" ? "เลือกแล้ว " + picked + " / " + n + " คน" : "ใครยังมีสิทธิ์ทอยใหม่ ตัดสินใจบนมือถือ";
+    var sub = ph === "pick" ? "เลือกแล้ว " + bumpN("pick", picked) + " / " + n + " คน" : "ใครยังมีสิทธิ์ทอยใหม่ ตัดสินใจบนมือถือ";
     var banAll = H.curRules.indexOf("ban") >= 0, banNote = banAll ? "ห้ามใช้รอบนี้" : "ห้ามใช้ (เฉพาะคนที่ได้รับผล)";
     h = hdr("รอบที่ " + H.round + " / 12" + (H.round === 12 ? " <span style=\"color:#FFD84D\">คะแนน ×2</span>" : ""), PHASE_T[ph] + " " + sub) +
-      '<div class="main" style="flex-direction:column;justify-content:center;gap:28px">' + rulesStrip() + '<div class="dref">' + LOL.DIE_IDS.map(function (d) {
+      '<div class="main" style="flex-direction:column;justify-content:center;gap:28px">' + rulesStrip() +
+      (ph === "reroll" ? '<div class="tumble">' + [0, 1, 2, 3, 4].map(function (k) { return '<i class="a-tum" data-t0="' + H.phaseAt + '" style="--d:' + k * 90 + 'ms">?</i>'; }).join("") + "</div>" : "") +
+      '<div class="dref">' + LOL.DIE_IDS.map(function (d) {
         var b = H.banned.indexOf(d) >= 0, nf = H.npcDie === d;
-        return '<div class="d' + (b && banAll ? " ban" : "") + (nf ? " npc" : "") + '"><div class="n">' + DIE_T[d] + '</div><div class="f">' + facesOf(d) + "</div>" + (b ? '<div class="bt">' + banNote + "</div>" : "") + (nf ? '<div class="nt">NPC Mode: ทุกคนต้องใช้ ยกเว้น Sigma Lord</div>' : "") + "</div>"; }).join("") + "</div>" +
+        return '<div class="d ' + DIE_CLS[d] + (b && banAll ? " ban" : "") + (nf ? " npc" : "") + '"><div class="n">' + DIE_T[d] + '</div><div class="f">' + facesHtml(d) + "</div>" + (b ? '<div class="bt">' + banNote + "</div>" : "") + (nf ? '<div class="nt">NPC Mode: ทุกคนต้องใช้ ยกเว้น Sigma Lord</div>' : "") + "</div>"; }).join("") + "</div>" +
       '<div class="su" style="text-align:center;margin-top:10px">' + (ph === "pick" ? (H.npcDie ? "รอบนี้ Sigma Lord เลือกเต๋าให้ทุกคนแล้ว รอ Sigma Lord เลือกเต๋าของตัวเอง" : "เลือกลูกเต๋าบนมือถือ ไม่มีใครเห็นว่าคุณเลือกลูกไหนจนกว่าจะเปิดผล") : "ทุกคนเห็นเลขของตัวเองแล้ว คนที่ยังมีสิทธิ์ทอยใหม่ (1 ครั้งต่อเกม) ตัดสินใจตอนนี้") +
       (H.delulu && ph === "pick" ? '<br><b style="color:#FFD84D">Delulu: เลือกเต๋าแล้ว ทุกคนยกเว้น Sigma Lord ต้องทายเลขที่จะทอยได้ ทายผิดเสีย 6 คะแนนสะสม</b>' : "") + "</div>" + brainPanel() + "</div>" + controls();
   } else if (ph === "guess" || ph === "god" || ph === "npc") {
@@ -1154,8 +1336,33 @@ function renderHost() {
       '<div class="ftr"><div>' + (subCounted().length ? '<button class="gb" data-h="subOpen">' + (H.subOk ? "ส่งผลแล้ว ✓ (ส่งอีกครั้ง)" : "ส่งผลเข้าระบบคะแนนชมรม") + "</button>" : '<span class="su" style="font-size:24px">ไม่มีใครใส่เลขประจำตัว จึงไม่มีผลให้ส่งเข้าระบบคะแนนชมรม</span>') +
       '</div><div style="display:flex;gap:14px"><button class="gb" data-h="again">กลับล็อบบี้ (เล่นอีกเกม)</button></div></div>';
   }
+  if (H.roundAt && H.round && ["pick", "reroll", "npc", "guess", "god"].indexOf(ph) >= 0)   /* the round banner (1.3), invisible once it has played */
+    h += '<div class="rban a-ban" data-t0="' + H.roundAt + '" aria-hidden="true">' + (H.round === 12 ? "รอบสุดท้าย<small>คะแนน ×2</small>" : "รอบ " + H.round + "<small>จาก 12</small>") + "</div>";
   if (HV.cfgOpen) h += cfgHtml();
   el.innerHTML = h;
+  hostAni(el);
+}
+/* after each redraw: the new screen's blocks slide in, running animations carry on, counters bounce, and a sound when the screen changes */
+function hostAni(el) {
+  aniSet(Number(H.cfg.anim) !== 0);
+  var ph = H.phase, t0 = H.phaseAt || 0;
+  for (var i = 0; i < el.children.length; i++) {
+    var c = el.children[i];
+    if (c.classList.contains("hdr") || c.classList.contains("ftr") || c.classList.contains("ov") || c.classList.contains("rban")) continue;
+    aniIn(c.children.length && c.children.length <= 8 ? c.children : [c], t0, 90);
+  }
+  aniSync(el); aniBump(el);
+  var key = ph + ":" + H.round + ":" + (H.vote ? H.vote.round : "");
+  if (ANI.sndKey !== key) {
+    var fresh = ANI.sndKey !== null && Date.now() - t0 < 2000;   /* not on the first draw after opening the page */
+    ANI.sndKey = key;
+    if (fresh) {
+      if ((ph === "pick" || ph === "npc") && Date.now() - (H.roundAt || 0) < 2000) SND.play("round");
+      else if (ph === "reroll") SND.play("roll");
+      else if (ph === "reveal") SND.play("reveal");
+      else if (["vote", "voted", "break", "ev", "evd", "end", "build"].indexOf(ph) >= 0) SND.play("chime");
+    }
+  }
 }
 function rcard(id, cls, extra) {
   return '<div class="rcard ' + (cls || "") + '"><div class="rn">' + esc(RULE_T[id]) + '</div><div class="re">' + esc(id === H.special && H.round >= 6 && cls && cls.indexOf("sp") >= 0 ? "กฎพิเศษรอบสุดท้าย" : "") + '</div><div class="rd">' + esc(ruleDesc(id, crowdXNow())) + "</div>" + (extra || "") + "</div>";
@@ -1237,7 +1444,7 @@ function voteHtml() {
     return rcard(id, cls, res ? '<div class="vt">' + res.tally[id] + " เสียง</div>" : "");
   }).join("");
   var note = res ? (res.how === "random" ? "ไม่มีใครโหวต ระบบสุ่มจาก 3 ข้อ" : res.how === "tie" ? "คะแนนเท่ากัน ข้อที่ได้รับโหวตก่อนชนะ" : "") :
-    (V.kind === "top1" ? "อันดับ 1 เป็นคนเลือก" + (voters.length > 1 ? " (เสมอกัน " + voters.length + " คน โหวตกัน)" : "") : "กลุ่มโหวต " + voters.length + " คน (อันดับครึ่งล่าง)") + " โหวตแล้ว " + Object.keys(V.votes).length + " คน";
+    (V.kind === "top1" ? "อันดับ 1 เป็นคนเลือก" + (voters.length > 1 ? " (เสมอกัน " + voters.length + " คน โหวตกัน)" : "") : "กลุ่มโหวต " + voters.length + " คน (อันดับครึ่งล่าง)") + " โหวตแล้ว " + bumpN("vote", Object.keys(V.votes).length) + " คน";
   return '<div class="main" style="flex-direction:column;justify-content:center;gap:34px"><div class="rcards">' + cards + '</div><div class="su" style="text-align:center">' + note + "</div>" +
     (res ? "" : '<div class="chips" style="justify-content:center">' + voters.map(function (p) { return '<span class="chip' + (V.votes[p.pid] ? " done" : "") + '" style="padding-right:20px;font-size:24px">' + (V.votes[p.pid] ? "✓ " : "") + esc(p.name) + "</span>"; }).join("") + "</div>") +
     (!res && (H.rules || []).length ? '<div class="su" style="text-align:center">' + (H.rules.length >= 2 ? "กฎที่ชนะจะเพิ่มเข้ามา และ " + esc(RULE_T[H.rules[0]]) + " จะหลุดออก (ใช้ 2 ข้อล่าสุด)" : "กฎที่ชนะจะใช้คู่กับ " + esc(RULE_T[H.rules[0]])) + "</div>" : "") +
@@ -1247,7 +1454,7 @@ function breakHtml() {
   var n = H.players.length, done = H.players.filter(function (p) { return p.brkDone; }).length;
   return '<div class="main" style="flex-direction:column;justify-content:center;align-items:center;gap:30px">' +
     (H.special ? '<div class="s1">กฎพิเศษรอบสุดท้าย จะเพิ่มเข้ามาในรอบ 12 คู่กับกฎ 2 ข้อที่ใช้อยู่ตอนนั้น (กฎที่โหวตก่อนรอบ 7 และ 10)</div><div class="rcards" style="width:900px">' + rcard(H.special, "sp") + "</div>" : '<div class="su">ปิดกฎพิเศษรอบสุดท้ายไว้</div>') +
-    '<div class="big2">' + done + " / " + n + '</div><div class="su">คนที่ตัดสินใจแล้ว (เปลี่ยนกฎส่วนตัวได้ 1 ครั้ง หรือใช้กฎเดิม)</div>' +
+    '<div class="big2">' + bumpN("brk", done) + " / " + n + '</div><div class="su">คนที่ตัดสินใจแล้ว (เปลี่ยนกฎส่วนตัวได้ 1 ครั้ง หรือใช้กฎเดิม)</div>' +
     '<div class="su" style="text-align:center;max-width:1600px">ครึ่งบนหลังรอบ 6 ได้ทอยใหม่เพิ่ม 1 ครั้ง: ' + H.players.filter(function (p) { return p.rrBonus; }).map(function (p) { return esc(p.name); }).join(", ") + "</div></div>";
 }
 function revealHtml() {
@@ -1288,6 +1495,8 @@ function cfgHtml() {
     '<label>กฎพิเศษรอบสุดท้าย (เพิ่มในรอบ 12)<input type="checkbox" class="ck" id="cf_special"' + (Number(c.special) ? " checked" : "") + "></label>" +
     row("votePct", "กลุ่มโหวตและ Never Gonna Give You Up: % ของผู้เล่น (ปัดขึ้น)", 1) + row("voteCount", "หรือระบุเป็นจำนวนคน (0 = ใช้ %)", 1) +
     row("start", "คะแนนเริ่มต้นของทุกคน (0–30)", 1) + row("cap", "เสียคะแนนจากขโมยและตัดหน้าได้สูงสุดต่อรอบ", 1) + row("crowdX", "ค่า x ของภาษีสังคม (0 = จำนวนผู้เล่น ÷ 5 ปัดขึ้น)", 1) +
+    '<label>ภาพเคลื่อนไหว (จอใหญ่และมือถือ)<input type="checkbox" class="ck" id="cf_anim"' + (Number(c.anim) !== 0 ? " checked" : "") + "></label>" +
+    '<label>เสียงบนจอใหญ่<input type="checkbox" class="ck" id="cf_sound"' + (Number(c.sound) !== 0 ? " checked" : "") + "></label>" +
     '<div class="s1" style="margin-top:10px">The 67 Event (วินาที)</div>' + row("tEv", "Sigma Lord เลือก Event", 1) + row("tEvVote", "Sigma Lord หลายคนโหวต Event", 1) + row("tCook", "Let Him Cook เลือกกฎและผู้ได้รับผล", 1) +
     row("tAura", "Aura Farming เลือกกฎใหม่", 1) + row("tGod", "GOD MODE เลือกหน้าเต๋า", 1) + row("tGuess", "Delulu ทายเลข", 1) + row("tNpc", "NPC Mode เลือกเต๋าให้ทุกคน", 1) + row("tLocked", "Locked In เปลี่ยนกฎ", 1) +
     '<div style="display:flex;gap:16px;justify-content:space-between"><button class="gb" data-h="cfgReset">ใช้ค่าเริ่มต้นทั้งหมด</button><div style="display:flex;gap:16px"><button class="gb" data-h="cfgClose">ยกเลิก</button><button class="pb" data-h="cfgSave">บันทึก</button></div></div>' +
@@ -1470,7 +1679,7 @@ function simPanel() {
 /* =====================================================================
    PLAYER (phone)
    ===================================================================== */
-var P = { sid: "", sidInfo: null, ckOpen: false, code: "", pid: "", name: "", kp: null, key: null, hpub: "", st: null, priv: null, pv: 0, pend: null, joined: false, err: "", sel: { cond: null, eff: null }, view: "", recvAt: 0, needAt: 0, joinT: null };
+var P = { phKey: "", phaseStart: 0, rollKey: "", rollAt: 0, firstX: null, spin: false, sid: "", sidInfo: null, ckOpen: false, code: "", pid: "", name: "", kp: null, key: null, hpub: "", st: null, priv: null, pv: 0, pend: null, joined: false, err: "", sel: { cond: null, eff: null }, view: "", recvAt: 0, needAt: 0, joinT: null };
 function playerBoot(code) {
   document.body.className = "ph";
   P.code = code || ss("lol-code") || ""; P.pid = ss("lol-pid") || ""; P.name = ss("lol-name") || ""; P.sid = ss("lol-sid") || ""; P.ckOpen = !!ss("lol-sidok");
@@ -1517,6 +1726,8 @@ function onPlayerMsg(m) {
   if (!me) { if (P.joined) { P.joined = false; P.st = null; renderPlayer(); } return; }
   if (!P.joined) { P.joined = true; ss("lol-joined", P.code); clearInterval(P.joinT); }
   P.st = m; P.recvAt = Date.now();
+  var pk = m.phase + ":" + m.round + ":" + (m.vote ? m.vote.round : "");
+  if (pk !== P.phKey) { P.phKey = pk; P.phaseStart = P.recvAt - (m.el == null ? 1e7 : m.el); }   /* when this screen started on the Host (animations) */
   var hp = JSON.stringify(m.hpub);
   var ready = P.key && P.hpub === hp ? Promise.resolve() : Sec.derive(P.kp.priv, m.hpub).then(function (k) { P.key = k; P.hpub = hp; });
   ready.then(function () {
@@ -1587,8 +1798,10 @@ function pendDoneFor(a, st, pr) {
 function resendPend() { if (P.pend && !pendDone()) sendSec(P.pend); else P.pend = null; }
 function leftMs() { var st = P.st; if (!st || !st.left || st.paused) return 0; return st.left - (Date.now() - P.recvAt); }
 function tickPlayer() {
-  var el = document.getElementById("ptm"); if (!el) return;
-  var s = secs(leftMs()); if (el.textContent !== String(s)) { el.textContent = s; el.classList.toggle("warn", s <= 5); }
+  var el = document.getElementById("ptm"), w = document.getElementById("ptmw"); if (!el || !w) return;
+  var left = leftMs(), s = secs(left);
+  w.style.setProperty("--p", frac(left, P.st && P.st.dur));
+  if (el.textContent !== String(s)) { el.textContent = s; w.classList.toggle("warn", s <= 5); }
 }
 
 var PACT = {
@@ -1638,7 +1851,7 @@ var PACT = {
   reload: function () { location.reload(); }
 };
 document.addEventListener("click", function (e) {
-  var b = e.target.closest("[data-p]"); if (!b || b.disabled || document.body.className !== "ph") return;
+  var b = e.target.closest("[data-p]"); if (!b || b.disabled || !document.body.classList.contains("ph")) return;
   if (PACT[b.dataset.p]) PACT[b.dataset.p](b);
 });
 document.addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target && (e.target.id === "jc" || e.target.id === "jn")) PACT.join(); });
@@ -1652,10 +1865,26 @@ function renderPlayer(force) {
   app.innerHTML = '<div id="pw">' + html + "</div>";
   if (keepJ && document.getElementById("jc")) { document.getElementById("jc").value = keepJ[0]; document.getElementById("jn").value = keepJ[1]; }
   window.scrollTo(0, y);
+  aniSet(!P.st || P.st.anim !== 0);
+  var pw = document.getElementById("pw");
+  aniIn(pw.children, P.joined ? P.phaseStart : 0, 40);
+  aniSync(pw);
+  spinRoll();
   tickPlayer();
 }
+/* the phone's own roll (4.2): random faces flicker for 0.9 s on top of the real number (which stays in the page, hidden), then it lands */
+function spinRoll() {
+  if (P.spin) return;
+  (function step() {
+    var el = document.querySelector(".rspin"), e = Date.now() - P.rollAt;
+    if (!el || e >= 900 || !aniOn()) { P.spin = false; return; }
+    P.spin = true;
+    var f = (el.getAttribute("data-f") || "").split(","); el.textContent = f[Math.floor(Math.random() * f.length)];
+    setTimeout(step, 70);
+  })();
+}
 function pTop(title, sub, timer) {
-  return '<div class="ptop"><div><div class="t">' + title + '</div><div class="s">' + (sub || "") + "</div></div>" + (timer ? (P.st && P.st.paused ? '<div class="tm" style="font-size:.9rem">หยุด</div>' : '<div class="tm" id="ptm">' + secs(leftMs()) + "</div>") : "") + "</div>";
+  return '<div class="ptop"><div><div class="t">' + title + '</div><div class="s">' + (sub || "") + "</div></div>" + (timer ? (P.st && P.st.paused ? '<div class="tm" style="font-size:.9rem;border:5px solid #FFD65A">หยุด</div>' : P.st && P.st.left ? '<div class="tm" id="ptmw">' + ringSvg(false) + '<span id="ptm">' + secs(leftMs()) + "</span></div>" : "") : "") + "</div>";
 }
 function statusBar() {
   var st = P.st, me = myPub(); if (!me) return "";
@@ -1868,7 +2097,7 @@ function playerHtml() {
     if (P.pend && P.pend.a === "pick") P.godSel = !!P.pend.god; else if (pr.die) P.godSel = !!pr.godNow;
     return h + pTop(rt, "เลือกลูกเต๋า (เปลี่ยนได้จนหมดเวลา)", true) + ruleBox(pr) + rulesBoxP(st) +
       (st.delulu && !isLord() ? '<div class="crule"><b>Delulu:</b> หลังเลือกเต๋า ต้องทายเลขที่จะทอยได้ ทายผิดเสีย 6 คะแนนสะสม</div>' : "") +
-      '<div class="dice">' + LOL.DIE_IDS.map(function (d) { var b = ban.indexOf(d) >= 0; return '<button class="die' + (mine === d ? " on" : "") + '" data-p="die" data-v="' + d + '"' + (b ? " disabled" : "") + '><div class="n">' + DIE_T[d] + '</div><div class="f">' + (b ? "ห้ามใช้รอบนี้" : facesOf(d)) + "</div></button>"; }).join("") + "</div>" +
+      '<div class="dice">' + LOL.DIE_IDS.map(function (d) { var b = ban.indexOf(d) >= 0; return '<button class="die ' + DIE_CLS[d] + (mine === d ? " on" : "") + '" data-p="die" data-v="' + d + '"' + (b ? " disabled" : "") + ">" + (mine === d ? '<span class="ck">✓</span>' : "") + '<div class="n">' + DIE_T[d] + '</div><div class="f">' + (b ? "ห้ามใช้รอบนี้" : facesHtml(d)) + "</div></button>"; }).join("") + "</div>" +
       (pr.god === 1 ? '<button class="btn' + (P.godSel ? "" : " alt") + '" data-p="god">' + (P.godSel ? "✓ ใช้ GOD MODE รอบนี้ (แตะเพื่อยกเลิก)" : "ใช้ GOD MODE รอบนี้") + '</button><div class="muted">เลือกเต๋าแล้ว จะได้เลือกหน้าเต๋าเองภายใน ' + (st.godT || 10) + " วินาที รอบนั้นทอยใหม่ไม่ได้</div>" : "") +
       (mine ? '<div class="ok">✓ เลือก ' + DIE_T[mine] + " แล้ว</div>" : P.pend && P.pend.a === "pick" ? '<div class="muted">กำลังส่ง…</div>' : '<div class="muted">ไม่เลือกภายในเวลา ระบบใช้ลูกเดิมจากรอบก่อน (รอบแรกสุ่มให้)</div>') +
       '<div class="muted">เลือกแล้ว ' + st.cnt.picked + " / " + st.n + " คน</div>";
@@ -1876,7 +2105,7 @@ function playerHtml() {
   if (ph === "reroll") {
     var canRr = pr.rrLeft && !pr.rrDone && !pr.rerolled && !pr.rrBlock;
     return h + pTop(rt, "ผลทอยของคุณ (คนอื่นยังไม่เห็น)", true) + ruleBox(pr) + rulesBoxP(st) +
-      '<div class="pc"><div class="muted" style="text-align:center">' + DIE_T[pr.die] + '</div><div class="roll">' + pr.x + "</div>" +
+      '<div class="pc"><div class="muted" style="text-align:center">' + DIE_T[pr.die] + "</div>" + rollBox(st, pr) +
       (pr.rerolled ? '<div class="ok" style="text-align:center">ทอยใหม่แล้ว ผลนี้คือผลจริงของรอบนี้</div>' : "") + "</div>" +
       (canRr ? '<div class="muted">เหลือสิทธิ์ทอยใหม่ ' + (Number(pr.rrLeft) || 0) + ' ครั้ง (ใช้ได้รอบละครั้ง) ทอยใหม่แล้วต้องใช้ผลใหม่</div><div class="dice"><button class="btn" data-p="rr" data-v="1">ทอยใหม่</button><button class="btn alt" data-p="rr" data-v="0">ใช้ผลนี้</button></div>' + (P.pend && P.pend.a === "rr" ? '<div class="muted">กำลังส่ง…</div>' : "")
         : '<div class="muted">' + (pr.rrBlock ? "รอบนี้ใช้ GOD MODE ทอยใหม่ไม่ได้" : pr.rrLeft ? "ใช้ผลนี้แล้ว" : "ใช้สิทธิ์ทอยใหม่ไปแล้ว") + " รอคนอื่นตัดสินใจ</div>") +
@@ -1896,6 +2125,23 @@ function playerHtml() {
       '<div class="muted">คะแนนสะสมเท่ากัน ตัดสินด้วยคะแนนรอบ 12, 11, ... ตามลำดับ</div><button class="btn alt" data-p="leave">ออกจากห้อง</button>';
   }
   return h;
+}
+/* the phone's roll (4.2, 4.3, 4.6): a die in its own colour; High Risk 0 = smoke, 7 = fire; Prime glows on a prime face;
+   after a re-roll the old number flies to the side, crossed out. The number itself is always in the page (.roll). */
+function rollBox(st, pr) {
+  var key = st.round + (pr.rerolled ? "b" : "a");
+  if (!pr.rerolled && pr.x != null) P.firstX = { r: st.round, x: pr.x };
+  if (key !== P.rollKey) {
+    P.rollKey = key;
+    var seen = pr.rerolled ? P.firstX && P.firstX.r === st.round : Date.now() - P.phaseStart < 4000;   /* opened late or reloaded: no roll */
+    P.rollAt = seen ? Date.now() : 0;
+  }
+  var x = pr.x, d = pr.die, t0 = P.rollAt, fx = d === "risk" && (x === 0 || x === 7) ? x : null;
+  var old = pr.rerolled && P.firstX && P.firstX.r === st.round ? '<div class="oldx a-old" data-t0="' + t0 + '">ผลเดิม <s>' + P.firstX.x + "</s></div>" : "";
+  return old + '<div class="rollbox ' + DIE_CLS[d] + (fx != null ? " x" + fx : "") + ' a-roll" data-t0="' + t0 + '">' +
+    '<div class="roll a-land' + (d === "prime" && isPrime(x) ? " pf" : "") + '" data-t0="' + t0 + '">' + x + "</div>" +
+    '<div class="rspin a-spin" data-t0="' + t0 + '" data-f="' + LOL.DICE[d].join(",") + '" aria-hidden="true">' + x + "</div>" +
+    (fx != null ? '<div class="fx fx' + fx + ' a-fx" data-t0="' + t0 + '" style="--d:900ms" aria-hidden="true"></div>' : "") + "</div>";
 }
 function stepsHtml(d) {
   var out = [];

@@ -178,8 +178,9 @@ async function runOne(browser, ev) {
         const want = L.applyFanum(acc2, lordsIdx, sh, {}, D.hist, D.fTie);
         ok(JSON.stringify(want.acc) === JSON.stringify(D.acc), "Fanum Tax: คิดใหม่ตรงกับจอใหญ่ " + JSON.stringify(D.fanum));
         const elig = acc2.filter((v, i) => v > 67 && !sh[i]).length;
-        const payers = Object.keys(D.fanum).filter((k) => D.fanum[k] < 0).length;
-        ok(payers === Math.min(5, elig), "Fanum Tax: มีคนเกิน 67 ที่ไม่มีโล่ " + elig + " คน จ่าย " + payers + " คน");
+        /* Sigma Lords are taxed one after another: someone who drops to 67 or less after the first is replaced by the next */
+        const payers = Object.keys(D.fanum).filter((k) => D.fanum[k] < 0).length, wantPay = want.delta.filter((v) => v < 0).length;
+        ok(payers === wantPay && payers >= Math.min(5, elig), "Fanum Tax: มีคนเกิน 67 ที่ไม่มีโล่ " + elig + " คน มีคนจ่าย " + payers + " คน (Sigma Lord 2 คนเก็บทีละคน)");
       }
       if (ev === "brainrot") {
         const others = D.cond.map((r, i) => i).filter((i) => lordsIdx.indexOf(i) < 0);

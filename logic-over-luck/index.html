@@ -561,6 +561,30 @@ body.ani .rr .ac.hot { animation: hot 1s ease-in-out infinite; }
 .chainb.open { background: #14562F; }
 .chainf { position: fixed; inset: 0; pointer-events: none; z-index: 30; border: 10px solid transparent; border-image: repeating-linear-gradient(45deg, #5A6785 0 10px, #C9D0E6 10px 16px, #5A6785 16px 26px) 10; }
 body.ani .chainf { animation: emerg 2s ease-in-out infinite; }
+/* ---------- end of the game (batch 5) ---------- */
+.a-rise, .a-wipe { animation-delay: calc(var(--d, 0ms) - var(--el, 0ms)); animation-fill-mode: both; }
+#conf, #pconf { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
+.pod .blk { transform-origin: 50% 100%; }
+body.ani .a-rise { animation-name: rise; animation-duration: .7s; animation-timing-function: cubic-bezier(.3, 1.3, .5, 1); }
+@keyframes rise { from { transform: scaleY(0); } to { transform: none; } }
+.endov { position: absolute; inset: -8px -10px 0; z-index: 12; border-radius: 26px; background: rgba(8, 11, 26, .97); display: flex; flex-direction: column; align-items: center; gap: 12px; padding-top: 20px; overflow: hidden; }
+.racew { position: relative; width: 1500px; height: 560px; }
+.rcover { position: absolute; top: 0; bottom: 30px; right: 0; width: 1460px; background: rgb(8, 11, 26); transform-origin: 100% 50%; transform: scaleX(0); }
+body.ani .a-wipe { animation-name: wipe; animation-duration: 4s; animation-timing-function: linear; }
+@keyframes wipe { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.rend { position: absolute; display: inline-flex; align-items: center; gap: 4px; } .rend b { font-family: Prompt, sans-serif; font-size: 24px; color: #FFD84D; }
+.vhs { display: flex; align-items: center; gap: 28px; }
+.reel { width: 70px; height: 70px; border-radius: 50%; border: 8px solid #C9D0E6; background: repeating-conic-gradient(#14213D 0 30deg, #5A6785 30deg 60deg); }
+body.ani .endov.tape .reel { animation: reelspin .5s linear infinite reverse; }
+@keyframes reelspin { to { transform: rotate(360deg); } }
+.rew { font-family: Prompt, sans-serif; font-size: 54px; color: #fff; letter-spacing: 6px; text-shadow: 3px 0 #FF3D5A, -3px 0 #4DD8FF; }
+body.ani .endov.tape .rew { animation: rewb 1s steps(1, end) infinite; }
+@keyframes rewb { 50% { opacity: .35; } }
+.ttab { border-collapse: separate; border-spacing: 10px 8px; font-size: 30px; }
+.ttab th { color: #B4BEDA; font-weight: 700; padding: 0 10px; } .ttab td { text-align: center; padding: 6px 14px; border-radius: 12px; background: #171E38; }
+.ttab td.tn { text-align: left; white-space: nowrap; } .ttab td.tw { background: #1F5A3E; color: #5BD98F; font-weight: 700; box-shadow: 0 0 16px rgba(91, 217, 143, .5); }
+.ttab td:last-child { background: transparent; }
+.tpl { display: inline-block; font-family: Prompt, sans-serif; font-weight: 700; color: #0E1326; background: #FFD84D; border-radius: 99px; padding: 4px 18px; white-space: nowrap; }
 /* banned dice: police tape (11.2) */
 .dref .d.ban::before, .die.bn::before { content: "ห้ามใช้ ห้ามใช้ ห้ามใช้ ห้ามใช้"; position: absolute; left: -20%; right: -20%; top: 42%; z-index: 3; transform: rotate(-12deg); background: repeating-linear-gradient(45deg, #FFD84D 0 18px, #14213D 18px 36px);
   color: transparent; height: 30px; overflow: hidden; box-shadow: 0 3px 8px rgba(0, 0, 0, .4); }
@@ -588,7 +612,7 @@ body.ani .a-old { animation-name: oldx; animation-duration: .6s; }
 <div id="app"></div>
 <div id="netb" aria-hidden="true"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/logic-over-luck/engine.js?v=2026112813"></script>
+<script src="/logic-over-luck/engine.js?v=2026112814"></script>
 <script>
 "use strict";
 /* Logic over Luck (Rules Race: Math Club Edition v5). Big screen (#host) + phones (#join=CODE).
@@ -598,7 +622,7 @@ body.ani .a-old { animation-name: oldx; animation-duration: .6s; }
    each phone and the Host make an ECDH P-256 key pair, the shared AES-GCM key is never sent. */
 
 /* page version: RAISE THIS NUMBER (and the ?v= of engine.js above) EVERY TIME THIS FOLDER CHANGES (YYYYMMDD + 2 digits) */
-var LOL_V = 2026112813;
+var LOL_V = 2026112814;
 
 /* ---------- animation and sound (step 8; ideas: claude/logic-over-luck-animation-ideas.md) ----------
    An animated element carries data-t0 = when its scene started (ms). After every redraw aniSync() sets --el = the time already
@@ -761,6 +785,9 @@ var SND = {
       else if (k === "gong") { SND.tone(98, 2, "sine", 0.18); SND.tone(196, 1.6, "sine", 0.08); SND.tone(294, 1.2, "sine", 0.04); }
       else if (k === "chain") { for (var w = 0; w < 6; w++) SND.noise(0.06, 0.18, w * 0.09, 3000); SND.tone(140, 0.2, "square", 0.1, 0, 0.6); }
       else if (k === "sizzle") SND.noise(1.6, 0.07, 0, 4000);
+      else if (k === "rewind") { for (var rw = 0; rw < 14; rw++) SND.tone(1600 - rw * 80, 0.06, "square", 0.04, 0, rw * 0.08); SND.noise(1.1, 0.05, 0, 2500); }
+      else if (k === "drum") { for (var dr = 0; dr < 6; dr++) SND.noise(0.05, 0.12, dr * 0.06, 300); SND.tone(110, 0.3, "sine", 0.15, 60, 0.36); }
+      else if (k === "fanfare") { [523, 659, 784, 1047].forEach(function (f, j) { SND.tone(f, j === 3 ? 0.8 : 0.18, "sawtooth", 0.06, 0, j * 0.15); }); SND.tone(784, 0.8, "triangle", 0.05, 0, 0.45); }
     } catch (e) {}
   }
 };
@@ -1061,7 +1088,7 @@ function newCode() { var c; do { c = String(1000 + Math.floor(rnd() * 9000)); } 
 function saveHost() { try { ls("lol-host", JSON.stringify({ t: Date.now(), H: H, kp: HOSTKEY })); } catch (e) {} }
 function hostBoot() {
   document.body.className = "host";
-  document.getElementById("app").innerHTML = '<div id="hostwrap"><div id="stage"></div></div>';
+  document.getElementById("app").innerHTML = '<div id="hostwrap"><div id="stage"></div><canvas id="conf" aria-hidden="true"></canvas></div>';
   fitStage(); window.addEventListener("resize", fitStage);
   if (!Sec.ok()) { document.getElementById("stage").innerHTML = '<div class="card" style="margin:auto;font-size:36px">เบราว์เซอร์นี้เข้ารหัสข้อมูลไม่ได้ (ต้องเปิดผ่าน https) ใช้ Chrome, Edge หรือ Safari รุ่นใหม่</div>'; return; }
   var saved = null; try { saved = JSON.parse(ls("lol-host") || "null"); } catch (e) {}
@@ -1221,7 +1248,7 @@ function hostStart() {
   H.runId = "lol-" + H.code + "-" + Date.now().toString(36); H.subOk = false;
   H.n = H.players.length;
   H.start = Math.max(0, Math.min(30, Math.round(Number(H.cfg.start)) || 0));   /* starting score, fixed for the game */
-  H.players.forEach(function (p) { p.built = false; p.cond = p.eff = null; p.acc = H.start; p.hist = []; p.prevX = null; p.prevDie = null; p.next6 = false; p.rrLeft = 1; p.rrBonus = false; p.det = null; p.rp = 0;
+  H.players.forEach(function (p) { p.built = false; p.cond = p.eff = null; p.acc = H.start; p.hist = []; p.accH = []; p.prevX = null; p.prevDie = null; p.next6 = false; p.rrLeft = 1; p.rrBonus = false; p.det = null; p.rp = 0;
     p.lord = false; p.aura = false; p.god = 0; p.guess = null; p.swapped = 0; p.revealed = false; p.shLast = false; });
   H.round = 0; H.places = null; H.room = null; H.rules = []; H.special = null; H.vote = null; H.curRules = []; H.banned = []; H.lucky = null;
   H.ev = null; H.evDone = false; H.cookNow = null; H.npcDie = null; H.delulu = false;
@@ -1370,6 +1397,7 @@ function endReroll() {
     var o = res.players[i];
     p.acc0 = p.acc; p.acc = res.acc[i]; p.rp = res.roundPts[i]; p.hist.push(res.roundPts[i]);
     p.px = p.prevX;   /* last round's roll (No Repeat on the reveal screen) */
+    (p.accH = p.accH || []).push(p.acc);   /* running total after each round (race chart at the end) */
     p.rvHit = o.fired && (o.eff === "steal2" || o.eff === "spoiler") ? { k: o.eff, t: o.targets || [], b: o.blocked || [] } : null;   /* Host only: never sent */
     p.next6 = o.next6Next; p.prevX = p.x; p.prevDie = p.die; p.rkBefore = before[i];
     p.det = { steps: o.steps, fired: o.fired, eff: o.eff, stolen: o.stolen || 0, crowded: o.crowded || 0, robin: o.robin || 0, delulu: o.delulu || 0, rp: o.roundPts, acc0: p.acc0, acc: p.acc };
@@ -1417,7 +1445,7 @@ function applyEvent() {
       H.players.map(function (p) { return p.hist; }), E.fTie);
     E.fanum = {};
     var rk0 = rankOf(H.players.map(function (p) { return p.acc; })), rk1 = rankOf(r.acc);
-    H.players.forEach(function (p, i) { if (r.delta[i]) { E.fanum[p.pid] = r.delta[i]; p.acc = r.acc[i]; } });
+    H.players.forEach(function (p, i) { if (r.delta[i]) { E.fanum[p.pid] = r.delta[i]; p.acc = r.acc[i]; if (p.accH && p.accH.length) p.accH[p.accH.length - 1] = p.acc; } });
     E.fRank = {}; H.players.forEach(function (p, i) { if (E.fanum[p.pid] || p.lord) E.fRank[p.pid] = [rk0[i], rk1[i]]; });   /* for the summary on the big screen */
   } else if (ev === "aura") {   /* immediately: Shield until the end of the game, then pick 1 of 2 new rules (6–7 coins) */
     L.forEach(function (p) { p.aura = true; p.auraOpts = LOL.auraOptions(rnd); p.auraPick = null; });
@@ -1486,6 +1514,7 @@ function brainrot() {
 }
 function endGame() {
   H.places = LOL.finalPlaces(H.players.map(function (p) { return p.acc; }), H.players.map(function (p) { return p.hist; }));
+  H.endPlan = endPlan();
   setPhase("end", 0);
 }
 
@@ -1557,7 +1586,7 @@ function publicState() {
     st.rev = H.players.map(function (p) { return { die: p.prevDie, x: p.prevX, rp: p.rp, rk0: p.rkBefore }; });
     st.stat = H.room;
   }
-  if (H.phase === "end") st.places = H.places;
+  if (H.phase === "end") { st.places = H.places; if (H.endPlan) st.podAt = H.endPlan.podAt; }
   if (H.phase === "reveal" && H.rv && H.rv.lordAt) st.lordAt = H.rv.lordAt;   /* the phone's "you are the Sigma Lord" card waits for the big screen */
   st.cur = H.curRules || []; st.banned = H.banned || []; st.lucky = H.lucky; st.rules = H.rules || []; st.special = H.special; st.cx = crowdXNow();
   if ((H.phase === "vote" || H.phase === "voted") && H.vote) {
@@ -1746,7 +1775,7 @@ function renderHost() {
   } else if (ph === "end") {
     h = hdr("จบเกม", "คะแนนสะสมเท่ากัน ตัดสินด้วยคะแนนรอบ 12, 11, ... ตามลำดับ") + endHtml() +
       '<div class="ftr"><div>' + (subCounted().length ? '<button class="gb" data-h="subOpen">' + (H.subOk ? "ส่งผลแล้ว ✓ (ส่งอีกครั้ง)" : "ส่งผลเข้าระบบคะแนนชมรม") + "</button>" : '<span class="su" style="font-size:24px">ไม่มีใครใส่เลขประจำตัว จึงไม่มีผลให้ส่งเข้าระบบคะแนนชมรม</span>') +
-      '</div><div style="display:flex;gap:14px"><button class="gb" data-h="again">กลับล็อบบี้ (เล่นอีกเกม)</button></div></div>';
+      '</div><div style="display:flex;gap:14px">' + (Number(H.cfg.anim) !== 0 && !RM ? '<button class="gb" data-h="askip">⏩ ข้ามภาพ</button>' : "") + '<button class="gb" data-h="again">กลับล็อบบี้ (เล่นอีกเกม)</button></div></div>';
   }
   if (H.roundAt && H.round && ["pick", "reroll", "npc", "guess", "god"].indexOf(ph) >= 0)   /* the round banner (1.3), invisible once it has played */
     h += '<div class="rban a-ban" data-t0="' + H.roundAt + '" aria-hidden="true">' + (H.round === 12 ? "รอบสุดท้าย<small>คะแนน ×2</small>" : "รอบ " + H.round + "<small>จาก 12</small>") + "</div>";
@@ -1786,6 +1815,7 @@ function hostAni(el) {
     var fresh = ANI.sndKey !== null && Date.now() - t0 < 2000;   /* not on the first draw after opening the page */
     ANI.sndKey = key; sndClear();
     if (fresh && ph === "reveal" && H.rv && aniOn()) sndReveal(H.rv, t0);
+    else if (fresh && ph === "end" && H.endPlan && aniOn()) sndEnd(H.endPlan, t0);
     else if (fresh) {
       if ((ph === "pick" || ph === "npc") && Date.now() - (H.roundAt || 0) < 2000) SND.play("round");
       else if (ph === "reroll") SND.play("roll");
@@ -2259,17 +2289,93 @@ function revealHtml() {
     ((H.curRules || []).length ? "<span>กฎ <b>" + H.curRules.map(function (id) { return esc(RULE_T[id]); }).join(" + ") + "</b></span>" : "") + (H.lucky != null ? "<span>เลขนำโชค <b>" + H.lucky + "</b></span>" : "") + "</div>" +
     '<div class="rv" style="grid-template-rows:repeat(' + rows + ', auto);grid-template-columns:repeat(' + cols + ',minmax(0,1fr))">' + rowsH + "</div>" + ov + x2 + "</div>";
 }
+/* ---------- the end of the game (step 8, batch 5) ----------
+   H.endPlan (worked out once in endGame): a race chart of the running totals round by round (11.4), then a VHS rewind
+   for ties that reach the top 3 (8.6, user 28 Nov 14:28: compare round 12, 11, 10 ... until there is a winner; top 3 only,
+   user 15:14), then the podium 3 -> 2 -> 1 with confetti for 1st (8.1, 8.2), then the other places slide in (8.3). */
+function endPlan() {
+  var P = H.players, R = H.round, pl = H.places || [], t = 300, plan = { tapes: [] };
+  if (R >= 2 && P.every(function (p) { return p.accH && p.accH.length === R; })) { plan.raceAt = t; t += 6200; plan.raceEnd = t; }
+  var groups = {};
+  P.forEach(function (p, i) { (groups[p.acc] = groups[p.acc] || []).push(i); });
+  var ties = Object.keys(groups).map(function (k) { return groups[k]; }).filter(function (g) { return g.length > 1 && Math.min.apply(null, g.map(function (i) { return pl[i]; })) <= 3; });
+  ties.sort(function (a, b) { return Math.min.apply(null, a.map(function (i) { return pl[i]; })) - Math.min.apply(null, b.map(function (i) { return pl[i]; })); });
+  ties.slice(0, 2).forEach(function (g) {
+    var keys = g.map(function () { return ""; }), cols = [];
+    for (var r = R; r >= 1; r--) {
+      cols.push(r); g.forEach(function (i, k) { keys[k] += "|" + (P[i].hist[r - 1] || 0); });
+      if (uniq(keys).length === g.length) break;
+    }
+    var tp = { g: g.slice().sort(function (a, b) { return pl[a] - pl[b] || a - b; }).slice(0, 6), cols: cols, at: t, shared: uniq(keys).length < g.length };
+    t += 1700 + cols.length * 1000 + 1800; tp.end = t; plan.tapes.push(tp);
+  });
+  plan.podAt = t; t += 3300; plan.restAt = t; plan.total = t + 1500;
+  return plan;
+}
+function raceHtml(E) {
+  var P = H.players, R = H.round, W = 1500, HH = 560, x0 = 80, A = E.raceAt;
+  var ser = P.map(function (p) { return [H.start || 0].concat(p.accH); }), all = [].concat.apply([], ser);
+  var mn = Math.min.apply(null, all), mx = Math.max.apply(null, all); if (mx === mn) mx = mn + 1;
+  var X = function (r) { return x0 + r * (W - x0 - 60) / R; }, Y = function (v) { return 20 + (mx - v) * (HH - 80) / (mx - mn); };
+  var pl = H.places || [], order = P.map(function (p, i) { return i; }).sort(function (a, b) { return pl[a] - pl[b] || a - b; }), top = order.slice(0, 8);
+  var line = function (i, col, w) { return '<polyline points="' + ser[i].map(function (v, r) { return X(r).toFixed(1) + "," + Y(v).toFixed(1); }).join(" ") + '" fill="none" stroke="' + col + '" stroke-width="' + w + '" stroke-linejoin="round" stroke-linecap="round"/>'; };
+  var axis = "";
+  for (var r = 0; r <= R; r++) axis += '<text x="' + X(r) + '" y="' + (HH - 30) + '" text-anchor="middle" fill="#8A93B0" font-size="22">' + (r === 0 ? "เริ่ม" : r) + "</text>";
+  axis += '<text x="' + (x0 - 14) + '" y="' + (Y(mx) + 8) + '" text-anchor="end" fill="#8A93B0" font-size="22">' + mx + '</text><text x="' + (x0 - 14) + '" y="' + (Y(mn) + 8) + '" text-anchor="end" fill="#8A93B0" font-size="22">' + mn + "</text>";
+  if (mn < 67 && mx >= 67) axis += '<line x1="' + x0 + '" x2="' + (W - 60) + '" y1="' + Y(67) + '" y2="' + Y(67) + '" stroke="#FFD84D" stroke-dasharray="8 10" stroke-width="2"/><text x="' + (W - 55) + '" y="' + (Y(67) + 8) + '" fill="#FFD84D" font-size="22">67</text>';
+  var svg = '<svg viewBox="0 0 ' + W + " " + HH + '" width="' + W + '" height="' + HH + '">' + axis +
+    order.slice(8).map(function (i) { return line(i, "#3A4570", 3); }).join("") +
+    top.slice().reverse().map(function (i) { return line(i, AV_COL[(avParse(avOfP(P[i])) || [0, 6])[1]], 6); }).join("") + "</svg>";
+  var ends = top.map(function (i, k) { var v = ser[i][R]; return '<span class="rend a-pop" style="left:' + (X(R) + 14) + "px;top:" + (Y(v) - 22) + "px;--d:" + (A + 4300 + k * 90) + 'ms">' + avP(P[i], 40) + "<b>" + pl[i] + "</b></span>"; }).join("");
+  return '<div class="endov race a-win" style="--d:' + A + "ms;--dur:" + (E.raceEnd - A) + 'ms"><div class="sct">เส้นทางคะแนนสะสม</div><div class="racew">' + svg +
+    '<div class="rcover a-wipe" style="--d:' + (A + 300) + 'ms"></div>' + ends + "</div></div>";
+}
+function tapeHtml(tp) {
+  var P = H.players, S = tp.at, pl = H.places || [], acc = P[tp.g[0]].acc;
+  var head = "<tr><th></th>" + tp.cols.map(function (r, k) { return '<th class="a-show" style="--d:' + (S + 1700 + k * 1000) + 'ms">รอบ ' + r + "</th>"; }).join("") + "<th></th></tr>";
+  var rows = tp.g.map(function (i) {
+    var p = P[i];
+    return "<tr><td class=\"tn\">" + avP(p, 40, "avc") + esc(p.name) + "</td>" + tp.cols.map(function (r, k) {
+      var vals = tp.g.map(function (j) { return P[j].hist[r - 1] || 0; }), v = p.hist[r - 1] || 0, best = Math.max.apply(null, vals);
+      return '<td class="a-show' + (v === best && uniq(vals).length > 1 ? " tw" : "") + '" style="--d:' + (S + 1700 + k * 1000) + 'ms">' + sign(v) + "</td>";
+    }).join("") + '<td><span class="tpl a-pop" style="--d:' + (S + 1900 + tp.cols.length * 1000) + 'ms">' + (tp.shared && tp.g.filter(function (j) { return pl[j] === pl[i]; }).length > 1 ? "อันดับร่วม " : "อันดับ ") + pl[i] + "</span></td></tr>";
+  }).join("");
+  return '<div class="endov tape a-win" style="--d:' + S + "ms;--dur:" + (tp.end - S) + 'ms"><div class="glz a-glz" style="--d:' + S + 'ms"></div>' +
+    '<div class="vhs"><i class="reel"></i><b class="rew">◀◀ REW</b><i class="reel"></i></div>' +
+    '<div class="sct">คะแนนสะสมเท่ากัน ' + num(acc) + " คะแนน!</div><div class=\"scs\">กรอเทปย้อนดูคะแนนในรอบ " + tp.cols[0] + ", " + (tp.cols[0] - 1) + ", ... จนกว่าจะรู้ผล</div>" +
+    '<table class="ttab">' + head + rows + "</table></div>";
+}
+/* confetti for 1st place (big screen) and for a top-3 phone: a canvas on top of everything, a few seconds, no library */
+function confetti(cv, ms, many) {
+  if (!cv || !aniOn()) return;
+  var c = cv.getContext("2d"), W = cv.width = innerWidth, Hh = cv.height = innerHeight, cols = ["#FFD84D", "#FF5AA8", "#4DD8FF", "#5BD98F", "#B197FC", "#FF8A1F"], ps = [], t0 = Date.now();
+  for (var i = 0; i < (many || 160); i++) ps.push({ x: Math.random() * W, y: -20 - Math.random() * Hh * .6, vx: (Math.random() - .5) * 4, vy: 2 + Math.random() * 4, a: Math.random() * 6, va: (Math.random() - .5) * .3, s: 6 + Math.random() * 8, c: cols[i % cols.length] });
+  (function f() {
+    var e = Date.now() - t0; c.clearRect(0, 0, W, Hh);
+    if (e > ms || !aniOn()) return;
+    ps.forEach(function (p) { p.x += p.vx; p.y += p.vy; p.vy += .05; p.a += p.va; c.save(); c.translate(p.x, p.y); c.rotate(p.a); c.fillStyle = p.c; c.globalAlpha = Math.min(1, (ms - e) / 600); c.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); c.restore(); });
+    requestAnimationFrame(f);
+  })();
+}
+function sndEnd(E, t0) {
+  var off = t0 - Date.now();
+  if (E.raceAt != null) { sndAt(off + E.raceAt + 300, "whoosh"); sndAt(off + E.raceAt + 4300, "ding"); }
+  E.tapes.forEach(function (tp) { sndAt(off + tp.at, "rewind"); tp.cols.forEach(function (_, k) { sndAt(off + tp.at + 1700 + k * 1000, "tick0"); }); sndAt(off + tp.at + 1900 + tp.cols.length * 1000, "ding"); });
+  sndAt(off + E.podAt, "drum"); sndAt(off + E.podAt + 1000, "drum"); sndAt(off + E.podAt + 2000, "fanfare");
+  ANI.snd.push(setTimeout(function () { confetti(document.getElementById("conf"), 4500); }, Math.max(0, off + E.podAt + 2000)));
+}
 function endHtml() {
-  var pl = H.places || [], n = H.players.length, idx = H.players.map(function (p, i) { return i; }).sort(function (a, b) { return pl[a] - pl[b] || a - b; });
+  var E = H.endPlan || { tapes: [], podAt: 0, restAt: 0 }, pl = H.places || [], n = H.players.length, idx = H.players.map(function (p, i) { return i; }).sort(function (a, b) { return pl[a] - pl[b] || a - b; });
   function at(place) { return idx.filter(function (i) { return pl[i] === place; }); }
   var podium = [2, 1, 3].map(function (place) {
     var who = at(place); if (!who.length) return '<div class="col"></div>';
-    var hgt = place === 1 ? 300 : place === 2 ? 220 : 160, col = place === 1 ? "#FFD84D" : place === 2 ? "#C9D0E6" : "#E8A66A";
-    return '<div class="col"><div class="who"><div class="pav">' + who.slice(0, 3).map(function (i) { return avP(H.players[i], who.length > 1 ? 64 : 110); }).join("") + "</div>" + who.slice(0, 3).map(function (i) { return esc(H.players[i].name); }).join("<br>") + (who.length > 3 ? "<br>และอีก " + (who.length - 3) + " คน" : "") +
-      '</div><div class="sc">' + num(H.players[who[0]].acc) + ' คะแนน</div><div class="blk" style="height:' + hgt + "px;background:" + col + '">' + place + "</div></div>";
+    var hgt = place === 1 ? 300 : place === 2 ? 220 : 160, col = place === 1 ? "#FFD84D" : place === 2 ? "#C9D0E6" : "#E8A66A", d = E.podAt + (3 - place) * 1000;
+    return '<div class="col" style="--d:' + d + 'ms"><div class="who a-pop" style="--d:' + (d + 450) + 'ms"><div class="pav">' + who.slice(0, 3).map(function (i) { return avP(H.players[i], who.length > 1 ? 64 : 110); }).join("") + "</div>" + who.slice(0, 3).map(function (i) { return esc(H.players[i].name); }).join("<br>") + (who.length > 3 ? "<br>และอีก " + (who.length - 3) + " คน" : "") +
+      '</div><div class="sc a-pop" style="--d:' + (d + 550) + 'ms">' + num(H.players[who[0]].acc) + ' คะแนน</div><div class="blk a-rise" style="height:' + hgt + "px;background:" + col + ";--d:" + d + 'ms">' + place + "</div></div>";
   }).join("");
-  var rest = idx.filter(function (i) { return pl[i] > 3; }).map(function (i) { return "<span>" + pl[i] + ". " + avP(H.players[i], 30, "avc") + esc(H.players[i].name) + " (" + num(H.players[i].acc) + ")</span>"; }).join("");
-  return '<div class="main" style="flex-direction:column;justify-content:center;gap:30px"><div class="pod">' + podium + '</div><div class="rest">' + rest + "</div></div>";
+  var rest = idx.filter(function (i) { return pl[i] > 3; }).map(function (i, k) { return '<span class="a-pop" style="--d:' + (E.restAt + Math.min(k, 30) * 40) + 'ms">' + pl[i] + ". " + avP(H.players[i], 30, "avc") + esc(H.players[i].name) + " (" + num(H.players[i].acc) + ")</span>"; }).join("");
+  return '<div class="main" data-t0="' + (H.phaseAt || 0) + '" style="flex-direction:column;justify-content:center;gap:30px;position:relative"><div class="pod">' + podium + '</div><div class="rest">' + rest + "</div>" +
+    (E.raceAt != null ? raceHtml(E) : "") + E.tapes.map(tapeHtml).join("") + "</div>";
 }
 function cfgHtml() {
   var c = H.cfg;
@@ -2466,7 +2572,8 @@ function simPanel() {
 var P = { phKey: "", phaseStart: 0, rollKey: "", rollAt: 0, firstX: null, spin: false, sid: "", sidInfo: null, ckOpen: false, code: "", pid: "", name: "", kp: null, key: null, hpub: "", st: null, priv: null, pv: 0, pend: null, joined: false, err: "", sel: { cond: null, eff: null }, view: "", recvAt: 0, needAt: 0, joinT: null };
 function playerBoot(code) {
   document.body.className = "ph";
-  P.av = avParse(ls("lol-av")) ? ls("lol-av") : avRandom(); ls("lol-av", P.av);   /* the avatar stays in this phone's browser (user 28 Nov 15:16) */
+  P.av = avParse(ls("lol-av")) ? ls("lol-av") : avRandom(); ls("lol-av", P.av);
+  var pc = document.createElement("canvas"); pc.id = "pconf"; pc.setAttribute("aria-hidden", "true"); document.body.appendChild(pc);   /* the avatar stays in this phone's browser (user 28 Nov 15:16) */
   P.code = code || ss("lol-code") || ""; P.pid = ss("lol-pid") || ""; P.name = ss("lol-name") || ""; P.sid = ss("lol-sid") || ""; P.ckOpen = !!ss("lol-sidok");
   ckPoll(); setInterval(ckPoll, 8000);
   document.getElementById("app").addEventListener("input", function (e) {   /* student ID box: digits only, look it up once all 5 are typed */
@@ -2928,8 +3035,12 @@ function playerHtml() {
       '<div class="muted">' + (st.stat && st.stat.rr ? "รอบนี้มีคนทอยใหม่" : "รอบนี้ไม่มีใครทอยใหม่") + "</div>";
   }
   if (ph === "end") {
-    var pl = st.places ? st.places[me.idx] : me.rank;
-    return h + pTop("จบเกม", "Logic over Luck") + '<div class="pc" style="text-align:center"><div class="muted">อันดับของคุณ</div><div class="roll">' + pl + '</div><div style="font-weight:700">จาก ' + st.n + " คน คะแนนสะสม " + num(me.acc) + "</div></div>" +
+    var pl = st.places ? st.places[me.idx] : me.rank, dl = st.podAt != null ? st.podAt + (pl <= 3 ? (3 - pl) * 1000 : 3300) : 0;   /* 8.4: your place shows when the big screen gets there */
+    if (pl <= 3 && st.podAt != null && P.confKey !== P.phaseStart) {   /* top 3: a little confetti on the phone too */
+      P.confKey = P.phaseStart; var wait = P.phaseStart + dl - Date.now();
+      if (wait > -800) setTimeout(function () { confetti(document.getElementById("pconf"), 3200, 90); }, Math.max(0, wait));
+    }
+    return h + pTop("จบเกม", "Logic over Luck") + '<div class="pc" style="text-align:center"><div class="muted">อันดับของคุณ</div><div class="a-pop" data-t0="' + P.phaseStart + '" style="--d:' + dl + 'ms"><div class="roll">' + pl + "</div></div>" + '<div style="font-weight:700">จาก ' + st.n + " คน คะแนนสะสม " + num(me.acc) + "</div></div>" +
       '<div class="muted">คะแนนสะสมเท่ากัน ตัดสินด้วยคะแนนรอบ 12, 11, ... ตามลำดับ</div><button class="btn alt" data-p="leave">ออกจากห้อง</button>';
   }
   return h;

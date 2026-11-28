@@ -27,7 +27,7 @@
   var RULES = ["ban", "curse", "prime", "median", "outlier", "minority", "norepeat", "underdog", "bust", "robin", "crowded", "bubble", "lucky"];
   var RANDOM_POOL = Object.keys(EFF).filter(function (e) { return e !== "random"; });   /* Random draws from every other effect, equal chance */
   var DEFAULTS = { cap: 3, crowdX: null, voteFrac: 0.5, voteCount: null, underdogNeedsCond: true,
-    stealGain: 4, stealLoss: 2, spoilGain: 5, spoilLoss: 3, deluluLoss: 6, fanumPts: 2, fanumTie: "order" };
+    stealGain: 4, stealLoss: 2, spoilGain: 5, spoilLoss: 3, deluluLoss: 6, fanumPts: 2, fanumTie: "order", start: 0 };   /* start: starting score (rules 28 Nov: 15 on the web; Compound Interest does not count it) */
 
   function cfgOf(c) { var o = {}, k; for (k in DEFAULTS) o[k] = DEFAULTS[k]; if (c) for (k in c) if (c[k] !== undefined) o[k] = c[k]; return o; }
   function has(arr, v) { return arr.indexOf(v) >= 0; }
@@ -160,7 +160,7 @@
           case "shield": g = face + 1; break;
           case "flip": g = cursed ? 0 : 9 - x; break;
           case "echo": g = face + (R.prev[i] == null ? 0 : R.prev[i]); break;
-          case "interest": g = face + Math.floor(Math.max(0, acc0[i]) / 8); break;
+          case "interest": g = face + Math.floor(Math.max(0, acc0[i] - (c.start || 0)) / 8); break;   /* points earned in the game only */
           default: g = face;   /* steal2, spoiler (step 5), next6 (next round) */
         }
       }

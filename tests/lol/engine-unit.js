@@ -17,6 +17,10 @@ eq("echo", run([pl("std", 4, "even", "echo", 0, { prevX: 6 }), pl("std", 5, "dej
 eq("echo round 1", run([pl("std", 4, "even", "echo"), pl("std", 5, "deja", "+2")]).acc, [4, 5]);
 eq("interest 1 per 8", run([pl("std", 4, "even", "interest", 23), pl("std", 5, "deja", "+2", -9)]).acc, [23 + 4 + 2, -9 + 5]);
 eq("interest negative total", run([pl("std", 4, "even", "interest", -20), pl("std", 5, "deja", "+2")]).acc, [-16, 5]);
+/* rules 28 Nov: everyone starts with a starting score; Compound Interest counts only points earned (total - start), never below 0 */
+eq("interest minus starting score", run([pl("std", 4, "even", "interest", 15 + 23), pl("std", 5, "deja", "+2", 15)], [], { cfg: { start: 15 } }).acc, [38 + 4 + 2, 20]);
+eq("interest below starting score gives 0", run([pl("std", 4, "even", "interest", 10), pl("std", 5, "deja", "+2", 15)], [], { cfg: { start: 15 } }).acc, [14, 20]);
+eq("ends7 counts the starting score (15 + 2 = 17)", run([pl("std", 2, "ends7", "+2", 15), pl("std", 5, "deja", "+2", 15)], [], { cfg: { start: 15 } }).players[0].fired, true);
 eq("crowd max 4", run([1, 2, 3, 4, 5].map(function () { return pl("con", 3, "odd", "crowd"); })).acc, [7, 7, 7, 7, 7]);
 eq("x3", run([pl("risk", 7, "odd", "x3"), pl("std", 5, "deja", "+2")]).acc, [21, 5]);
 eq("next6 lands even if condition fails", run([pl("std", 5, "deja", "+2", 0, { next6: true }), pl("std", 1, "deja", "+2")]).acc, [11, 1]);

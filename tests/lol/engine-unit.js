@@ -88,6 +88,11 @@ eq("steal 2 while 1st: nothing", run([pl("std", 1, "sq", "steal2", 30), pl("std"
 eq("steal 2 tied leaders both lose, gain once", run([pl("std", 1, "sq", "steal2"), pl("std", 4, "deja", "+2", 10), pl("std", 4, "deja", "+2", 10)]).acc, [5, 12, 12]);
 eq("steal 2 shielded leader: no gain", run([pl("std", 1, "sq", "steal2"), pl("std", 4, "even", "shield", 10)]).acc, [1, 15]);
 eq("loss cap 3: two steals, leader loses 3, both gain 4", run([pl("std", 1, "sq", "steal2"), pl("std", 1, "sq", "steal2"), pl("std", 4, "deja", "+2", 10)]).acc, [5, 5, 11]);
+/* user 28 Nov 12:35: Steal 2 hits the player(s) one rank above you (next higher running total + round points after step 4) */
+eq("steal 2 hits one rank above, not the leader", run([pl("std", 1, "sq", "steal2"), pl("std", 4, "deja", "+2", 6), pl("std", 4, "deja", "+2", 16)]).acc, [5, 8, 20]);
+eq("steal 2: everyone tied one rank above loses", run([pl("std", 1, "sq", "steal2"), pl("std", 4, "deja", "+2", 6), pl("std", 4, "deja", "+2", 6), pl("std", 4, "deja", "+2", 16)]).acc, [5, 8, 8, 20]);
+eq("steal 2: a player tied with you is not above you", run([pl("std", 1, "sq", "steal2"), pl("std", 1, "deja", "+2"), pl("std", 4, "deja", "+2", 6)]).acc, [5, 1, 8]);
+eq("steal 2 old rule (stealTarget leader) still available", run([pl("std", 1, "sq", "steal2"), pl("std", 4, "deja", "+2", 6), pl("std", 4, "deja", "+2", 16)], [], { cfg: { stealTarget: "leader" } }).acc, [5, 10, 18]);
 eq("spoiler hits top scorer", run([pl("std", 1, "sq", "spoiler"), pl("risk", 7, "deja", "+2")]).acc, [6, 4]);
 /* spoiler user is the top scorer: 6 + 5 - 3 = 8; in round 12 (6 + 5) x 2 - 3 = 19 */
 eq("spoiler self-hit", run([pl("std", 6, "ge6", "spoiler"), pl("std", 5, "deja", "+2")]).acc, [8, 5]);

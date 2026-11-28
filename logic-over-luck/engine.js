@@ -27,7 +27,7 @@
   var RULES = ["ban", "curse", "prime", "median", "outlier", "minority", "norepeat", "underdog", "bust", "robin", "crowded", "bubble", "lucky"];
   var RANDOM_POOL = Object.keys(EFF).filter(function (e) { return e !== "random"; });   /* Random draws from every other effect, equal chance */
   var DEFAULTS = { cap: 3, crowdX: null, voteFrac: 0.5, voteCount: null, underdogNeedsCond: true,
-    stealGain: 4, stealLoss: 2, spoilGain: 5, spoilLoss: 3, deluluLoss: 6, fanumPts: 2, fanumTie: "order", start: 0 };   /* start: starting score (rules 28 Nov: 15 on the web; Compound Interest does not count it) */
+    stealGain: 4, stealLoss: 2, spoilGain: 5, spoilLoss: 3, deluluLoss: 6, fanumPts: 2, fanumTie: "order", start: 0, stealTarget: "above" };   /* start: starting score (rules 28 Nov: 15 on the web; Compound Interest does not count it) */
 
   function cfgOf(c) { var o = {}, k; for (k in DEFAULTS) o[k] = DEFAULTS[k]; if (c) for (k in c) if (c[k] !== undefined) o[k] = c[k]; return o; }
   function has(arr, v) { return arr.indexOf(v) >= 0; }
@@ -190,8 +190,18 @@
     out.forEach(function (o, p) {
       if (!o.fired) return;
       if (o.eff === "steal2") {
-        if (has(leaders, p)) { o.stealSelf = true; return; }   /* you are 1st yourself: the card does nothing */
-        var vs = leaders.filter(function (v) { return !out[v].shield; });
+        /* user (28 Nov 12:35): the target is the player(s) one rank above you, ranked by running total + round points after
+           step 4 (the next higher value; everyone tied there loses). Nobody above you (you are 1st): the card does nothing.
+           cfg.stealTarget "leader" = the old rule (1st place). */
+        var tg;
+        if (c.stealTarget === "leader") { if (has(leaders, p)) { o.stealSelf = true; return; } tg = leaders; }
+        else {
+          var up = base.filter(function (v) { return v > base[p]; });
+          if (!up.length) { o.stealSelf = true; return; }
+          var nx = Math.min.apply(null, up); tg = [];
+          for (var q = 0; q < n; q++) if (base[q] === nx) tg.push(q);
+        }
+        var vs = tg.filter(function (v) { return !out[v].shield; });
         vs.forEach(function (v) { take(v, c.stealLoss); });
         gain[p] = vs.length ? c.stealGain : 0; o.targets = vs;
       } else if (o.eff === "spoiler") {   /* v5: the user can be a target too */

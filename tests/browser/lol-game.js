@@ -91,6 +91,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   for (let t = 1; t <= 12; t++) {
     if (t === 7) {   /* mid-game break: phone 0 changes its rule, phone 1 keeps it, phone 2 does nothing */
       await host.waitForFunction(() => H.phase === "break", null, { timeout: 40000 });
+      /* top half after round 6 (ties at the line too) got 1 more re-roll */
+      const rb = await host.evaluate(() => { const acc = H.players.map((p) => p.acc), c = engCfg(), k = c.voteCount || Math.ceil(acc.length * c.voteFrac), thr = acc.slice().sort((a, b) => b - a)[k - 1];
+        return H.players.map((p) => ({ top: p.acc >= thr, bonus: p.rrBonus, left: p.rrLeft, used: p.pid })); });
+      ok(rb.every((q) => q.top === q.bonus) && rb.filter((q) => q.bonus).length >= Math.ceil(rb.length / 2), "พักครึ่ง: ครึ่งบน " + rb.filter((q) => q.bonus).length + " คนได้ทอยใหม่เพิ่ม (สิทธิ์ที่เหลือ " + rb.map((q) => q.left).join(",") + ")");
+      ok(rb.every((q) => q.left >= (q.bonus ? 1 : 0) && q.left <= (q.bonus ? 2 : 1)), "จำนวนทอยใหม่ที่เหลือถูก (ครึ่งบน 1–2, คนอื่น 0–1)");
       const sp = await host.evaluate(() => H.special);
       ok(!!sp, "พักครึ่ง เปิดกฎพิเศษรอบสุดท้าย: " + sp);
       if (FORCE) await host.evaluate((r) => { H.special = r; }, FORCE[3]);
@@ -108,7 +113,12 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     }
     if (t === 4 || t === 7 || t === 10) {   /* vote: every phone in the voting group votes for its first option */
       await host.waitForFunction((tt) => H.phase === "vote" && H.vote.round === tt, t, { timeout: 40000 });
-      const vi = await host.evaluate(() => ({ voters: H.vote.voters, opts: H.vote.opts, rules: H.rules.slice(), special: H.special, grp: LOL.votingGroup(H.players.map((p) => p.acc), engCfg()).map((i) => H.players[i].pid) }));
+      const vi = await host.evaluate((tt) => {
+        const acc = H.players.map((p) => p.acc), top = Math.max.apply(null, acc);
+        const grp = tt === 7 ? H.players.filter((p) => p.acc === top).map((p) => p.pid) : LOL.votingGroup(acc, engCfg()).map((i) => H.players[i].pid);   /* before round 7: rank 1 (ties all) */
+        return { voters: H.vote.voters, opts: H.vote.opts, rules: H.rules.slice(), special: H.special, grp: grp, kind: H.vote.kind };
+      }, t);
+      ok(vi.kind === (t === 7 ? "top1" : "lower"), "ก่อนรอบ " + t + " ผู้โหวต = " + (t === 7 ? "อันดับ 1" : "ครึ่งล่าง"));
       ok(JSON.stringify(vi.voters) === JSON.stringify(vi.grp) && vi.opts.length === 3 && new Set(vi.opts).size === 3 && vi.opts.every((o) => vi.rules.indexOf(o) < 0) && vi.opts.indexOf(vi.special) < 0,
         "โหวตก่อนรอบ " + t + ": กลุ่มโหวต " + vi.voters.length + " คน ตัวเลือก 3 ข้อไม่ซ้ำ ไม่ใช่กฎที่ใช้อยู่ (" + vi.rules.join("+") + ") และไม่ใช่กฎพิเศษ");
       rulesBefore = vi.rules;
